@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   <extension
+         point="org.eclipse.ui.views">
+      <category
+            name="Selection Category"
+            id="selectionPlugin">
+      </category>
+      <view
+            name="Method Defragmenter"
+            icon="icons/defrag_icon.gif"
+            category="selectionPlugin"
+            class="kar.method.defragmenter.views.SelectionView"
+            id="selectionplugin.views.SelectionView">
+      </view>
+   </extension>
+   <extension
+         point="org.eclipse.ui.perspectiveExtensions">
+      <perspectiveExtension
+            targetID="org.eclipse.jdt.ui.JavaPerspective">
+         <view
+               ratio="0.5"
+               relative="org.eclipse.ui.views.ProblemView"
+               relationship="right"
+               id="selectionplugin.views.SelectionView">
+         </view>
+      </perspectiveExtension>
+   </extension>
+   <extension
+         point="org.eclipse.help.contexts">
+      <contexts
+            file="contexts.xml">
+      </contexts>
+   </extension>
+	<extension point="org.eclipse.core.resources.markers" id="com.ibm.mymarkers.mymarker">
+		<super type="org.eclipse.core.resources.textmarker"/>
+		/>
+	</extension>
+	
+	<extension point="org.eclipse.ui.editors.markerAnnotationSpecification"
+		id="myannotationspecification" name="MyAnnotation">
+		<specification
+        annotationType="com.ibm.example.myannotation1"
+        colorPreferenceKey="clcolor1"
+        colorPreferenceValue="255,190,181"
+        highlightPreferenceKey="clhighlight1"
+        highlightPreferenceValue="true"
+        includeOnPreferencePage="true"
+        label="MyAnnotation1"
+        overviewRulerPreferenceKey="clruler"
+        overviewRulerPreferenceValue="true"
+        textPreferenceKey="cltext"
+        textPreferenceValue="true"
+        textStylePreferenceKey="clstyle"
+        textStylePreferenceValue="BOX"
+        verticalRulerPreferenceKey="clvertical"
+        verticalRulerPreferenceValue="true">
+		</specification>
+  <specification
+        annotationType="com.ibm.example.myannotation2"
+        colorPreferenceKey="clcolor2"
+        colorPreferenceValue="253,235,132"
+        highlightPreferenceKey="clhighlight2"
+        highlightPreferenceValue="true"
+        includeOnPreferencePage="true"
+        label="MyAnnotation2"
+        overviewRulerPreferenceKey="clruler"
+        overviewRulerPreferenceValue="true"
+        textPreferenceKey="cltext"
+        textPreferenceValue="true"
+        textStylePreferenceKey="clstyle"
+        textStylePreferenceValue="BOX"
+        verticalRulerPreferenceKey="clvertical"
+        verticalRulerPreferenceValue="true">
+  </specification>
+  <specification
+        annotationType="com.ibm.example.myannotation3"
+        colorPreferenceKey="clcolor3"
+        colorPreferenceValue="200,254,160"
+        highlightPreferenceKey="clhighlight3"
+        highlightPreferenceValue="true"
+        includeOnPreferencePage="true"
+        label="MyAnnotation3"
+        overviewRulerPreferenceKey="clruler"
+        overviewRulerPreferenceValue="true"
+        textPreferenceKey="cltext"
+        textPreferenceValue="true"
+        textStylePreferenceKey="clstyle"
+        textStylePreferenceValue="BOX"
+        verticalRulerPreferenceKey="clvertical"
+        verticalRulerPreferenceValue="true">
+  </specification>
+  <specification
+        annotationType="com.ibm.example.myannotation4"
+        colorPreferenceKey="clcolor4"
+        colorPreferenceValue="159,255,236"
+        highlightPreferenceKey="clhighlight4"
+        highlightPreferenceValue="true"
+        includeOnPreferencePage="true"
+        label="MyAnnotation4"
+        overviewRulerPreferenceKey="clruler"
+        overviewRulerPreferenceValue="true"
+        textPreferenceKey="cltext"
+        textPreferenceValue="true"
+        textStylePreferenceKey="clstyle"
+        textStylePreferenceValue="BOX"
+        verticalRulerPreferenceKey="clvertical"
+        verticalRulerPreferenceValue="true">
+  </specification>
+  <specification
+        annotationType="com.ibm.example.myannotation5"
+        colorPreferenceKey="clcolor5"
+        colorPreferenceValue="170,179,255"
+        highlightPreferenceKey="clhighlight5"
+        highlightPreferenceValue="true"
+        includeOnPreferencePage="true"
+        label="MyAnnotation5"
+        overviewRulerPreferenceKey="clruler"
+        overviewRulerPreferenceValue="true"
+        textPreferenceKey="cltext"
+        textPreferenceValue="true"
+        textStylePreferenceKey="clstyle"
+        textStylePreferenceValue="BOX"
+        verticalRulerPreferenceKey="clvertical"
+        verticalRulerPreferenceValue="true">
+  </specification>
+  <specification
+        annotationType="com.ibm.example.myannotation6"
+        colorPreferenceKey="clcolor6"
+        colorPreferenceValue="219,191,255"
+        highlightPreferenceKey="clhighlight6"
+        highlightPreferenceValue="true"
+        includeOnPreferencePage="true"
+        label="MyAnnotation6"
+        overviewRulerPreferenceKey="clruler"
+        overviewRulerPreferenceValue="true"
+        textPreferenceKey="cltext"
+        textPreferenceValue="true"
+        textStylePreferenceKey="clstyle"
+        textStylePreferenceValue="BOX"
+        verticalRulerPreferenceKey="clvertical"
+        verticalRulerPreferenceValue="true">
+  </specification>
+	</extension>
+	
+	<extension point="org.eclipse.ui.editors.annotationTypes">
+   		 <type markerSeverity="0"
+          super="org.eclipse.ui.workbench.texteditor.info"
+          name="com.ibm.example.myannotation" 
+          markerType="com.ibm.mymarkers.mymarker"/>
+	</extension>
+</plugin>
