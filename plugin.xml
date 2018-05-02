@@ -34,21 +34,21 @@
             file="contexts.xml">
       </contexts>
    </extension>
-	<extension point="org.eclipse.core.resources.markers" id="com.ibm.mymarkers.mymarker">
+	<extension point="org.eclipse.core.resources.markers" id="kar.method.defragmenter.marker">
 		<super type="org.eclipse.core.resources.textmarker"/>
 		/>
 	</extension>
 	
 	<extension point="org.eclipse.ui.editors.markerAnnotationSpecification"
-		id="myannotationspecification" name="MyAnnotation">
+		id="MethodDefragmenterAnnotationSpecification" name="CodeAnnotation">
 		<specification
-        annotationType="com.ibm.example.myannotation1"
+        annotationType="annotationColor_1"
         colorPreferenceKey="clcolor1"
-        colorPreferenceValue="255,190,181"
+        colorPreferenceValue="239,154,154"
         highlightPreferenceKey="clhighlight1"
         highlightPreferenceValue="true"
         includeOnPreferencePage="true"
-        label="MyAnnotation1"
+        label="CodeAnnotation1"
         overviewRulerPreferenceKey="clruler"
         overviewRulerPreferenceValue="true"
         textPreferenceKey="cltext"
@@ -59,13 +59,13 @@
         verticalRulerPreferenceValue="true">
 		</specification>
   <specification
-        annotationType="com.ibm.example.myannotation2"
+        annotationType="annotationColor_2"
         colorPreferenceKey="clcolor2"
-        colorPreferenceValue="253,235,132"
+        colorPreferenceValue="244,143,177"
         highlightPreferenceKey="clhighlight2"
         highlightPreferenceValue="true"
         includeOnPreferencePage="true"
-        label="MyAnnotation2"
+        label="CodeAnnotation2"
         overviewRulerPreferenceKey="clruler"
         overviewRulerPreferenceValue="true"
         textPreferenceKey="cltext"
@@ -76,13 +76,13 @@
         verticalRulerPreferenceValue="true">
   </specification>
   <specification
-        annotationType="com.ibm.example.myannotation3"
+        annotationType="annotationColor_3"
         colorPreferenceKey="clcolor3"
-        colorPreferenceValue="200,254,160"
+        colorPreferenceValue="206,147,216"
         highlightPreferenceKey="clhighlight3"
         highlightPreferenceValue="true"
         includeOnPreferencePage="true"
-        label="MyAnnotation3"
+        label="CodeAnnotation3"
         overviewRulerPreferenceKey="clruler"
         overviewRulerPreferenceValue="true"
         textPreferenceKey="cltext"
@@ -93,13 +93,13 @@
         verticalRulerPreferenceValue="true">
   </specification>
   <specification
-        annotationType="com.ibm.example.myannotation4"
+        annotationType="annotationColor_4"
         colorPreferenceKey="clcolor4"
-        colorPreferenceValue="159,255,236"
+        colorPreferenceValue="179,157,219"
         highlightPreferenceKey="clhighlight4"
         highlightPreferenceValue="true"
         includeOnPreferencePage="true"
-        label="MyAnnotation4"
+        label="CodeAnnotation4"
         overviewRulerPreferenceKey="clruler"
         overviewRulerPreferenceValue="true"
         textPreferenceKey="cltext"
@@ -110,13 +110,13 @@
         verticalRulerPreferenceValue="true">
   </specification>
   <specification
-        annotationType="com.ibm.example.myannotation5"
+        annotationType="annotationColor_5"
         colorPreferenceKey="clcolor5"
-        colorPreferenceValue="170,179,255"
+        colorPreferenceValue="159,168,218"
         highlightPreferenceKey="clhighlight5"
         highlightPreferenceValue="true"
         includeOnPreferencePage="true"
-        label="MyAnnotation5"
+        label="CodeAnnotation5"
         overviewRulerPreferenceKey="clruler"
         overviewRulerPreferenceValue="true"
         textPreferenceKey="cltext"
@@ -127,13 +127,217 @@
         verticalRulerPreferenceValue="true">
   </specification>
   <specification
-        annotationType="com.ibm.example.myannotation6"
+        annotationType="annotationColor_6"
         colorPreferenceKey="clcolor6"
-        colorPreferenceValue="219,191,255"
+        colorPreferenceValue="144,202,249"
         highlightPreferenceKey="clhighlight6"
         highlightPreferenceValue="true"
         includeOnPreferencePage="true"
-        label="MyAnnotation6"
+        label="CodeAnnotation6"
+        overviewRulerPreferenceKey="clruler"
+        overviewRulerPreferenceValue="true"
+        textPreferenceKey="cltext"
+        textPreferenceValue="true"
+        textStylePreferenceKey="clstyle"
+        textStylePreferenceValue="BOX"
+        verticalRulerPreferenceKey="clvertical"
+        verticalRulerPreferenceValue="true">
+  </specification>
+  <specification
+        annotationType="annotationColor_7"
+        colorPreferenceKey="clcolor7"
+        colorPreferenceValue="129,212,250"
+        highlightPreferenceKey="clhighlight7"
+        highlightPreferenceValue="true"
+        includeOnPreferencePage="true"
+        label="CodeAnnotation7"
+        overviewRulerPreferenceKey="clruler"
+        overviewRulerPreferenceValue="true"
+        textPreferenceKey="cltext"
+        textPreferenceValue="true"
+        textStylePreferenceKey="clstyle"
+        textStylePreferenceValue="BOX"
+        verticalRulerPreferenceKey="clvertical"
+        verticalRulerPreferenceValue="true">
+  </specification>
+  <specification
+        annotationType="annotationColor_8"
+        colorPreferenceKey="clcolor8"
+        colorPreferenceValue="128,222,234"
+        highlightPreferenceKey="clhighlight8"
+        highlightPreferenceValue="true"
+        includeOnPreferencePage="true"
+        label="CodeAnnotation8"
+        overviewRulerPreferenceKey="clruler"
+        overviewRulerPreferenceValue="true"
+        textPreferenceKey="cltext"
+        textPreferenceValue="true"
+        textStylePreferenceKey="clstyle"
+        textStylePreferenceValue="BOX"
+        verticalRulerPreferenceKey="clvertical"
+        verticalRulerPreferenceValue="true">
+  </specification>
+  <specification
+        annotationType="annotationColor_9"
+        colorPreferenceKey="clcolor9"
+        colorPreferenceValue="128,203,196"
+        highlightPreferenceKey="clhighlight9"
+        highlightPreferenceValue="true"
+        includeOnPreferencePage="true"
+        label="CodeAnnotation9"
+        overviewRulerPreferenceKey="clruler"
+        overviewRulerPreferenceValue="true"
+        textPreferenceKey="cltext"
+        textPreferenceValue="true"
+        textStylePreferenceKey="clstyle"
+        textStylePreferenceValue="BOX"
+        verticalRulerPreferenceKey="clvertical"
+        verticalRulerPreferenceValue="true">
+  </specification>
+  <specification
+        annotationType="annotationColor_10"
+        colorPreferenceKey="clcolor10"
+        colorPreferenceValue="165,214,167"
+        highlightPreferenceKey="clhighlight10"
+        highlightPreferenceValue="true"
+        includeOnPreferencePage="true"
+        label="CodeAnnotation10"
+        overviewRulerPreferenceKey="clruler"
+        overviewRulerPreferenceValue="true"
+        textPreferenceKey="cltext"
+        textPreferenceValue="true"
+        textStylePreferenceKey="clstyle"
+        textStylePreferenceValue="BOX"
+        verticalRulerPreferenceKey="clvertical"
+        verticalRulerPreferenceValue="true">
+  </specification>
+  <specification
+        annotationType="annotationColor_11"
+        colorPreferenceKey="clcolor11"
+        colorPreferenceValue="197,225,165"
+        highlightPreferenceKey="clhighlight11"
+        highlightPreferenceValue="true"
+        includeOnPreferencePage="true"
+        label="CodeAnnotation11"
+        overviewRulerPreferenceKey="clruler"
+        overviewRulerPreferenceValue="true"
+        textPreferenceKey="cltext"
+        textPreferenceValue="true"
+        textStylePreferenceKey="clstyle"
+        textStylePreferenceValue="BOX"
+        verticalRulerPreferenceKey="clvertical"
+        verticalRulerPreferenceValue="true">
+  </specification>
+  <specification
+        annotationType="annotationColor_12"
+        colorPreferenceKey="clcolor12"
+        colorPreferenceValue="230,238,156"
+        highlightPreferenceKey="clhighlight12"
+        highlightPreferenceValue="true"
+        includeOnPreferencePage="true"
+        label="CodeAnnotation12"
+        overviewRulerPreferenceKey="clruler"
+        overviewRulerPreferenceValue="true"
+        textPreferenceKey="cltext"
+        textPreferenceValue="true"
+        textStylePreferenceKey="clstyle"
+        textStylePreferenceValue="BOX"
+        verticalRulerPreferenceKey="clvertical"
+        verticalRulerPreferenceValue="true">
+  </specification>
+  <specification
+        annotationType="annotationColor_13"
+        colorPreferenceKey="clcolor13"
+        colorPreferenceValue="255,245,157"
+        highlightPreferenceKey="clhighlight13"
+        highlightPreferenceValue="true"
+        includeOnPreferencePage="true"
+        label="CodeAnnotation13"
+        overviewRulerPreferenceKey="clruler"
+        overviewRulerPreferenceValue="true"
+        textPreferenceKey="cltext"
+        textPreferenceValue="true"
+        textStylePreferenceKey="clstyle"
+        textStylePreferenceValue="BOX"
+        verticalRulerPreferenceKey="clvertical"
+        verticalRulerPreferenceValue="true">
+  </specification>
+  <specification
+        annotationType="annotationColor_15"
+        colorPreferenceKey="clcolor15"
+        colorPreferenceValue="255,204,128"
+        highlightPreferenceKey="clhighlight15"
+        highlightPreferenceValue="true"
+        includeOnPreferencePage="true"
+        label="CodeAnnotation15"
+        overviewRulerPreferenceKey="clruler"
+        overviewRulerPreferenceValue="true"
+        textPreferenceKey="cltext"
+        textPreferenceValue="true"
+        textStylePreferenceKey="clstyle"
+        textStylePreferenceValue="BOX"
+        verticalRulerPreferenceKey="clvertical"
+        verticalRulerPreferenceValue="true">
+  </specification>
+  <specification
+        annotationType="annotationColor_14"
+        colorPreferenceKey="clcolor14"
+        colorPreferenceValue="255,224,130"
+        highlightPreferenceKey="clhighlight14"
+        highlightPreferenceValue="true"
+        includeOnPreferencePage="true"
+        label="CodeAnnotation14"
+        overviewRulerPreferenceKey="clruler"
+        overviewRulerPreferenceValue="true"
+        textPreferenceKey="cltext"
+        textPreferenceValue="true"
+        textStylePreferenceKey="clstyle"
+        textStylePreferenceValue="BOX"
+        verticalRulerPreferenceKey="clvertical"
+        verticalRulerPreferenceValue="true">
+  </specification>
+  <specification
+        annotationType="annotationColor_16"
+        colorPreferenceKey="clcolor16"
+        colorPreferenceValue="255,171,145"
+        highlightPreferenceKey="clhighlight16"
+        highlightPreferenceValue="true"
+        includeOnPreferencePage="true"
+        label="CodeAnnotation16"
+        overviewRulerPreferenceKey="clruler"
+        overviewRulerPreferenceValue="true"
+        textPreferenceKey="cltext"
+        textPreferenceValue="true"
+        textStylePreferenceKey="clstyle"
+        textStylePreferenceValue="BOX"
+        verticalRulerPreferenceKey="clvertical"
+        verticalRulerPreferenceValue="true">
+  </specification>
+  <specification
+        annotationType="annotationColor_17"
+        colorPreferenceKey="clcolor17"
+        colorPreferenceValue="188,170,164"
+        highlightPreferenceKey="clhighlight17"
+        highlightPreferenceValue="true"
+        includeOnPreferencePage="true"
+        label="CodeAnnotation17"
+        overviewRulerPreferenceKey="clruler"
+        overviewRulerPreferenceValue="true"
+        textPreferenceKey="cltext"
+        textPreferenceValue="true"
+        textStylePreferenceKey="clstyle"
+        textStylePreferenceValue="BOX"
+        verticalRulerPreferenceKey="clvertical"
+        verticalRulerPreferenceValue="true">
+  </specification>
+  <specification
+        annotationType="annotationColor_0"
+        colorPreferenceKey="clcolor0"
+        colorPreferenceValue="105,240,174"
+        highlightPreferenceKey="clhighlight0"
+        highlightPreferenceValue="true"
+        includeOnPreferencePage="true"
+        label="CodeAnnotation0"
         overviewRulerPreferenceKey="clruler"
         overviewRulerPreferenceValue="true"
         textPreferenceKey="cltext"
@@ -147,8 +351,7 @@
 	
 	<extension point="org.eclipse.ui.editors.annotationTypes">
    		 <type markerSeverity="0"
-          super="org.eclipse.ui.workbench.texteditor.info"
-          name="com.ibm.example.myannotation" 
-          markerType="com.ibm.mymarkers.mymarker"/>
+          name="kar.method.defragmenter.annotation" 
+          markerType="kar.method.defragmenter.marker"/>
 	</extension>
 </plugin>

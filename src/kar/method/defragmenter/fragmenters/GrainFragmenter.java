@@ -1,10 +1,8 @@
-package kar.method.defragmenter.visittors;
+package kar.method.defragmenter.fragmenters;
 
 import java.util.List;
-import java.util.Stack;
 
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.ArrayAccess;
 import org.eclipse.jdt.core.dom.ArrayCreation;
 import org.eclipse.jdt.core.dom.ArrayInitializer;
@@ -20,7 +18,6 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.ForStatement;
 import org.eclipse.jdt.core.dom.IfStatement;
-import org.eclipse.jdt.core.dom.Initializer;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
@@ -36,24 +33,11 @@ import org.eclipse.jdt.core.dom.WhileStatement;
 
 import kar.method.defragmenter.utils.CodeFragmentLeaf;
 import kar.method.defragmenter.utils.CodeFragmentTreeNode;
-
-/*
- * TODO:
- * 		implement visitors for the following cases:
- * 		
- * 		- this.number++ and this.number--
- * 		
- * 		
- * 		look at every visitor in API 
- * 		 calculate the metric of interest
- * 		
- */
+import kar.method.defragmenter.utils.DontGetHereException;
 
 
-
-
-public class BlockVisitor extends ASTVisitor{
-	public Stack<CodeFragmentTreeNode> lastNode = new Stack<CodeFragmentTreeNode>(); 
+@SuppressWarnings("unchecked")
+public class GrainFragmenter extends AbstractFragmenter{
 
 	@Override
 	public boolean visit(Block node) {
@@ -68,7 +52,11 @@ public class BlockVisitor extends ASTVisitor{
 			((ASTNode) currentStatements.get(i)).accept(this);
 			
 			// Get subtree from below
-			CodeFragmentTreeNode res = lastNode.pop();
+			CodeFragmentTreeNode res = null;
+			if(!lastNode.isEmpty()){
+				res = lastNode.pop();
+			}
+			
 			
 			// If there is no block below, this means there are only statements
 			if(res == null) {		
@@ -110,23 +98,7 @@ public class BlockVisitor extends ASTVisitor{
 		return false;
 	}
 	
-	
-	
-	/*TODO:
-	 * 
-	 * Need to break the if into tree parts:
-	 * 	trebuie creat un node pt if-else, care este root-ul if-ului si asta va fi returnat la block visitor
-	 * 
-	 *  EXPRESSION - in a CodeFragmentLeaf
-	 * 	THEN_STATEMENT - in a CodeFragmentTreeNode
-	 *  ELSE_STATEMENT - in a CodeFragemntTreeNode
-	 *  
-	 *  daca nu are acolade  adaug manual un leaf cu continut de statement si la then si la else
-	 *  
-	 *  
-	 * (non-Javadoc)
-	 * @see org.eclipse.jdt.core.dom.ASTVisitor#visit(org.eclipse.jdt.core.dom.IfStatement)
-	 */
+
 	public boolean visit(IfStatement ifStatement){
 		CodeFragmentTreeNode parent = new CodeFragmentTreeNode();
 		CodeFragmentLeaf currentExpressionFragment = new CodeFragmentLeaf();
@@ -138,17 +110,20 @@ public class BlockVisitor extends ASTVisitor{
 		}
 
 		// apelez visit pt block-ul din then
-		ifStatement.getThenStatement().accept(this);
-		CodeFragmentTreeNode resThen = lastNode.pop();
-		if (resThen != null){
-			parent.addChild(resThen);
-		}else{
-			CodeFragmentTreeNode thenNode = new CodeFragmentTreeNode();
-			CodeFragmentLeaf thenStatement = new CodeFragmentLeaf();
-			thenStatement.addStatement(ifStatement.getThenStatement());
-			thenNode.addChild(thenStatement);
-			parent.addChild(thenNode);
+		if(ifStatement.getThenStatement() != null){
+			ifStatement.getThenStatement().accept(this);
+			CodeFragmentTreeNode resThen = lastNode.pop();
+			if (resThen != null){
+				parent.addChild(resThen);
+			}else{
+				CodeFragmentTreeNode thenNode = new CodeFragmentTreeNode();
+				CodeFragmentLeaf thenStatement = new CodeFragmentLeaf();
+				thenStatement.addStatement(ifStatement.getThenStatement());
+				thenNode.addChild(thenStatement);
+				parent.addChild(thenNode);
+			}
 		}
+
 		
 		// apelez visit pt block-ul din else
 		if(ifStatement.getElseStatement() != null){
@@ -416,29 +391,6 @@ public class BlockVisitor extends ASTVisitor{
 	}
 
 	
-	/*
-	 *  Two nodes, one for init and one for body... it's might be not good.
-	 */
-//	@Override
-//	public boolean visit(Initializer node) {
-//		CodeFragmentTreeNode parent = new CodeFragmentTreeNode();
-//		
-//		node.getBody().accept(this);
-//		CodeFragmentTreeNode bodyInit = lastNode.pop();
-//		if (bodyInit != null){
-//			parent.addChild(bodyInit);
-//		}else{
-//			CodeFragmentTreeNode initNode = new CodeFragmentTreeNode();
-//			CodeFragmentLeaf initStatement = new CodeFragmentLeaf();
-//			initStatement.addStatement(node.getBody());
-//			initNode.addChild(initStatement);
-//			parent.addChild(initNode);
-//		}
-//		
-//		lastNode.push(parent);
-//		return false;
-//	}
-
 	@Override
 	public boolean visit(MethodInvocation node) {
 		CodeFragmentTreeNode parent = new CodeFragmentTreeNode();
@@ -581,9 +533,4 @@ public class BlockVisitor extends ASTVisitor{
 		return false;
 	}
 	
-	private class DontGetHereException extends RuntimeException {
-	    public DontGetHereException(String message){
-	        super(message);
-	    }
-	}
 }

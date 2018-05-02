@@ -46,11 +46,28 @@ public class MultipleMethodViewer extends TableViewer{
 		 }
 	 };
 	 
+	 public ColumnLabelProvider methodLengthColumnLabel = new ColumnLabelProvider(){
+		 
+		 @Override
+		 public String getText(Object element) {
+			 MethodBasicItem item = (MethodBasicItem) element;
+			 return item.getLength() + "";
+		 };
+	 };
+	 
 	 public ColumnLabelProvider rootMetricColumnLabel =  new ColumnLabelProvider(){
 		 @Override
 		 public String getText(Object element) {
 			 MethodBasicItem item = (MethodBasicItem) element;
 			 return item.getRootNCOCP2();
+		 }
+	 };
+	 
+	 public ColumnLabelProvider containEnviousBlocksLabel =  new ColumnLabelProvider(){
+		 @Override
+		 public String getText(Object element) {
+			 MethodBasicItem item = (MethodBasicItem) element;
+			 return item.containEnviousBlocks() + "";
 		 }
 	 };
 	 
@@ -81,8 +98,14 @@ public class MultipleMethodViewer extends TableViewer{
 		  TableViewerColumn colLines = createTableViewerColumn("Lines (From - to)", 100, 3);
 		  colLines.setLabelProvider(methodLinesColumnLabel);
 		  
-		  TableViewerColumn colMetric = createTableViewerColumn("Method NCOCP2", 100, 4);
+		  TableViewerColumn colLength = createTableViewerColumn("Length", 100, 4);
+		  colLength.setLabelProvider(methodLengthColumnLabel);
+		  
+		  TableViewerColumn colMetric = createTableViewerColumn("Method NCOCP2", 100, 5);
 		  colMetric.setLabelProvider(rootMetricColumnLabel);
+		  
+		  TableViewerColumn colEnvy = createTableViewerColumn("Envy Blocks", 100, 6);
+		  colEnvy.setLabelProvider(containEnviousBlocksLabel);
 		  
 		  Layout layout = this.getControl().getParent().getLayout();
 		  if (layout instanceof TableColumnLayout) {
@@ -90,7 +113,10 @@ public class MultipleMethodViewer extends TableViewer{
 		    ((TableColumnLayout)layout).setColumnData(colType.getColumn(),new ColumnWeightData(1,100,true));
 		    ((TableColumnLayout)layout).setColumnData(colReturnType.getColumn(),new ColumnWeightData(2,100,true));
 		    ((TableColumnLayout)layout).setColumnData(colLines.getColumn(),new ColumnWeightData(3,100,true));
-		    ((TableColumnLayout)layout).setColumnData(colMetric.getColumn(),new ColumnWeightData(4,100,true));
+		    ((TableColumnLayout)layout).setColumnData(colLength.getColumn(),new ColumnWeightData(4,100,true));
+		    ((TableColumnLayout)layout).setColumnData(colMetric.getColumn(),new ColumnWeightData(5,100,true));
+		    ((TableColumnLayout)layout).setColumnData(colEnvy.getColumn(),new ColumnWeightData(6,100,true));
+
 		  }
 	}
 	

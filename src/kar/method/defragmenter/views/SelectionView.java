@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
@@ -14,7 +15,9 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IMethod;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
@@ -24,6 +27,7 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.ui.JavaUI;
 import org.eclipse.jface.layout.TableColumnLayout;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.Position;
@@ -34,10 +38,18 @@ import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.SashForm;
+import org.eclipse.swt.events.ModifyEvent;
+import org.eclipse.swt.events.ModifyListener;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Text;
+import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
@@ -50,23 +62,50 @@ import org.eclipse.ui.texteditor.IDocumentProvider;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.eclipse.ui.texteditor.SimpleMarkerAnnotation;
 
+import kar.method.defragmenter.fragmenters.AbstractFragmenter;
+import kar.method.defragmenter.fragmenters.ChunkFragmenter;
+import kar.method.defragmenter.fragmenters.GrainFragmenter;
+import kar.method.defragmenter.matchers.EnviousBlockMacther;
+import kar.method.defragmenter.matchers.IBlockMatcher;
 import kar.method.defragmenter.utils.CodeFragmentLeaf;
 import kar.method.defragmenter.utils.CodeFragmentTreeNode;
-import kar.method.defragmenter.visittors.BlockVisitor;
 import kar.method.defragmenter.visittors.MethodVisitor;
 
 
 public class SelectionView extends ViewPart {
 
-	public static final String MARKER = "com.ibm.mymarkers.mymarker";
+	private static final String METHOD_CHUNK_FRAGMENTER = "ChunkFragmenter";
+	private static final String METHOD_GRAIN_FRAGMENTER = "GrainFragmenter";
+	private static final String MARKER = "kar.method.defragmenter.marker";
+
+	private static final int ATFD_TRESHOLD = 6;
+	private static final int FDP_TREHSOLD  = 3;
+	
 	private MultipleMethodViewer tableViewer;
 	private MethodTableViewer methodTableViewer;
-	private HashMap<String, ICompilationUnit> classList = new HashMap<String, ICompilationUnit>();
+	private EnviousNodeTableViewer enviousNodeTableViewer;
+	private Map<String, ICompilationUnit> classList = new HashMap<String, ICompilationUnit>();
+
+	private IWorkbenchPart sourcepartFld;
+	private ISelection selectionFld;
+
+	private boolean applyLongMethodIdentification = false;
+	private boolean expandedFeatureEnvyVerification = false;
+	private boolean considerBlankLines = true;
+	private boolean considerStaticFieldAccesses = false;
+	private String selectedParsingMethod = "";
+	
+	private Integer minBlockSize = null;
+	
+	private boolean wholeProjectAnalyzed = false;
+	
 
 	private ISelectionListener listener = new ISelectionListener() {
 		public void selectionChanged(IWorkbenchPart sourcepart, ISelection selection) {
 			if (sourcepart != SelectionView.this) {
 				try {
+					sourcepartFld = sourcepart;
+					selectionFld = selection;
 					showSelection(sourcepart, selection);
 				} catch (JavaModelException e) {
 					e.printStackTrace();
@@ -118,7 +157,8 @@ public class SelectionView extends ViewPart {
 		setContentDescription(sourcepart.getTitle() + " (" + selection.getClass().getName() + ")");
 		if (selection instanceof IStructuredSelection) {
 			IStructuredSelection ss = (IStructuredSelection) selection;
-			if (ss.getFirstElement() instanceof IJavaProject){
+			if (ss.getFirstElement() instanceof IJavaProject && !wholeProjectAnalyzed){
+				wholeProjectAnalyzed = true;
 				tableViewer.setInput(null);
 				tableViewer.refresh();
 				System.out.println("A project was selected!");
@@ -131,43 +171,98 @@ public class SelectionView extends ViewPart {
 						for (ICompilationUnit unit : mypackage.getCompilationUnits()) {
 							CompilationUnit parsedUnit = parse(unit);
 							List<AbstractTypeDeclaration> dcls = parsedUnit.types();
-							this.classList.put(dcls.get(0).getName().getIdentifier(), unit);
-							methodItems.addAll(applyDefragmenterForCompUnit(parse(unit)));
+							if(!dcls.isEmpty()){
+								this.classList.put(dcls.get(0).getName().getIdentifier(), unit);
+								methodItems.addAll(applyDefragmenterForCompUnit(parse(unit)));
+							}
 						}
 					}
 				}
-
-
+				  
 				Collections.sort(methodItems, new Comparator<MethodBasicItem>() {
 
 					@Override
 					public int compare(MethodBasicItem o1, MethodBasicItem o2) {
+						return Integer.compare(o2.getLength(), o1.getLength());
+					}
+				});
+				
+				Collections.sort(methodItems, new Comparator<MethodBasicItem>() {
 
-						return o2.getRootNCOCP2().compareTo(o1.getRootNCOCP2());
+					@Override
+					public int compare(MethodBasicItem o1, MethodBasicItem o2) {
+						return  Boolean.compare(o2.containEnviousBlocks(), o1.containEnviousBlocks());
 					}
 				});
 
-
 				tableViewer.setInput(methodItems);
-
-
-
 			}
+			
+			if(ss.getFirstElement() instanceof IPackageFragment){
+				wholeProjectAnalyzed = false;
+				tableViewer.setInput(null);
+				tableViewer.refresh();
+				
+				IPackageFragment mypackage = (IPackageFragment) ss.getFirstElement();
+				List<MethodBasicItem> methodItems =  new ArrayList<MethodBasicItem>();
+
+				if (mypackage.getKind() == IPackageFragmentRoot.K_SOURCE) {
+					for (ICompilationUnit unit : mypackage.getCompilationUnits()) {
+						CompilationUnit parsedUnit = parse(unit);
+						List<AbstractTypeDeclaration> dcls = parsedUnit.types();
+						if(!dcls.isEmpty()){
+							this.classList.put(dcls.get(0).getName().getIdentifier(), unit);
+							methodItems.addAll(applyDefragmenterForCompUnit(parse(unit)));
+						}
+					}
+					Collections.sort(methodItems, new Comparator<MethodBasicItem>() {
+
+						@Override
+						public int compare(MethodBasicItem o1, MethodBasicItem o2) {
+							return Integer.compare(o2.getLength(), o1.getLength());
+						}
+					});
+					
+					Collections.sort(methodItems, new Comparator<MethodBasicItem>() {
+
+						@Override
+						public int compare(MethodBasicItem o1, MethodBasicItem o2) {
+							return  Boolean.compare(o2.containEnviousBlocks(), o1.containEnviousBlocks());
+						}
+					});
+					tableViewer.setInput(methodItems);
+					tableViewer.refresh();
+				}
+			}
+			
+			
 			if (ss.getFirstElement() instanceof ICompilationUnit){
+				wholeProjectAnalyzed = false;
 				tableViewer.setInput(null);
 				tableViewer.refresh();
 				ICompilationUnit unit = (ICompilationUnit) ss.getFirstElement();
 				CompilationUnit parsedUnit = parse(unit);
 				List<MethodBasicItem> methodItems =  new ArrayList<MethodBasicItem>();
 				List<AbstractTypeDeclaration> dcls = parsedUnit.types();
-				this.classList.put(dcls.get(0).getName().getIdentifier(), unit);
-				methodItems.addAll(applyDefragmenterForCompUnit(parse(unit)));
+				if(!dcls.isEmpty()){
+					this.classList.put(dcls.get(0).getName().getIdentifier(), unit);
+					methodItems.addAll(applyDefragmenterForCompUnit(parse(unit)));
+				}
+
+				
 				Collections.sort(methodItems, new Comparator<MethodBasicItem>() {
 
 					@Override
 					public int compare(MethodBasicItem o1, MethodBasicItem o2) {
+						return Integer.compare(o2.getLength(), o1.getLength());
+					}
+				});
+				
+				Collections.sort(methodItems, new Comparator<MethodBasicItem>() {
 
-						return o2.getRootNCOCP2().compareTo(o1.getRootNCOCP2());
+					@Override
+					public int compare(MethodBasicItem o1, MethodBasicItem o2) {
+						return  Boolean.compare(o2.containEnviousBlocks(), o1.containEnviousBlocks());
 					}
 				});
 				tableViewer.setInput(methodItems);
@@ -178,94 +273,163 @@ public class SelectionView extends ViewPart {
 
 	private List<MethodBasicItem> applyDefragmenterForCompUnit(CompilationUnit unit){
 		MethodVisitor visitorMethod = new MethodVisitor();
-		BlockVisitor visitorBlock = new BlockVisitor();
+		
+		AbstractFragmenter visitorBlock = new GrainFragmenter();
+		if(selectedParsingMethod.equals(METHOD_CHUNK_FRAGMENTER)){
+			visitorBlock = new ChunkFragmenter(unit, considerBlankLines);
+		}
+		
 		List<MethodBasicItem> methodItems = new ArrayList<MethodBasicItem>();
 		unit.accept(visitorMethod);
-
+		
 
 		for (MethodDeclaration method : visitorMethod.getMethods()) {
-			System.out.println("Method name: " + method.getName() + " Return type: " + method.getReturnType2());
+			//System.out.println("Method name: " + method.getName() + " Return type: " + method.getReturnType2());
 			MethodBasicItem item = new MethodBasicItem();
 			/*
 			 * Visit all blocks of code in each method
 			 */
 			method.accept(visitorBlock);
+
 			if(!visitorBlock.lastNode.empty()){
 				CodeFragmentTreeNode root = visitorBlock.lastNode.pop();
-				CodeFragmentTreeNode.colorCounter = 0;
-				System.out.println(root);
-				root.print(0);
-				root.getCohesionMetric(unit);
-				List<CodeFragmentTreeNode> identifiedNodes = root.identifyFunctionalSegments();
-				root.combineNodes(identifiedNodes);
 
-				//			root.colorFragemnts(textEditor, file, identifiedNodes);
+				//System.out.println(root);
+				//root.print(0);
+
 				List<AbstractTypeDeclaration> dcls = unit.types();
 				item.setClassName(dcls.get(0).getName().getIdentifier());
-				item.setName(method.getName().toString());
+				item.setName(method.getName().toString());	
 				item.setLines(unit.getLineNumber(method.getStartPosition()) + " - " + unit.getLineNumber(method.getStartPosition() + method.getLength()));
+				int methodLines = unit.getLineNumber(method.getStartPosition() + method.getLength()) - unit.getLineNumber(method.getStartPosition());
+				item.setLength(methodLines);
+				item.setNumberOfParams(method.parameters().size());
 				if(method.getReturnType2() == null){
 					item.setReturnType("");
 				}else{
 					item.setReturnType(method.getReturnType2().toString());
 				}
-				item.setRootNCOCP2("" + root.getNodeNCOCP2());
+
+				if(applyLongMethodIdentification){
+					root.init();
+					
+					root.getCohesionMetric(unit);
+					List<CodeFragmentTreeNode> identifiedNodes = root.identifyFunctionalSegments();
+					root.combineNodes(identifiedNodes);
+					item.setRootNCOCP2("" + root.getNodeNCOCP2());
+				}else{
+					item.setRootNCOCP2("-");
+					if(root != null){
+						root.init();
+						String analyzedClass = dcls.get(0).getName().getIdentifier();
+						root.computeDataAccesses(analyzedClass, considerStaticFieldAccesses,
+								minBlockSize);
+						List<IBlockMatcher> matchers = new ArrayList<IBlockMatcher>();
+						matchers.add(new EnviousBlockMacther(analyzedClass, ATFD_TRESHOLD, FDP_TREHSOLD));
+						root.verifyFeatureEnvy(ATFD_TRESHOLD, FDP_TREHSOLD, expandedFeatureEnvyVerification, matchers);
+						item.setContainsEnviousBlocks(root.isContainsEnvy());
+					}
+				}
+				item.setMethodRoot(root);
+				item.setIMtehodReference((IMethod) method.resolveBinding().getJavaElement());
 				methodItems.add(item);
 			}
+
 		}
 
 		return methodItems;
 	}
 
-	private List<CodeFragmentTreeNode> applyDefragmenterForMethod(MethodDeclaration method, BlockVisitor visitorBlock, ICompilationUnit unit){
-		List<CodeFragmentTreeNode> nodes = new ArrayList<CodeFragmentTreeNode>();
-		IFile ifile = null;
-		if (unit.getResource().getType()== IResource.FILE) {
-			ifile = (IFile) unit.getResource();
-			IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
-			try {
-				IDE.openEditor(page, ifile, true);
-			} catch (PartInitException e) {
+	private void populateMethodTable(MethodBasicItem clickedItem){		
+		CodeFragmentTreeNode root = clickedItem.getMethodRoot();
 
-				e.printStackTrace();
-			}
-		}
-		ITextEditor textEditor = (ITextEditor) getActiveWorkbenchWindow().getActivePage().getActiveEditor();
-
-
-		CompilationUnit parsedUnit = parse(unit);
-		method.accept(visitorBlock);
-		CodeFragmentTreeNode root = visitorBlock.lastNode.pop();
-		CodeFragmentTreeNode.colorCounter = 0;
-		CodeFragmentTreeNode.allNodesLeafs.clear();
-		root.getCohesionMetric(parsedUnit);
-		List<CodeFragmentTreeNode> identifiedNodes = root.identifyFunctionalSegments();
-		root.combineNodes(identifiedNodes);
-
-		root.colorFragemnts(textEditor, ifile, identifiedNodes);
-		root.getAllTreeData();
-		nodes = CodeFragmentTreeNode.allNodesLeafs;
-		nodes.add(root);
-
-		return nodes;
-	}
-
-	private void populateMethodTable(String methodName, String className){
-		List<MethodDescribingItem> methodTableItems = null;
-		List<CodeFragmentTreeNode> nodes = null;
-		ICompilationUnit unit = classList.get(className);
-		CompilationUnit parsedUnit = parse(unit);
+		ICompilationUnit unit = classList.get(clickedItem.getClassName());
 		if (unit != null){
-			methodTableItems = new ArrayList<MethodDescribingItem>();
-			MethodVisitor visitorMethod = new MethodVisitor();
-			BlockVisitor visitorBlock = new BlockVisitor();
-			parsedUnit.accept(visitorMethod);
-			for (MethodDeclaration method : visitorMethod.getMethods()) {
-				if (method.getName().toString().equalsIgnoreCase(methodName)){
-					nodes = applyDefragmenterForMethod(method, visitorBlock, unit);
+			IFile ifile = null;
+			CompilationUnit parsedUnit = parse(unit);
+			if (unit.getResource().getType()== IResource.FILE) {
+				ifile = (IFile) unit.getResource();
+				IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
+				try {
+					IEditorPart editor = IDE.openEditor(page, ifile, true);
+
+					JavaUI.revealInEditor(editor, (IJavaElement)clickedItem.getIMtehodReference());
+				} catch (PartInitException e) {
+					e.printStackTrace();
 				}
 			}
-			if (nodes != null){
+
+			ITextEditor textEditor = (ITextEditor) getActiveWorkbenchWindow().getActivePage().getActiveEditor();
+
+			if(!applyLongMethodIdentification){
+				System.out.println("Method coloring will be performed here!");
+				CodeFragmentTreeNode.colorCounter = 0;
+				try {
+					root.init();
+					enviousNodeTableViewer.setInput(null);
+					String analyzedClass = clickedItem.getClassName();
+					root.computeDataAccesses(analyzedClass, considerStaticFieldAccesses,
+							minBlockSize);
+					List<IBlockMatcher> matchers = new ArrayList<IBlockMatcher>();
+					matchers.add(new EnviousBlockMacther(analyzedClass, ATFD_TRESHOLD, FDP_TREHSOLD));
+				
+					root.verifyFeatureEnvy(ATFD_TRESHOLD, FDP_TREHSOLD, expandedFeatureEnvyVerification, matchers);
+					
+					//CodeFragmentTreeNode.allNodesLeafs.clear();
+					//root.getAllTreeData();
+					List<CodeFragmentTreeNode> nodes = root.getAllEnviousNodes();
+					//List<CodeFragmentTreeNode> nodes = CodeFragmentTreeNode.allNodesLeafs;
+					nodes.add(root);
+					
+					List<EnviousNodeData> enviousNodeItems = new ArrayList<>();
+					
+					for(CodeFragmentTreeNode node : nodes){
+						if(node instanceof CodeFragmentLeaf && ((CodeFragmentLeaf)node).isEnvy()){
+							CodeFragmentLeaf leaf = (CodeFragmentLeaf)node;
+							EnviousNodeData enviousItem = new EnviousNodeData();
+							enviousItem.setLines(parsedUnit.getLineNumber(((CodeFragmentLeaf)node).getFragmentFirstLine()) + " - " + parsedUnit.getLineNumber(((CodeFragmentLeaf)node).getFragmentLastLine()));
+							enviousItem.setAccessForeignData(leaf.getAccessForeignData());
+							enviousItem.setForeignDataProviders(leaf.getForeignDataProviders());
+							enviousItem.setLocalAttrAccess(leaf.getLocalAttrAccess());
+							enviousItem.setTargetClass(leaf.getTargetClass());
+							enviousNodeItems.add(enviousItem);
+						}else if(expandedFeatureEnvyVerification && node.isEnviousNode()){
+							EnviousNodeData enviousItem = new EnviousNodeData();
+							enviousItem.setLines(parsedUnit.getLineNumber(node.getStartNode()) + " - " + parsedUnit.getLineNumber(node.getEndNode()));
+							enviousItem.setAccessForeignData(node.getNodeAccessForeignData());
+							enviousItem.setForeignDataProviders(node.getNodeForeignDataProviders());
+							enviousItem.setLocalAttrAccess(node.getNodeLocalAttrAccess());
+							enviousItem.setTargetClass(node.getNodeTargetClass());
+							enviousNodeItems.add(enviousItem);
+						}
+					}
+					
+					root.colorEnvyLeafNodes(textEditor, ifile);
+					
+					enviousNodeTableViewer.setInput(enviousNodeItems);
+				} catch (CoreException e) {
+					e.printStackTrace();
+				}
+				
+			}else{
+				System.out.println("Calculating Long Method Fragmentation! Threshold: " + CodeFragmentTreeNode.NCOCP2Treshold);
+				
+				root.init();
+				
+				List<MethodDescribingItem> methodTableItems = new ArrayList<>();
+				List<CodeFragmentTreeNode> nodes = null;
+
+				CodeFragmentTreeNode.colorCounter = 0;
+				CodeFragmentTreeNode.allNodesLeafs.clear();
+				root.getCohesionMetric(parsedUnit);
+				List<CodeFragmentTreeNode> identifiedNodes = root.identifyFunctionalSegments();
+				root.combineNodes(identifiedNodes);
+
+				root.colorLongMethodFragments(textEditor, ifile, identifiedNodes);
+				root.getAllTreeData();
+				nodes = CodeFragmentTreeNode.allNodesLeafs;
+				nodes.add(root);
+
 				MethodDescribingItem item = null;
 				for (int i = nodes.size() - 1; i >= 0; i--){
 					item = new MethodDescribingItem();
@@ -282,27 +446,256 @@ public class SelectionView extends ViewPart {
 					}
 					methodTableItems.add(item);
 				}
-
+				methodTableViewer.setInput(methodTableItems);
 			}
-
 		}
-		methodTableViewer.setInput(methodTableItems);
+
 	}
 
 
 	public void createPartControl(Composite parent) {
-		GridLayout layout = new GridLayout(1, true);
+		GridLayout mainLayout = new GridLayout(1,false);
+		parent.setLayout(mainLayout);
 
-		SashForm form = new SashForm(parent, SWT.VERTICAL);
-		form.setLayout(layout);
-		form.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		Composite firstRow = new Composite(parent, SWT.FILL);
+		firstRow.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+		GridLayout firstRowLayout = new GridLayout();
+		firstRowLayout.numColumns = 8;
+		firstRow.setLayout(firstRowLayout);
 
-		Composite methodTableComp = new Composite(form,SWT.NONE);
-		methodTableComp.setLayout(new TableColumnLayout());
-		methodTableViewer = new MethodTableViewer(methodTableComp,SWT.MULTI | SWT.BORDER | SWT.FULL_SELECTION);
+		GridData gridData = new GridData(GridData.FILL);
+		gridData.widthHint = 100;
 
-		Composite tableComp=new Composite(form,SWT.NONE);
+		Label lblDetectionMethod = new Label(firstRow, SWT.NULL);
+		lblDetectionMethod.setText("Detection Method:");
+		GridData detectionMethodGridData = new GridData();
+		detectionMethodGridData.widthHint = 120;
+		lblDetectionMethod.setLayoutData(detectionMethodGridData);
+
+		final Combo cmbMethods = new Combo(firstRow, SWT.NULL);
+		cmbMethods.setItems(new String[] {METHOD_GRAIN_FRAGMENTER, METHOD_CHUNK_FRAGMENTER});
+		GridData cmbGridData = new GridData();
+		gridData.widthHint = 150;
+		cmbMethods.setLayoutData(cmbGridData);
+		cmbMethods.addSelectionListener(new SelectionListener() {
+			
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				selectedParsingMethod = cmbMethods.getText();
+			}
+			
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {	
+			}
+		});
+		cmbMethods.select(1);
+		selectedParsingMethod = METHOD_CHUNK_FRAGMENTER;
+		
+		Button btnExpandedFeatureEnvy = new Button(firstRow, SWT.CHECK | SWT.WRAP | SWT.BORDER);
+		btnExpandedFeatureEnvy.setText("Expanded Feature Envy");
+		btnExpandedFeatureEnvy.setLayoutData(detectionMethodGridData);
+		btnExpandedFeatureEnvy.setSelection(expandedFeatureEnvyVerification);
+		btnExpandedFeatureEnvy.addSelectionListener(new SelectionListener() {
+
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				Button btn = (Button) e.getSource();
+				expandedFeatureEnvyVerification = btn.getSelection();
+			}
+
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+			}
+		});
+		
+		Button btnConsiderBlankLines = new Button(firstRow, SWT.CHECK | SWT.WRAP | SWT.BORDER);
+		btnConsiderBlankLines.setText("Consider Blank Lines");
+		btnConsiderBlankLines.setLayoutData(detectionMethodGridData);
+		btnConsiderBlankLines.setSelection(considerBlankLines);
+		btnConsiderBlankLines.addSelectionListener(new SelectionListener() {
+
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				Button btn = (Button) e.getSource();
+				considerBlankLines = btn.getSelection();
+			}
+
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+			}
+		});
+			
+		Button btnConsiderStaticFieldAccesses = new Button(firstRow, SWT.CHECK | SWT.WRAP | SWT.BORDER);
+		btnConsiderStaticFieldAccesses.setText("Consider Static Field Accesses");
+		btnConsiderStaticFieldAccesses.setLayoutData(detectionMethodGridData);
+		btnConsiderStaticFieldAccesses.setSelection(considerStaticFieldAccesses);
+		btnConsiderStaticFieldAccesses.addSelectionListener(new SelectionListener() {
+
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				Button btn = (Button) e.getSource();
+				considerStaticFieldAccesses = btn.getSelection();
+			}
+
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+			}
+		});
+			
+		
+		Label lblMinBlockSize = new Label(firstRow, SWT.NULL);
+		lblMinBlockSize.setText("Min. Block Size: ");
+		GridData thresholdGridData = new GridData();
+		thresholdGridData.widthHint = 80;
+		lblMinBlockSize.setLayoutData(thresholdGridData);
+		
+		final Text txtMinBlockSize = new Text(firstRow,  SWT.NULL | SWT.BORDER);
+		GridData txtGridData = new GridData(GridData.FILL);
+		txtGridData.widthHint = 30;
+		txtMinBlockSize.setLayoutData(txtGridData);
+		txtMinBlockSize.addModifyListener(new ModifyListener() {
+			
+			@Override
+			public void modifyText(ModifyEvent e) {
+				minBlockSize = Integer.parseInt(txtMinBlockSize.getText() + "");
+//				applyDefragmenterForCompUnit
+			}
+		});
+		
+	
+		
+		Button btnLongMethodIdentif = new Button(firstRow, SWT.CHECK | SWT.WRAP | SWT.BORDER);
+		btnLongMethodIdentif.setAlignment(SWT.RIGHT);
+		btnLongMethodIdentif.setOrientation(SWT.RIGHT_TO_LEFT);
+//		btnLongMethodIdentif.setBackground(new org.eclipse.swt.graphics.Color(btnLongMethodIdentif., 0, 0, 0));
+		btnLongMethodIdentif.setText("Long Method Identification");
+		btnLongMethodIdentif.setLayoutData(detectionMethodGridData);
+		btnLongMethodIdentif.setSelection(applyLongMethodIdentification);
+		btnLongMethodIdentif.addSelectionListener(new SelectionListener() {
+
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				Button btn = (Button) e.getSource();
+				applyLongMethodIdentification = btn.getSelection();
+			}
+
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+			}
+		});
+		
+
+		
+		
+//		Label lblThreshold = new Label(firstRow, SWT.NULL);
+//		lblThreshold.setText("Set Treshold: ");
+//		GridData thresholdGridData = new GridData();
+//		thresholdGridData.widthHint = 80;
+//		lblThreshold.setLayoutData(thresholdGridData);
+//
+//		final Text txtTreshold = new Text(firstRow,  SWT.NULL | SWT.BORDER);
+//		GridData txtGridData = new GridData(GridData.FILL);
+//		txtGridData.widthHint = 30;
+//		txtTreshold.setLayoutData(txtGridData);
+//		txtTreshold.setText(CodeFragmentTreeNode.NCOCP2Treshold + "");
+		
+		
+
+//		final Button btnConfirmTreshold = new Button(firstRow, SWT.BORDER | SWT.Selection);
+//		btnConfirmTreshold.setText("CONFIRM");
+//		btnConfirmTreshold.setLayoutData(gridData);
+//		btnConfirmTreshold.addMouseListener(new MouseListener() {
+//
+//			@Override
+//			public void mouseUp(MouseEvent e) {
+//
+//			}
+//
+//			@Override
+//			public void mouseDown(MouseEvent e) {
+//
+//				if(sourcepartFld != null && selectionFld != null && !txtTreshold.getText().isEmpty()){
+//					try {
+//						System.out.println("refresh");
+//						CodeFragmentTreeNode.NCOCP2Treshold = Double.parseDouble(txtTreshold.getText());
+//						showSelection(sourcepartFld, selectionFld);
+//
+//					} catch (Exception e1) {
+//						e1.printStackTrace();
+//					}
+//					txtTreshold.setEnabled(false);
+//
+//					btnConfirmTreshold.forceFocus();
+//					btnConfirmTreshold.setFocus();
+//					btnConfirmTreshold.requestLayout();
+//					btnConfirmTreshold.setSelection(true);
+//
+//					txtTreshold.setEnabled(true);
+//				}
+//
+//			}
+//
+//			@Override
+//			public void mouseDoubleClick(MouseEvent e) {
+//			}
+//		});
+
+
+//		final Button btnExtractMethod = new Button(firstRow, SWT.BORDER | SWT.Selection);
+//		btnExtractMethod.setText("EXTRACT");
+//		btnExtractMethod.setLayoutData(gridData);
+//		btnExtractMethod.addMouseListener(new MouseListener() {
+//
+//			@Override
+//			public void mouseUp(MouseEvent e) {
+//			}
+//
+//			@Override
+//			public void mouseDown(MouseEvent e) {
+//				System.out.println("Will perfom extraction");
+//
+//			}
+//
+//			@Override
+//			public void mouseDoubleClick(MouseEvent e) {
+//			}
+//		});
+
+//		final Button btnUndoExtract = new Button(firstRow, SWT.BORDER | SWT.Selection);
+//		btnUndoExtract.setText("UNDO");
+//		btnUndoExtract.setLayoutData(gridData);
+//		btnUndoExtract.addMouseListener(new MouseListener() {
+//
+//			@Override
+//			public void mouseUp(MouseEvent e) {
+//			}
+//
+//			@Override
+//			public void mouseDown(MouseEvent e) {
+//				System.out.println("Undo extract");
+//
+//			}
+//
+//			@Override
+//			public void mouseDoubleClick(MouseEvent e) {
+//			}
+//		});
+
+		Composite tableComposite = new Composite(parent, SWT.FILL);
+		tableComposite.setLayoutData(new GridData(GridData.FILL_BOTH));
+		GridLayout tableLayout = new GridLayout();
+		tableLayout.numColumns = 2;
+		tableComposite.setLayout(tableLayout);
+
+		GridData tableGrid = new GridData(GridData.FILL_BOTH);
+		tableGrid.grabExcessVerticalSpace = true;
+		tableGrid.grabExcessHorizontalSpace = true;
+
+		Composite tableComp=new Composite(tableComposite,SWT.FILL);
 		tableComp.setLayout(new TableColumnLayout());
+		GridData tblGrid = new GridData(GridData.FILL_BOTH);
+		tblGrid.widthHint = 700;
+		tableComp.setLayoutData(tblGrid);
 		tableViewer=new MultipleMethodViewer(tableComp,SWT.MULTI | SWT.BORDER | SWT.FULL_SELECTION);
 		tableViewer.addDoubleClickListener(new IDoubleClickListener() {
 
@@ -310,10 +703,25 @@ public class SelectionView extends ViewPart {
 			public void doubleClick(DoubleClickEvent event) {
 				StructuredSelection selection = (StructuredSelection)event.getSelection();
 				MethodBasicItem selectedItem = (MethodBasicItem)selection.getFirstElement();
-				populateMethodTable(selectedItem.getName(), selectedItem.getClassName());
+				populateMethodTable(selectedItem);
 			}
 		});
-		getSite().setSelectionProvider(methodTableViewer);
+
+//		Composite methodTableComp = new Composite(tableComposite,SWT.FILL);
+//		methodTableComp.setLayout(new TableColumnLayout());
+//		methodTableComp.setLayoutData(tableGrid);
+//		methodTableViewer = new MethodTableViewer(methodTableComp,SWT.MULTI | SWT.BORDER | SWT.FULL_SELECTION);
+//		
+//		methodTableComp.setVisible(false);
+		
+		Composite enviousNodeTableComp = new Composite(tableComposite,SWT.FILL);
+		enviousNodeTableComp.setLayout(new TableColumnLayout());
+		enviousNodeTableComp.setLayoutData(tableGrid);
+		enviousNodeTableViewer = new EnviousNodeTableViewer(enviousNodeTableComp,SWT.MULTI | SWT.BORDER | SWT.FULL_SELECTION);
+		
+	
+		
+		getSite().setSelectionProvider(enviousNodeTableViewer);
 		getSite().setSelectionProvider(tableViewer);
 		getSite().getWorkbenchWindow().getSelectionService().addSelectionListener(listener);
 	}
