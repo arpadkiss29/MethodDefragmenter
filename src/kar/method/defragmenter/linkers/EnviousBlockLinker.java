@@ -1,4 +1,4 @@
-package kar.method.defragmenter.matchers;
+package kar.method.defragmenter.linkers;
 
 import java.util.HashMap;
 import java.util.List;
@@ -16,7 +16,7 @@ import kar.method.defragmenter.utils.CodeFragmentTreeNode;
 import kar.method.defragmenter.visittors.MethodInvocationVisitor;
 import kar.method.defragmenter.visittors.VariableBindingVisitor;
 
-public class EnviousBlockMacther implements IBlockMatcher{
+public class EnviousBlockLinker implements IBlockLinker{
 	
 	private int ATFDTreshold;
 	private int FDPTreshold;
@@ -29,7 +29,7 @@ public class EnviousBlockMacther implements IBlockMatcher{
 	private int foreignDataProviders = 0;
 	private String targetClass;
 	
-	public EnviousBlockMacther(String analyzedClass, int ATFDTreshold, int FDPTreshold) {
+	public EnviousBlockLinker(String analyzedClass, int ATFDTreshold, int FDPTreshold) {
 		this.ATFDTreshold = ATFDTreshold;
 		this.FDPTreshold = FDPTreshold;
 		this.analyzedClass = analyzedClass;
@@ -37,7 +37,7 @@ public class EnviousBlockMacther implements IBlockMatcher{
 	
 
 	@Override
-	public boolean tryToMatchBlocks(CodeFragmentTreeNode node) {
+	public boolean tryToLinkBlocks(CodeFragmentTreeNode node) {
 		List<ASTNode> allSubTreeNodes = node.getAllSubTreeASTNodes();
 		calculateDataAccesses(allSubTreeNodes);
 		boolean enviousNode = verifyFeatureEnvy();
@@ -113,6 +113,13 @@ public class EnviousBlockMacther implements IBlockMatcher{
 			//(localAttrAccess / totalAccesses)  < (1.0 / 3) &&
 				(localAttrAccess > 0 ? (localAttrAccess * 1.0) / totalAccesses : 0) < (1.0 / 3) &&
 				foreignDataProviders <= FDPTreshold){
+			
+//			System.out.println("for nodes : " + myASTNodes);
+			System.out.println("accessForeignData : " + accessForeignData);
+			System.out.println("foreignDataProviders : " + foreignDataProviders);
+			System.out.println("localAttrAccess : " + localAttrAccess);
+			System.out.println("totalAccesses: " + totalAccesses);
+			System.out.println();
 			
 			String enviousClass  = "";
 			int maxAccess = Integer.MIN_VALUE;

@@ -23,7 +23,7 @@ import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jface.text.Position;
 import org.eclipse.ui.texteditor.ITextEditor;
 
-import kar.method.defragmenter.matchers.IBlockMatcher;
+import kar.method.defragmenter.linkers.IBlockLinker;
 import kar.method.defragmenter.views.SelectionView;
 import kar.method.defragmenter.visittors.MethodInvocationVisitor;
 import kar.method.defragmenter.visittors.VariableBindingVisitor;
@@ -210,7 +210,7 @@ public class CodeFragmentLeaf extends CodeFragmentTreeNode {
 
 
 	@Override
-	public boolean verifyFeatureEnvy(int ATFDTreshold, int FDPTreshold, boolean expand, List<IBlockMatcher> matchers) {
+	public boolean verifyFeatureEnvy(int ATFDTreshold, int FDPTreshold, boolean expand, List<IBlockLinker> matchers) {
 		for(Integer numberOfAcc: accessClassesMapping.values()){
 			accessForeignData += numberOfAcc;
 		}

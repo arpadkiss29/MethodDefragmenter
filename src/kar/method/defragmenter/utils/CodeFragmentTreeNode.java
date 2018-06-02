@@ -15,7 +15,7 @@ import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jface.text.Position;
 import org.eclipse.ui.texteditor.ITextEditor;
 
-import kar.method.defragmenter.matchers.IBlockMatcher;
+import kar.method.defragmenter.linkers.IBlockLinker;
 import kar.method.defragmenter.views.SelectionView;
 
 public class CodeFragmentTreeNode {
@@ -284,14 +284,14 @@ public class CodeFragmentTreeNode {
 	}
 
 
-	public boolean verifyFeatureEnvy(int ATFDTreshold, int FDPTreshold, boolean expand, List<IBlockMatcher> matchers){
+	public boolean verifyFeatureEnvy(int ATFDTreshold, int FDPTreshold, boolean expand, List<IBlockLinker> matchers){
 		for (int i = 0; i < children.size(); i++){ 
 			if(children.get(i).verifyFeatureEnvy(ATFDTreshold, FDPTreshold, expand, matchers)){
 				containsEnvy = true;
 
 				if(children.size() > 1 && expand && type != null){
-					for(IBlockMatcher matcher: matchers){
-						if(matcher.tryToMatchBlocks(this)) return true;
+					for(IBlockLinker matcher: matchers){
+						if(matcher.tryToLinkBlocks(this)) return true;
 					}
 				}
 			}

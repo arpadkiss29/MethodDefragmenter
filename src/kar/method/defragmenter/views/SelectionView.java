@@ -65,8 +65,8 @@ import org.eclipse.ui.texteditor.SimpleMarkerAnnotation;
 import kar.method.defragmenter.fragmenters.AbstractFragmenter;
 import kar.method.defragmenter.fragmenters.ChunkFragmenter;
 import kar.method.defragmenter.fragmenters.GrainFragmenter;
-import kar.method.defragmenter.matchers.EnviousBlockMacther;
-import kar.method.defragmenter.matchers.IBlockMatcher;
+import kar.method.defragmenter.linkers.EnviousBlockLinker;
+import kar.method.defragmenter.linkers.IBlockLinker;
 import kar.method.defragmenter.utils.CodeFragmentLeaf;
 import kar.method.defragmenter.utils.CodeFragmentTreeNode;
 import kar.method.defragmenter.visittors.MethodVisitor;
@@ -78,7 +78,7 @@ public class SelectionView extends ViewPart {
 	private static final String METHOD_GRAIN_FRAGMENTER = "GrainFragmenter";
 	private static final String MARKER = "kar.method.defragmenter.marker";
 
-	private static final int ATFD_TRESHOLD = 6;
+	private static final int ATFD_TRESHOLD = 2;
 	private static final int FDP_TREHSOLD  = 3;
 	
 	private MultipleMethodViewer tableViewer;
@@ -324,8 +324,8 @@ public class SelectionView extends ViewPart {
 						String analyzedClass = dcls.get(0).getName().getIdentifier();
 						root.computeDataAccesses(analyzedClass, considerStaticFieldAccesses,
 								minBlockSize);
-						List<IBlockMatcher> matchers = new ArrayList<IBlockMatcher>();
-						matchers.add(new EnviousBlockMacther(analyzedClass, ATFD_TRESHOLD, FDP_TREHSOLD));
+						List<IBlockLinker> matchers = new ArrayList<IBlockLinker>();
+						matchers.add(new EnviousBlockLinker(analyzedClass, ATFD_TRESHOLD, FDP_TREHSOLD));
 						root.verifyFeatureEnvy(ATFD_TRESHOLD, FDP_TREHSOLD, expandedFeatureEnvyVerification, matchers);
 						item.setContainsEnviousBlocks(root.isContainsEnvy());
 					}
@@ -370,8 +370,8 @@ public class SelectionView extends ViewPart {
 					String analyzedClass = clickedItem.getClassName();
 					root.computeDataAccesses(analyzedClass, considerStaticFieldAccesses,
 							minBlockSize);
-					List<IBlockMatcher> matchers = new ArrayList<IBlockMatcher>();
-					matchers.add(new EnviousBlockMacther(analyzedClass, ATFD_TRESHOLD, FDP_TREHSOLD));
+					List<IBlockLinker> matchers = new ArrayList<IBlockLinker>();
+					matchers.add(new EnviousBlockLinker(analyzedClass, ATFD_TRESHOLD, FDP_TREHSOLD));
 				
 					root.verifyFeatureEnvy(ATFD_TRESHOLD, FDP_TREHSOLD, expandedFeatureEnvyVerification, matchers);
 					
