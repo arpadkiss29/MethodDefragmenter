@@ -1,6 +1,8 @@
 package kar.method.defragmenter.linkers;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Map.Entry;
@@ -56,6 +58,8 @@ public class EnviousBlockLinker implements IBlockLinker{
 	
 	
 	private void calculateDataAccesses(List<ASTNode> allSubTreeNodes){
+		HashSet<IVariableBinding> variableBindingsCache = new  HashSet<IVariableBinding>();
+		HashSet<IMethodBinding> methodBindingCache = new HashSet<IMethodBinding>();
 		
 		for(ASTNode node:allSubTreeNodes){
 			MethodInvocationVisitor invocationVisitor = new MethodInvocationVisitor();
@@ -63,12 +67,17 @@ public class EnviousBlockLinker implements IBlockLinker{
 			List<MethodInvocation> methodInvocations = invocationVisitor.getMethodInvocations();
 			for(MethodInvocation invocation: methodInvocations){
 				if(invocation.getName().getFullyQualifiedName().startsWith("get")){
+					
 					IMethodBinding methodBinding = invocation.resolveMethodBinding();
-					if(methodBinding.getParameterTypes().length == 0){
-						if(invocation.getExpression() != null){
-							incrementAccesses(analyzedClass,invocation.getExpression().resolveTypeBinding());
+					if(!methodBindingCache.contains(methodBinding)){
+						if(methodBinding.getParameterTypes().length == 0){
+							if(invocation.getExpression() != null){
+								incrementAccesses(analyzedClass,invocation.getExpression().resolveTypeBinding());
+							}
 						}
+						methodBindingCache.add(methodBinding);
 					}
+					
 				}
 			}
 	
@@ -76,13 +85,16 @@ public class EnviousBlockLinker implements IBlockLinker{
 			node.accept(variableVisitor);
 			Set<IVariableBinding> variables = variableVisitor.getVariableBindings();
 			for(IVariableBinding binding: variables){
-
-				ITypeBinding typeBinding = binding.getDeclaringClass();
-				if(typeBinding != null){
-					if(!Modifier.isStatic(binding.getModifiers())){
-						incrementAccesses(analyzedClass, typeBinding);
+				if(!variableBindingsCache.contains(binding)){
+					ITypeBinding typeBinding = binding.getDeclaringClass();
+					if(typeBinding != null){
+						if(!Modifier.isStatic(binding.getModifiers())){
+							incrementAccesses(analyzedClass, typeBinding);
+						}
 					}
+					variableBindingsCache.add(binding);
 				}
+				
 			}
 		}
 	}
