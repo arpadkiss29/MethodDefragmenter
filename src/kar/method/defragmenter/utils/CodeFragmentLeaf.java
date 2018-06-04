@@ -11,6 +11,9 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jdt.core.IClasspathEntry;
+import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.ITypeHierarchy;
 import org.eclipse.jdt.core.JavaModelException;
@@ -105,7 +108,7 @@ public class CodeFragmentLeaf extends CodeFragmentTreeNode {
 	}
 
 	@Override
-	public void computeDataAccesses(String analyzedClass, boolean staticFields, Integer minBlockSize) {
+	public void computeDataAccesses(String analyzedClass, boolean staticFields, Integer minBlockSize, boolean libraryCheck) {
 
 		if(minBlockSize != null){
 			//System.out.println("Applying size filter");
@@ -123,15 +126,25 @@ public class CodeFragmentLeaf extends CodeFragmentTreeNode {
 				if(invocation.getName().getFullyQualifiedName().startsWith("get")){
 
 					IMethodBinding methodBinding = invocation.resolveMethodBinding();
-					if(!methodBindingCache.contains(methodBinding)){
-						if(methodBinding.getParameterTypes().length == 0){
-							if(invocation.getExpression() != null){
-								incrementAccesses(analyzedClass,invocation.getExpression().resolveTypeBinding());
+
+					IJavaElement element = methodBinding.getJavaElement();
+					IPackageFragmentRoot root = (IPackageFragmentRoot) element.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT);
+					IClasspathEntry classpathEntry;
+					try {
+						classpathEntry = root.getRawClasspathEntry();
+						if (classpathEntry.getEntryKind() == IClasspathEntry.CPE_SOURCE || !libraryCheck){
+							if(!methodBindingCache.contains(methodBinding)){
+								if(methodBinding.getParameterTypes().length == 0){
+									if(invocation.getExpression() != null){
+										incrementAccesses(analyzedClass,invocation.getExpression().resolveTypeBinding());
+									}
+								}
+								methodBindingCache.add(methodBinding);
 							}
 						}
-						methodBindingCache.add(methodBinding);
+					} catch (JavaModelException e) {
+						e.printStackTrace();
 					}
-
 				}
 			}
 
@@ -139,20 +152,32 @@ public class CodeFragmentLeaf extends CodeFragmentTreeNode {
 			node.accept(variableVisitor);
 			Set<IVariableBinding> variables = variableVisitor.getVariableBindings();
 			for(IVariableBinding binding: variables){
-				if(!variableBindingsCache.contains(binding)){
-					ITypeBinding typeBinding = binding.getDeclaringClass();
-					if(typeBinding != null){
-						boolean staticCheck = true; 
-						if(!staticFields){
-							if(Modifier.isStatic(binding.getModifiers())) staticCheck = false;
-						}
-						if(staticCheck){
-							incrementAccesses(analyzedClass, typeBinding);
+
+				IJavaElement element = binding.getJavaElement();
+				IPackageFragmentRoot root = (IPackageFragmentRoot) element.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT);
+				IClasspathEntry classpathEntry;
+				try {
+					classpathEntry = root.getRawClasspathEntry();
+
+					if (classpathEntry.getEntryKind() == IClasspathEntry.CPE_SOURCE || !libraryCheck){
+						if(!variableBindingsCache.contains(binding)){
+							ITypeBinding typeBinding = binding.getDeclaringClass();
+							if(typeBinding != null){
+								boolean staticCheck = true; 
+								if(!staticFields){
+									if(Modifier.isStatic(binding.getModifiers())) staticCheck = false;
+								}
+								if(staticCheck){
+									incrementAccesses(analyzedClass, typeBinding);
+								}
+							}
+							variableBindingsCache.add(binding);
 						}
 					}
-					variableBindingsCache.add(binding);
-				}
 
+				} catch (JavaModelException e) {
+					e.printStackTrace();
+				}
 
 			}
 		}

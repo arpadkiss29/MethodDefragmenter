@@ -7,6 +7,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.Map.Entry;
 
+import org.eclipse.jdt.core.IClasspathEntry;
+import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IPackageFragmentRoot;
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
@@ -69,14 +73,27 @@ public class EnviousBlockLinker implements IBlockLinker{
 				if(invocation.getName().getFullyQualifiedName().startsWith("get")){
 					
 					IMethodBinding methodBinding = invocation.resolveMethodBinding();
-					if(!methodBindingCache.contains(methodBinding)){
-						if(methodBinding.getParameterTypes().length == 0){
-							if(invocation.getExpression() != null){
-								incrementAccesses(analyzedClass,invocation.getExpression().resolveTypeBinding());
+					
+					IJavaElement element = methodBinding.getJavaElement();
+					IPackageFragmentRoot root = (IPackageFragmentRoot) element.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT);
+					IClasspathEntry classpathEntry;
+					
+					try {
+						classpathEntry = root.getRawClasspathEntry();
+						if (classpathEntry.getEntryKind() == IClasspathEntry.CPE_SOURCE){
+							if(!methodBindingCache.contains(methodBinding)){
+								if(methodBinding.getParameterTypes().length == 0){
+									if(invocation.getExpression() != null){
+										incrementAccesses(analyzedClass,invocation.getExpression().resolveTypeBinding());
+									}
+								}
+								methodBindingCache.add(methodBinding);
 							}
 						}
-						methodBindingCache.add(methodBinding);
+					} catch (JavaModelException e) {
+						e.printStackTrace();
 					}
+					
 					
 				}
 			}
@@ -85,14 +102,24 @@ public class EnviousBlockLinker implements IBlockLinker{
 			node.accept(variableVisitor);
 			Set<IVariableBinding> variables = variableVisitor.getVariableBindings();
 			for(IVariableBinding binding: variables){
-				if(!variableBindingsCache.contains(binding)){
-					ITypeBinding typeBinding = binding.getDeclaringClass();
-					if(typeBinding != null){
-						if(!Modifier.isStatic(binding.getModifiers())){
-							incrementAccesses(analyzedClass, typeBinding);
+				IJavaElement element = binding.getJavaElement();
+				IPackageFragmentRoot root = (IPackageFragmentRoot) element.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT);
+				IClasspathEntry classpathEntry;
+				try {
+					classpathEntry = root.getRawClasspathEntry();
+					if (classpathEntry.getEntryKind() == IClasspathEntry.CPE_SOURCE){
+						if(!variableBindingsCache.contains(binding)){
+							ITypeBinding typeBinding = binding.getDeclaringClass();
+							if(typeBinding != null){
+								if(!Modifier.isStatic(binding.getModifiers())){
+									incrementAccesses(analyzedClass, typeBinding);
+								}
+							}
+							variableBindingsCache.add(binding);
 						}
 					}
-					variableBindingsCache.add(binding);
+				} catch (JavaModelException e) {
+					e.printStackTrace();
 				}
 				
 			}

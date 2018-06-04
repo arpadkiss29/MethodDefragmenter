@@ -276,9 +276,9 @@ public class CodeFragmentTreeNode {
 
 
 
-	public void computeDataAccesses(String analyzedClass, boolean staticFields, Integer minBlockSize){
+	public void computeDataAccesses(String analyzedClass, boolean staticFields, Integer minBlockSize, boolean libraryCheck){
 		for (int i = 0; i < children.size(); i++){ 
-			children.get(i).computeDataAccesses(analyzedClass, staticFields, minBlockSize);
+			children.get(i).computeDataAccesses(analyzedClass, staticFields, minBlockSize, libraryCheck);
 		}
 
 	}

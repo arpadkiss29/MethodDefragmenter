@@ -79,7 +79,7 @@ public class SelectionView extends ViewPart {
 	private static final String MARKER = "kar.method.defragmenter.marker";
 
 	private static final int ATFD_TRESHOLD = 2;
-	private static final int FDP_TREHSOLD  = 2;
+	private static final int FDP_TREHSOLD  = 3;
 	
 	private MultipleMethodViewer tableViewer;
 	private MethodTableViewer methodTableViewer;
@@ -93,6 +93,7 @@ public class SelectionView extends ViewPart {
 	private boolean expandedFeatureEnvyVerification = false;
 	private boolean considerBlankLines = true;
 	private boolean considerStaticFieldAccesses = false;
+	private boolean libraryCheck = true;
 	private String selectedParsingMethod = "";
 	
 	private Integer minBlockSize = null;
@@ -158,81 +159,81 @@ public class SelectionView extends ViewPart {
 		if (selection instanceof IStructuredSelection) {
 			IStructuredSelection ss = (IStructuredSelection) selection;
 			if (ss.getFirstElement() instanceof IJavaProject && !wholeProjectAnalyzed){
-				wholeProjectAnalyzed = true;
-				tableViewer.setInput(null);
-				tableViewer.refresh();
-				System.out.println("A project was selected!");
-				List<MethodBasicItem> methodItems =  new ArrayList<MethodBasicItem>();
-				IProject selectedProject = ((IJavaProject)ss.getFirstElement()).getProject();
-
-				IPackageFragment[] packages = JavaCore.create(selectedProject).getPackageFragments();
-				for (IPackageFragment mypackage : packages) {
-					if (mypackage.getKind() == IPackageFragmentRoot.K_SOURCE) {
-						for (ICompilationUnit unit : mypackage.getCompilationUnits()) {
-							CompilationUnit parsedUnit = parse(unit);
-							List<AbstractTypeDeclaration> dcls = parsedUnit.types();
-							if(!dcls.isEmpty()){
-								this.classList.put(dcls.get(0).getName().getIdentifier(), unit);
-								methodItems.addAll(applyDefragmenterForCompUnit(parse(unit)));
-							}
-						}
-					}
-				}
-				  
-				Collections.sort(methodItems, new Comparator<MethodBasicItem>() {
-
-					@Override
-					public int compare(MethodBasicItem o1, MethodBasicItem o2) {
-						return Integer.compare(o2.getLength(), o1.getLength());
-					}
-				});
-				
-				Collections.sort(methodItems, new Comparator<MethodBasicItem>() {
-
-					@Override
-					public int compare(MethodBasicItem o1, MethodBasicItem o2) {
-						return  Boolean.compare(o2.containEnviousBlocks(), o1.containEnviousBlocks());
-					}
-				});
-
-				tableViewer.setInput(methodItems);
+//				wholeProjectAnalyzed = true;
+//				tableViewer.setInput(null);
+//				tableViewer.refresh();
+//				System.out.println("A project was selected!");
+//				List<MethodBasicItem> methodItems =  new ArrayList<MethodBasicItem>();
+//				IProject selectedProject = ((IJavaProject)ss.getFirstElement()).getProject();
+//
+//				IPackageFragment[] packages = JavaCore.create(selectedProject).getPackageFragments();
+//				for (IPackageFragment mypackage : packages) {
+//					if (mypackage.getKind() == IPackageFragmentRoot.K_SOURCE) {
+//						for (ICompilationUnit unit : mypackage.getCompilationUnits()) {
+//							CompilationUnit parsedUnit = parse(unit);
+//							List<AbstractTypeDeclaration> dcls = parsedUnit.types();
+//							if(!dcls.isEmpty()){
+//								this.classList.put(dcls.get(0).getName().getIdentifier(), unit);
+//								methodItems.addAll(applyDefragmenterForCompUnit(parse(unit)));
+//							}
+//						}
+//					}
+//				}
+//				  
+//				Collections.sort(methodItems, new Comparator<MethodBasicItem>() {
+//
+//					@Override
+//					public int compare(MethodBasicItem o1, MethodBasicItem o2) {
+//						return Integer.compare(o2.getLength(), o1.getLength());
+//					}
+//				});
+//				
+//				Collections.sort(methodItems, new Comparator<MethodBasicItem>() {
+//
+//					@Override
+//					public int compare(MethodBasicItem o1, MethodBasicItem o2) {
+//						return  Boolean.compare(o2.containEnviousBlocks(), o1.containEnviousBlocks());
+//					}
+//				});
+//
+//				tableViewer.setInput(methodItems);
 			}
 			
 			if(ss.getFirstElement() instanceof IPackageFragment){
-				wholeProjectAnalyzed = false;
-				tableViewer.setInput(null);
-				tableViewer.refresh();
-				
-				IPackageFragment mypackage = (IPackageFragment) ss.getFirstElement();
-				List<MethodBasicItem> methodItems =  new ArrayList<MethodBasicItem>();
-
-				if (mypackage.getKind() == IPackageFragmentRoot.K_SOURCE) {
-					for (ICompilationUnit unit : mypackage.getCompilationUnits()) {
-						CompilationUnit parsedUnit = parse(unit);
-						List<AbstractTypeDeclaration> dcls = parsedUnit.types();
-						if(!dcls.isEmpty()){
-							this.classList.put(dcls.get(0).getName().getIdentifier(), unit);
-							methodItems.addAll(applyDefragmenterForCompUnit(parse(unit)));
-						}
-					}
-					Collections.sort(methodItems, new Comparator<MethodBasicItem>() {
-
-						@Override
-						public int compare(MethodBasicItem o1, MethodBasicItem o2) {
-							return Integer.compare(o2.getLength(), o1.getLength());
-						}
-					});
-					
-					Collections.sort(methodItems, new Comparator<MethodBasicItem>() {
-
-						@Override
-						public int compare(MethodBasicItem o1, MethodBasicItem o2) {
-							return  Boolean.compare(o2.containEnviousBlocks(), o1.containEnviousBlocks());
-						}
-					});
-					tableViewer.setInput(methodItems);
-					tableViewer.refresh();
-				}
+//				wholeProjectAnalyzed = false;
+//				tableViewer.setInput(null);
+//				tableViewer.refresh();
+//				
+//				IPackageFragment mypackage = (IPackageFragment) ss.getFirstElement();
+//				List<MethodBasicItem> methodItems =  new ArrayList<MethodBasicItem>();
+//
+//				if (mypackage.getKind() == IPackageFragmentRoot.K_SOURCE) {
+//					for (ICompilationUnit unit : mypackage.getCompilationUnits()) {
+//						CompilationUnit parsedUnit = parse(unit);
+//						List<AbstractTypeDeclaration> dcls = parsedUnit.types();
+//						if(!dcls.isEmpty()){
+//							this.classList.put(dcls.get(0).getName().getIdentifier(), unit);
+//							methodItems.addAll(applyDefragmenterForCompUnit(parse(unit)));
+//						}
+//					}
+//					Collections.sort(methodItems, new Comparator<MethodBasicItem>() {
+//
+//						@Override
+//						public int compare(MethodBasicItem o1, MethodBasicItem o2) {
+//							return Integer.compare(o2.getLength(), o1.getLength());
+//						}
+//					});
+//					
+//					Collections.sort(methodItems, new Comparator<MethodBasicItem>() {
+//
+//						@Override
+//						public int compare(MethodBasicItem o1, MethodBasicItem o2) {
+//							return  Boolean.compare(o2.containEnviousBlocks(), o1.containEnviousBlocks());
+//						}
+//					});
+//					tableViewer.setInput(methodItems);
+//					tableViewer.refresh();
+//				}
 			}
 			
 			
@@ -323,7 +324,7 @@ public class SelectionView extends ViewPart {
 						root.init();
 						String analyzedClass = dcls.get(0).getName().getIdentifier();
 						root.computeDataAccesses(analyzedClass, considerStaticFieldAccesses,
-								minBlockSize);
+								minBlockSize, libraryCheck);
 						List<IBlockLinker> matchers = new ArrayList<IBlockLinker>();
 						matchers.add(new EnviousBlockLinker(analyzedClass, ATFD_TRESHOLD, FDP_TREHSOLD));
 						root.verifyFeatureEnvy(ATFD_TRESHOLD, FDP_TREHSOLD, expandedFeatureEnvyVerification, matchers);
@@ -369,7 +370,7 @@ public class SelectionView extends ViewPart {
 					enviousNodeTableViewer.setInput(null);
 					String analyzedClass = clickedItem.getClassName();
 					root.computeDataAccesses(analyzedClass, considerStaticFieldAccesses,
-							minBlockSize);
+							minBlockSize, libraryCheck);
 					List<IBlockLinker> matchers = new ArrayList<IBlockLinker>();
 					matchers.add(new EnviousBlockLinker(analyzedClass, ATFD_TRESHOLD, FDP_TREHSOLD));
 				
