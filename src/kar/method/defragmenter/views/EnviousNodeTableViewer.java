@@ -62,7 +62,7 @@ public class EnviousNodeTableViewer extends TableViewer{
 	public EnviousNodeTableViewer(Composite parent, int style) {
 		super(parent, style);
 		Table table = getTable();
-		GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
+		GridData gridData = new GridData(SWT.V_SCROLL, SWT.V_SCROLL, true, true);
 		table.setLayoutData(gridData);
 		createColumns();
 		table.setHeaderVisible(true);
@@ -79,16 +79,16 @@ public class EnviousNodeTableViewer extends TableViewer{
 		  TableViewerColumn lineType = createTableViewerColumn("Lines (From - To)", 100, 0);
 		  lineType.setLabelProvider(linesColumnLabel);
 		  
-		  TableViewerColumn acdType = createTableViewerColumn("accessForeignData", 100, 1);
+		  TableViewerColumn acdType = createTableViewerColumn("accessForeignData", 50, 1);
 		  acdType.setLabelProvider(acdColumnLabel);
 		  
-		  TableViewerColumn localAttrType = createTableViewerColumn("localAttrAccess", 100, 2);
+		  TableViewerColumn localAttrType = createTableViewerColumn("localAttrAccess", 50, 2);
 		  localAttrType.setLabelProvider(localAttrColumnLabel);
 		  
-		  TableViewerColumn foreignDataAttrType = createTableViewerColumn("foreignDataProviders", 100, 3);
+		  TableViewerColumn foreignDataAttrType = createTableViewerColumn("foreignDataProviders", 50, 3);
 		  foreignDataAttrType.setLabelProvider(foreignDataColumnLabel);
 		  		  
-		  TableViewerColumn targetClassType = createTableViewerColumn("targetClass", 100, 4);
+		  TableViewerColumn targetClassType = createTableViewerColumn("targetClass", 250, 4);
 		  targetClassType.setLabelProvider(targetClassColumnLabel);
 		  
 		  Layout layout = this.getControl().getParent().getLayout();

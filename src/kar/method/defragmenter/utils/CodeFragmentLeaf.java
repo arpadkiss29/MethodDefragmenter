@@ -268,12 +268,22 @@ public class CodeFragmentLeaf extends CodeFragmentTreeNode {
 
 			String enviousClass  = "";
 			int maxAccess = Integer.MIN_VALUE;
-			for(Entry<String, Integer> accessedClassEntry: accessClassesMapping.entrySet()){
-				if(accessedClassEntry.getValue() > maxAccess){
-					maxAccess = accessedClassEntry.getValue();
-					enviousClass = accessedClassEntry.getKey();
+			if(accessClassesMapping.entrySet().size() == 1){
+				for(Entry<String, Integer> accessedClassEntry: accessClassesMapping.entrySet()){
+					if(accessedClassEntry.getValue() > maxAccess){
+						maxAccess = accessedClassEntry.getValue();
+						enviousClass = accessedClassEntry.getKey();
+					}
+				}
+			}else{
+				int count = 0;
+				for(Entry<String, Integer> accessedClassEntry: accessClassesMapping.entrySet()){
+					if(count > 0) enviousClass += ";";
+					enviousClass += accessedClassEntry.getKey() + " - " + accessedClassEntry.getValue();
+					count++;
 				}
 			}
+
 			targetClass = enviousClass;
 			isEnviousLeaf = true;
 		}else{
