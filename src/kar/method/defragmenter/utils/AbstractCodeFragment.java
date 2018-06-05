@@ -18,13 +18,14 @@ import org.eclipse.ui.texteditor.ITextEditor;
 import kar.method.defragmenter.linkers.IBlockLinker;
 import kar.method.defragmenter.views.SelectionView;
 
-public class CodeFragmentTreeNode {
+public abstract class AbstractCodeFragment {
+	
 	public static double NCOCP2Treshold = 0.75;
 	//	public static final double NCOCP2TresholdIdentif = 0.5;
 	public static int colorCounter = 0;
 
-	public static List<CodeFragmentTreeNode> allNodesLeafs = new ArrayList<CodeFragmentTreeNode>();
-	private List<CodeFragmentTreeNode> children = null;
+	public static List<AbstractCodeFragment> allNodesLeafs = new ArrayList<AbstractCodeFragment>();
+	protected List<AbstractCodeFragment> children = null;
 	private double nodeNCOCP2 = 0.0;
 	private double nodeCOCP = 0.0;
 	private int startNode = 0;
@@ -32,7 +33,7 @@ public class CodeFragmentTreeNode {
 	private List<CodeFragmentLeaf> leafsReceived = new ArrayList<CodeFragmentLeaf>(); 
 
 	protected boolean possiblyRelatedFlag = false;
-	protected List<CodeFragmentTreeNode> cohesivlyRelatedNodes = new ArrayList<CodeFragmentTreeNode>();
+	protected List<AbstractCodeFragment> cohesivlyRelatedNodes = new ArrayList<AbstractCodeFragment>();
 
 	// Used by ChunkFragmenter Method 
 	private List<ASTNode> internalASTNodes = new ArrayList<ASTNode>();
@@ -51,7 +52,7 @@ public class CodeFragmentTreeNode {
 	private boolean containsEnvy;
 
 
-	public CodeFragmentTreeNode()
+	public AbstractCodeFragment()
 	{
 		this.children = new ArrayList<>();
 	}
@@ -64,13 +65,6 @@ public class CodeFragmentTreeNode {
 	public void removeInternalStatement(ASTNode node){
 		internalASTNodes.remove(node);
 	}
-
-
-	public void addChild(CodeFragmentTreeNode child)
-	{
-		children.add(child);
-	}
-
 
 	public int getChildrenSize(){
 		return children.size();
@@ -180,7 +174,7 @@ public class CodeFragmentTreeNode {
 	}
 
 	private int calculateFirstLine(){
-		CodeFragmentTreeNode firstChild = children.get(0);
+		AbstractCodeFragment firstChild = children.get(0);
 		if(firstChild instanceof CodeFragmentLeaf){
 			return ((CodeFragmentLeaf)firstChild).getFragmentFirstLine();
 		}else {
@@ -193,7 +187,7 @@ public class CodeFragmentTreeNode {
 			System.out.println("Problem");
 			return 0;
 		}
-		CodeFragmentTreeNode lastChild = children.get(children.size()-1);
+		AbstractCodeFragment lastChild = children.get(children.size()-1);
 		if(lastChild instanceof CodeFragmentLeaf){
 			return ((CodeFragmentLeaf)lastChild).getFragmentLastLine();
 		}else {
@@ -201,8 +195,8 @@ public class CodeFragmentTreeNode {
 		}
 	}
 
-	public List<CodeFragmentTreeNode> identifyFunctionalSegments(){
-		List<CodeFragmentTreeNode> receivedNodes = new ArrayList<CodeFragmentTreeNode>();
+	public List<AbstractCodeFragment> identifyFunctionalSegments(){
+		List<AbstractCodeFragment> receivedNodes = new ArrayList<AbstractCodeFragment>();
 		for (int i = 0; i < children.size(); i++){
 			receivedNodes.addAll(children.get(i).identifyFunctionalSegments());
 		}
@@ -222,7 +216,7 @@ public class CodeFragmentTreeNode {
 		this.possiblyRelatedFlag = possiblyRelatedFlag;
 	}
 
-	public void combineNodes(List<CodeFragmentTreeNode> nodes){
+	public void combineNodes(List<AbstractCodeFragment> nodes){
 		for(int i = 0; i < nodes.size() - 1; i++){
 			for(int j = i + 1; j < nodes.size(); j++){
 				List<CodeFragmentLeaf> fragmentsCombination = new ArrayList<CodeFragmentLeaf>();
@@ -231,7 +225,7 @@ public class CodeFragmentTreeNode {
 					fragmentsCombination.add((CodeFragmentLeaf) nodes.get(i));
 				} else{
 					fragmentsCombination.addAll(nodes.get(i).getLeafsReceived());
-					for(CodeFragmentTreeNode eachNode: nodes.get(i).children){
+					for(AbstractCodeFragment eachNode: nodes.get(i).children){
 						if(eachNode instanceof CodeFragmentLeaf) fragmentsCombination.add((CodeFragmentLeaf) eachNode);
 					}
 				}
@@ -240,7 +234,7 @@ public class CodeFragmentTreeNode {
 					fragmentsCombination.add((CodeFragmentLeaf) nodes.get(j));
 				} else {
 					fragmentsCombination.addAll(nodes.get(j).getLeafsReceived());
-					for(CodeFragmentTreeNode eachNode: nodes.get(j).children){
+					for(AbstractCodeFragment eachNode: nodes.get(j).children){
 						if(eachNode instanceof CodeFragmentLeaf) fragmentsCombination.add((CodeFragmentLeaf) eachNode);
 					}
 				}
@@ -321,9 +315,9 @@ public class CodeFragmentTreeNode {
 	}
 	
 	
-	public List<CodeFragmentTreeNode> getAllEnviousNodes(){
-		List<CodeFragmentTreeNode> nodes = new ArrayList<CodeFragmentTreeNode>();
-		for(CodeFragmentTreeNode node: children){
+	public List<AbstractCodeFragment> getAllEnviousNodes(){
+		List<AbstractCodeFragment> nodes = new ArrayList<AbstractCodeFragment>();
+		for(AbstractCodeFragment node: children){
 			if(node instanceof CodeFragmentLeaf && ((CodeFragmentLeaf)node).isEnvy()){
 				nodes.add(node);
 			}else{
@@ -337,7 +331,7 @@ public class CodeFragmentTreeNode {
 		return nodes;
 	}
 
-	public void colorLongMethodFragments(ITextEditor textEditor, IFile file, List<CodeFragmentTreeNode> functionalSegmentNodes){
+	public void colorLongMethodFragments(ITextEditor textEditor, IFile file, List<AbstractCodeFragment> functionalSegmentNodes){
 		for (int i = 0; i < children.size(); i++){ 
 			children.get(i).colorLongMethodFragments(textEditor, file, functionalSegmentNodes);
 		}
@@ -404,7 +398,7 @@ public class CodeFragmentTreeNode {
 		System.out.println();
 	}
 
-	public CodeFragmentTreeNode getAllTreeData(){
+	public AbstractCodeFragment getAllTreeData(){
 		for (int i = 0; i < children.size(); i++){	
 			allNodesLeafs.add(children.get(i).getAllTreeData());
 		}
@@ -461,7 +455,7 @@ public class CodeFragmentTreeNode {
 	}
 
 
-	public List<CodeFragmentTreeNode> getPossiblyRelatedNodes() {
+	public List<AbstractCodeFragment> getPossiblyRelatedNodes() {
 		return cohesivlyRelatedNodes;
 	}
 

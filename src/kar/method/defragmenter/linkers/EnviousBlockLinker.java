@@ -18,7 +18,7 @@ import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
 
-import kar.method.defragmenter.utils.CodeFragmentTreeNode;
+import kar.method.defragmenter.utils.AbstractCodeFragment;
 import kar.method.defragmenter.visittors.MethodInvocationVisitor;
 import kar.method.defragmenter.visittors.VariableBindingVisitor;
 
@@ -43,7 +43,7 @@ public class EnviousBlockLinker implements IBlockLinker{
 	
 
 	@Override
-	public boolean tryToLinkBlocks(CodeFragmentTreeNode node) {
+	public boolean tryToLinkBlocks(AbstractCodeFragment node) {
 		List<ASTNode> allSubTreeNodes = node.getAllSubTreeASTNodes();
 		calculateDataAccesses(allSubTreeNodes);
 		boolean enviousNode = verifyFeatureEnvy();

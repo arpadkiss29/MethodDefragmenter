@@ -4,9 +4,9 @@ import java.util.Stack;
 
 import org.eclipse.jdt.core.dom.ASTVisitor;
 
-import kar.method.defragmenter.utils.CodeFragmentTreeNode;
+import kar.method.defragmenter.utils.AbstractCodeFragment;
 
 public abstract class AbstractFragmenter extends ASTVisitor{
-	public Stack<CodeFragmentTreeNode> lastNode = new Stack<CodeFragmentTreeNode>(); 
+	public Stack<AbstractCodeFragment> lastNode = new Stack<AbstractCodeFragment>(); 
 	
 }

@@ -31,7 +31,7 @@ import kar.method.defragmenter.views.SelectionView;
 import kar.method.defragmenter.visittors.MethodInvocationVisitor;
 import kar.method.defragmenter.visittors.VariableBindingVisitor;
 
-public class CodeFragmentLeaf extends CodeFragmentTreeNode {
+public class CodeFragmentLeaf extends AbstractCodeFragment {
 
 	private ArrayList<ASTNode> myASTNodes = new ArrayList<ASTNode>();
 
@@ -95,14 +95,14 @@ public class CodeFragmentLeaf extends CodeFragmentTreeNode {
 		return myASTNodes;
 	}
 
-	public CodeFragmentTreeNode getAllTreeData(){
+	public AbstractCodeFragment getAllTreeData(){
 		return this;
 	}
 
 
 	@Override
-	public List<CodeFragmentTreeNode> identifyFunctionalSegments() {
-		List<CodeFragmentTreeNode> temp = new ArrayList<CodeFragmentTreeNode>();
+	public List<AbstractCodeFragment> identifyFunctionalSegments() {
+		List<AbstractCodeFragment> temp = new ArrayList<AbstractCodeFragment>();
 		temp.add(this);
 		return temp;
 	}
@@ -329,7 +329,7 @@ public class CodeFragmentLeaf extends CodeFragmentTreeNode {
 
 	@Override
 	public void colorLongMethodFragments(ITextEditor textEditor, IFile file,
-			List<CodeFragmentTreeNode> functionalSegmentNodes) {
+			List<AbstractCodeFragment> functionalSegmentNodes) {
 
 		if((functionalSegmentNodes.contains(this)) && (possiblyRelatedFlag != true)){
 			try {

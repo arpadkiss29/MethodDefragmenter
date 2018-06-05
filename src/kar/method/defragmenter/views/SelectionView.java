@@ -68,7 +68,7 @@ import kar.method.defragmenter.fragmenters.GrainFragmenter;
 import kar.method.defragmenter.linkers.EnviousBlockLinker;
 import kar.method.defragmenter.linkers.IBlockLinker;
 import kar.method.defragmenter.utils.CodeFragmentLeaf;
-import kar.method.defragmenter.utils.CodeFragmentTreeNode;
+import kar.method.defragmenter.utils.AbstractCodeFragment;
 import kar.method.defragmenter.visittors.MethodVisitor;
 
 
@@ -293,7 +293,7 @@ public class SelectionView extends ViewPart {
 			method.accept(visitorBlock);
 
 			if(!visitorBlock.lastNode.empty()){
-				CodeFragmentTreeNode root = visitorBlock.lastNode.pop();
+				AbstractCodeFragment root = visitorBlock.lastNode.pop();
 
 				//System.out.println(root);
 				//root.print(0);
@@ -315,7 +315,7 @@ public class SelectionView extends ViewPart {
 					root.init();
 					
 					root.getCohesionMetric(unit);
-					List<CodeFragmentTreeNode> identifiedNodes = root.identifyFunctionalSegments();
+					List<AbstractCodeFragment> identifiedNodes = root.identifyFunctionalSegments();
 					root.combineNodes(identifiedNodes);
 					item.setRootNCOCP2("" + root.getNodeNCOCP2());
 				}else{
@@ -342,7 +342,7 @@ public class SelectionView extends ViewPart {
 	}
 
 	private void populateMethodTable(MethodBasicItem clickedItem){		
-		CodeFragmentTreeNode root = clickedItem.getMethodRoot();
+		AbstractCodeFragment root = clickedItem.getMethodRoot();
 
 		ICompilationUnit unit = classList.get(clickedItem.getClassName());
 		if (unit != null){
@@ -364,7 +364,7 @@ public class SelectionView extends ViewPart {
 
 			if(!applyLongMethodIdentification){
 				System.out.println("Method coloring will be performed here!");
-				CodeFragmentTreeNode.colorCounter = 0;
+				AbstractCodeFragment.colorCounter = 0;
 				try {
 					root.init();
 					enviousNodeTableViewer.setInput(null);
@@ -378,13 +378,13 @@ public class SelectionView extends ViewPart {
 					
 					//CodeFragmentTreeNode.allNodesLeafs.clear();
 					//root.getAllTreeData();
-					List<CodeFragmentTreeNode> nodes = root.getAllEnviousNodes();
+					List<AbstractCodeFragment> nodes = root.getAllEnviousNodes();
 					//List<CodeFragmentTreeNode> nodes = CodeFragmentTreeNode.allNodesLeafs;
 					nodes.add(root);
 					
 					List<EnviousNodeData> enviousNodeItems = new ArrayList<>();
 					
-					for(CodeFragmentTreeNode node : nodes){
+					for(AbstractCodeFragment node : nodes){
 						if(node instanceof CodeFragmentLeaf && ((CodeFragmentLeaf)node).isEnvy()){
 							CodeFragmentLeaf leaf = (CodeFragmentLeaf)node;
 							EnviousNodeData enviousItem = new EnviousNodeData();
@@ -413,22 +413,22 @@ public class SelectionView extends ViewPart {
 				}
 				
 			}else{
-				System.out.println("Calculating Long Method Fragmentation! Threshold: " + CodeFragmentTreeNode.NCOCP2Treshold);
+				System.out.println("Calculating Long Method Fragmentation! Threshold: " + AbstractCodeFragment.NCOCP2Treshold);
 				
 				root.init();
 				
 				List<MethodDescribingItem> methodTableItems = new ArrayList<>();
-				List<CodeFragmentTreeNode> nodes = null;
+				List<AbstractCodeFragment> nodes = null;
 
-				CodeFragmentTreeNode.colorCounter = 0;
-				CodeFragmentTreeNode.allNodesLeafs.clear();
+				AbstractCodeFragment.colorCounter = 0;
+				AbstractCodeFragment.allNodesLeafs.clear();
 				root.getCohesionMetric(parsedUnit);
-				List<CodeFragmentTreeNode> identifiedNodes = root.identifyFunctionalSegments();
+				List<AbstractCodeFragment> identifiedNodes = root.identifyFunctionalSegments();
 				root.combineNodes(identifiedNodes);
 
 				root.colorLongMethodFragments(textEditor, ifile, identifiedNodes);
 				root.getAllTreeData();
-				nodes = CodeFragmentTreeNode.allNodesLeafs;
+				nodes = AbstractCodeFragment.allNodesLeafs;
 				nodes.add(root);
 
 				MethodDescribingItem item = null;

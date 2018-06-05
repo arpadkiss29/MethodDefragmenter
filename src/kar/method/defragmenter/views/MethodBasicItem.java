@@ -2,12 +2,12 @@ package kar.method.defragmenter.views;
 
 import org.eclipse.jdt.core.IMethod;
 
-import kar.method.defragmenter.utils.CodeFragmentTreeNode;
+import kar.method.defragmenter.utils.AbstractCodeFragment;
 
 public class MethodBasicItem {
 	private IMethod IMtehodReference;
 	
-	private CodeFragmentTreeNode methodRoot;
+	private AbstractCodeFragment methodRoot;
 	
 	private String className;
 	private String name;
@@ -85,11 +85,11 @@ public class MethodBasicItem {
 		this.IMtehodReference = IMtehodReference;
 	}
 
-	public CodeFragmentTreeNode getMethodRoot() {
+	public AbstractCodeFragment getMethodRoot() {
 		return methodRoot;
 	}
 
-	public void setMethodRoot(CodeFragmentTreeNode methodRoot) {
+	public void setMethodRoot(AbstractCodeFragment methodRoot) {
 		this.methodRoot = methodRoot;
 	}
 	

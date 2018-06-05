@@ -32,8 +32,9 @@ import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.WhileStatement;
 
 import kar.method.defragmenter.utils.CodeFragmentLeaf;
-import kar.method.defragmenter.utils.CodeFragmentTreeNode;
+import kar.method.defragmenter.utils.AbstractCodeFragment;
 import kar.method.defragmenter.utils.DontGetHereException;
+import kar.method.defragmenter.utils.InternalCodeFragment;
 
 
 @SuppressWarnings("unchecked")
@@ -42,7 +43,7 @@ public class GrainFragmenter extends AbstractFragmenter{
 	@Override
 	public boolean visit(Block node) {
 		
-		CodeFragmentTreeNode parent = new CodeFragmentTreeNode();
+		InternalCodeFragment parent = new InternalCodeFragment();
 
 		CodeFragmentLeaf currentFragment = null;
 		List<Statement> currentStatements = node.statements();
@@ -52,7 +53,7 @@ public class GrainFragmenter extends AbstractFragmenter{
 			((ASTNode) currentStatements.get(i)).accept(this);
 			
 			// Get subtree from below
-			CodeFragmentTreeNode res = null;
+			AbstractCodeFragment res = null;
 			if(!lastNode.isEmpty()){
 				res = lastNode.pop();
 			}
@@ -100,7 +101,7 @@ public class GrainFragmenter extends AbstractFragmenter{
 	
 
 	public boolean visit(IfStatement ifStatement){
-		CodeFragmentTreeNode parent = new CodeFragmentTreeNode();
+		InternalCodeFragment parent = new InternalCodeFragment();
 		CodeFragmentLeaf currentExpressionFragment = new CodeFragmentLeaf();
 		
 		Expression expr = ifStatement.getExpression();
@@ -112,11 +113,11 @@ public class GrainFragmenter extends AbstractFragmenter{
 		// apelez visit pt block-ul din then
 		if(ifStatement.getThenStatement() != null){
 			ifStatement.getThenStatement().accept(this);
-			CodeFragmentTreeNode resThen = lastNode.pop();
+			AbstractCodeFragment resThen = lastNode.pop();
 			if (resThen != null){
 				parent.addChild(resThen);
 			}else{
-				CodeFragmentTreeNode thenNode = new CodeFragmentTreeNode();
+				InternalCodeFragment thenNode = new InternalCodeFragment();
 				CodeFragmentLeaf thenStatement = new CodeFragmentLeaf();
 				thenStatement.addStatement(ifStatement.getThenStatement());
 				thenNode.addChild(thenStatement);
@@ -128,11 +129,11 @@ public class GrainFragmenter extends AbstractFragmenter{
 		// apelez visit pt block-ul din else
 		if(ifStatement.getElseStatement() != null){
 			ifStatement.getElseStatement().accept(this);
-			CodeFragmentTreeNode resElse = lastNode.pop();
+			AbstractCodeFragment resElse = lastNode.pop();
 			if (resElse != null){
 				parent.addChild(resElse);
 			}else{
-				CodeFragmentTreeNode elseNode = new CodeFragmentTreeNode();
+				InternalCodeFragment elseNode = new InternalCodeFragment();
 				CodeFragmentLeaf elseStatement = new CodeFragmentLeaf();
 				elseStatement.addStatement(ifStatement.getElseStatement());
 				elseNode.addChild(elseStatement);
@@ -147,7 +148,7 @@ public class GrainFragmenter extends AbstractFragmenter{
 	
 	@Override
 	public boolean visit(DoStatement doStatement) {
-		CodeFragmentTreeNode parent = new CodeFragmentTreeNode();
+		InternalCodeFragment parent = new InternalCodeFragment();
 		CodeFragmentLeaf currentExpressionFragment = new CodeFragmentLeaf();
 		
 		Expression expr = doStatement.getExpression();
@@ -157,11 +158,11 @@ public class GrainFragmenter extends AbstractFragmenter{
 		}
 		
 		doStatement.getBody().accept(this);
-		CodeFragmentTreeNode doWhileBody = lastNode.pop();
+		AbstractCodeFragment doWhileBody = lastNode.pop();
 		if (doWhileBody != null){
 			parent.addChild(doWhileBody);
 		}else{
-			CodeFragmentTreeNode doNode = new CodeFragmentTreeNode();
+			InternalCodeFragment doNode = new InternalCodeFragment();
 			CodeFragmentLeaf simpleDoWhileStatement = new CodeFragmentLeaf();
 			simpleDoWhileStatement.addStatement(doStatement.getBody());
 			doNode.addChild(simpleDoWhileStatement);
@@ -192,7 +193,7 @@ public class GrainFragmenter extends AbstractFragmenter{
 
 	@Override
 	public boolean visit(ForStatement forStatement) {
-		CodeFragmentTreeNode parent = new CodeFragmentTreeNode();
+		InternalCodeFragment parent = new InternalCodeFragment();
 		CodeFragmentLeaf currentExpressionFragment = new CodeFragmentLeaf();
 		
 		Expression expr = forStatement.getExpression();
@@ -201,7 +202,7 @@ public class GrainFragmenter extends AbstractFragmenter{
 			parent.addChild(currentExpressionFragment);
 		}
 		
-		CodeFragmentTreeNode initNode = new CodeFragmentTreeNode();
+		InternalCodeFragment initNode = new InternalCodeFragment();
 		CodeFragmentLeaf initLeaf = new CodeFragmentLeaf();
 		List<Expression> inits = forStatement.initializers();
 		for(Expression each : inits){
@@ -210,7 +211,7 @@ public class GrainFragmenter extends AbstractFragmenter{
 		initNode.addChild(initLeaf);
 		parent.addChild(initNode);
 		
-		CodeFragmentTreeNode updateNode = new CodeFragmentTreeNode();
+		InternalCodeFragment updateNode = new InternalCodeFragment();
 		CodeFragmentLeaf updateLeaf = new CodeFragmentLeaf();
 		List<Expression> updates = forStatement.updaters();
 		for(Expression each : updates){
@@ -220,11 +221,11 @@ public class GrainFragmenter extends AbstractFragmenter{
 		parent.addChild(updateNode);
 
 		forStatement.getBody().accept(this);
-		CodeFragmentTreeNode forBody = lastNode.pop();
+		AbstractCodeFragment forBody = lastNode.pop();
 		if (forBody != null){
 			parent.addChild(forBody);
 		}else{
-			CodeFragmentTreeNode forNode = new CodeFragmentTreeNode();
+			InternalCodeFragment forNode = new InternalCodeFragment();
 			CodeFragmentLeaf simpleForStatement = new CodeFragmentLeaf();
 			simpleForStatement.addStatement(forStatement.getBody());
 			forNode.addChild(simpleForStatement);
@@ -237,7 +238,7 @@ public class GrainFragmenter extends AbstractFragmenter{
 
 	@Override
 	public boolean visit(WhileStatement whileStatement) {
-		CodeFragmentTreeNode parent = new CodeFragmentTreeNode();
+		InternalCodeFragment parent = new InternalCodeFragment();
 		CodeFragmentLeaf currentExpressionFragment = new CodeFragmentLeaf();
 		
 		Expression expr = whileStatement.getExpression();
@@ -248,11 +249,11 @@ public class GrainFragmenter extends AbstractFragmenter{
 		
 		
 		whileStatement.getBody().accept(this);
-		CodeFragmentTreeNode bodyWhile = lastNode.pop();
+		AbstractCodeFragment bodyWhile = lastNode.pop();
 		if (bodyWhile != null){
 			parent.addChild(bodyWhile);
 		}else{
-			CodeFragmentTreeNode whileNode = new CodeFragmentTreeNode();
+			InternalCodeFragment whileNode = new InternalCodeFragment();
 			CodeFragmentLeaf simpleWhileStatement = new CodeFragmentLeaf();
 			simpleWhileStatement.addStatement(whileStatement.getBody());
 			whileNode.addChild(simpleWhileStatement);
@@ -275,7 +276,7 @@ public class GrainFragmenter extends AbstractFragmenter{
 	 */
 	@Override
 	public boolean visit(ArrayAccess node) {
-		CodeFragmentTreeNode parent = new CodeFragmentTreeNode();
+		InternalCodeFragment parent = new InternalCodeFragment();
 		CodeFragmentLeaf currentExpressionFragment = new CodeFragmentLeaf();
 		
 		Expression exprArray = node.getArray();
@@ -305,7 +306,7 @@ public class GrainFragmenter extends AbstractFragmenter{
 	
 	@Override
 	public boolean visit(ArrayInitializer node) {
-		CodeFragmentTreeNode parent = new CodeFragmentTreeNode();
+		InternalCodeFragment parent = new InternalCodeFragment();
 		CodeFragmentLeaf currentExpressionFragment = new CodeFragmentLeaf();
 		
 		List<Expression> exprList = node.expressions();
@@ -345,7 +346,7 @@ public class GrainFragmenter extends AbstractFragmenter{
 
 	@Override
 	public boolean visit(CatchClause node) {
-		CodeFragmentTreeNode parent = new CodeFragmentTreeNode();
+		InternalCodeFragment parent = new InternalCodeFragment();
 		CodeFragmentLeaf currentExpressionFragment = new CodeFragmentLeaf();
 		
 		SingleVariableDeclaration exceptVar = node.getException();
@@ -355,11 +356,11 @@ public class GrainFragmenter extends AbstractFragmenter{
 		}
 		
 		node.getBody().accept(this);
-		CodeFragmentTreeNode bodyCatch = lastNode.pop();
+		AbstractCodeFragment bodyCatch = lastNode.pop();
 		if (bodyCatch != null){
 			parent.addChild(bodyCatch);
 		}else{
-			CodeFragmentTreeNode CatchNode = new CodeFragmentTreeNode();
+			InternalCodeFragment CatchNode = new InternalCodeFragment();
 			CodeFragmentLeaf simpleCatchStatement = new CodeFragmentLeaf();
 			simpleCatchStatement.addStatement(node.getBody());
 			CatchNode.addChild(simpleCatchStatement);
@@ -393,7 +394,7 @@ public class GrainFragmenter extends AbstractFragmenter{
 	
 	@Override
 	public boolean visit(MethodInvocation node) {
-		CodeFragmentTreeNode parent = new CodeFragmentTreeNode();
+		InternalCodeFragment parent = new InternalCodeFragment();
 		CodeFragmentLeaf currentFragment = new CodeFragmentLeaf();
 		
 		
@@ -432,7 +433,7 @@ public class GrainFragmenter extends AbstractFragmenter{
 
 	@Override
 	public boolean visit(TryStatement tryStatement) {
-		CodeFragmentTreeNode parent = new CodeFragmentTreeNode();
+		InternalCodeFragment parent = new InternalCodeFragment();
 		CodeFragmentLeaf catchFrag = new CodeFragmentLeaf();
 		
 		List<CatchClause> catchList = tryStatement.catchClauses();
@@ -444,11 +445,11 @@ public class GrainFragmenter extends AbstractFragmenter{
 		parent.addChild(catchFrag);
 
 		tryStatement.getBody().accept(this);
-		CodeFragmentTreeNode bodyTry = lastNode.pop();
+		AbstractCodeFragment bodyTry = lastNode.pop();
 		if (bodyTry != null){
 			parent.addChild(bodyTry);
 		}else{
-			CodeFragmentTreeNode tryNode = new CodeFragmentTreeNode();
+			InternalCodeFragment tryNode = new InternalCodeFragment();
 			CodeFragmentLeaf simpleTryStatement = new CodeFragmentLeaf();
 			simpleTryStatement.addStatement(tryStatement.getBody());
 			tryNode.addChild(simpleTryStatement);
@@ -457,11 +458,11 @@ public class GrainFragmenter extends AbstractFragmenter{
 		
 		if(tryStatement.getFinally() != null){
 			tryStatement.getFinally().accept(this);
-			CodeFragmentTreeNode bodyFinally = lastNode.pop();
+			AbstractCodeFragment bodyFinally = lastNode.pop();
 			if (bodyFinally != null){
 				parent.addChild(bodyFinally);
 			}else{
-				CodeFragmentTreeNode finallyNode = new CodeFragmentTreeNode();
+				InternalCodeFragment finallyNode = new InternalCodeFragment();
 				CodeFragmentLeaf simpleFinallyStatement = new CodeFragmentLeaf();
 				simpleFinallyStatement.addStatement(tryStatement.getFinally());
 				finallyNode.addChild(simpleFinallyStatement);
@@ -485,7 +486,7 @@ public class GrainFragmenter extends AbstractFragmenter{
 
 	@Override
 	public boolean visit(SwitchCase switchCase) {
-		CodeFragmentTreeNode parent = new CodeFragmentTreeNode();
+		InternalCodeFragment parent = new InternalCodeFragment();
 		CodeFragmentLeaf currentExpressionFragment = new CodeFragmentLeaf();
 		
 		Expression expr = switchCase.getExpression();
@@ -502,7 +503,7 @@ public class GrainFragmenter extends AbstractFragmenter{
 
 	@Override
 	public boolean visit(SwitchStatement switchStatement) {
-		CodeFragmentTreeNode parent = new CodeFragmentTreeNode();
+		InternalCodeFragment parent = new InternalCodeFragment();
 		CodeFragmentLeaf currentExpressionFragment = new CodeFragmentLeaf();
 		
 		Expression expr = switchStatement.getExpression();
@@ -512,12 +513,12 @@ public class GrainFragmenter extends AbstractFragmenter{
 		}
 		
 		List<Statement> switchStatements = switchStatement.statements();
-		CodeFragmentTreeNode nodeStatements = new CodeFragmentTreeNode();
+		InternalCodeFragment nodeStatements = new InternalCodeFragment();
 		CodeFragmentLeaf allSwitchStatements = new CodeFragmentLeaf();
 		for(int i=0; i< switchStatements.size(); i++){
 			switchStatements.get(i).accept(this);
 			
-			CodeFragmentTreeNode res = lastNode.pop();
+			AbstractCodeFragment res = lastNode.pop();
 			if(res == null){
 				allSwitchStatements.addStatement(switchStatements.get(i));
 			}else{

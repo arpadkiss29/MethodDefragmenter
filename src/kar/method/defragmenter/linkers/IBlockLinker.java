@@ -1,9 +1,9 @@
 package kar.method.defragmenter.linkers;
 
-import kar.method.defragmenter.utils.CodeFragmentTreeNode;
+import kar.method.defragmenter.utils.AbstractCodeFragment;
 
 public interface IBlockLinker {
 	
-	public boolean tryToLinkBlocks(CodeFragmentTreeNode node);
+	public boolean tryToLinkBlocks(AbstractCodeFragment node);
 	
 }
