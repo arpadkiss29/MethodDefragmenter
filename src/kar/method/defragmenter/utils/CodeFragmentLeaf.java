@@ -261,7 +261,7 @@ public class CodeFragmentLeaf extends CodeFragmentTreeNode {
 		System.out.println("totalAccesses: " + totalAccesses);
 		System.out.println();
 
-		if( accessForeignData >= ATFDTreshold &&
+		if( accessForeignData > ATFDTreshold &&
 				//(localAttrAccess / totalAccesses)  < (1.0 / 3) &&
 				(localAttrAccess > 0 ? (localAttrAccess * 1.0) / totalAccesses : 0) < (1.0 / 3) &&
 				foreignDataProviders <= FDPTreshold){
