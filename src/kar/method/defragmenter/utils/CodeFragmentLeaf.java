@@ -1,30 +1,17 @@
 package kar.method.defragmenter.utils;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map.Entry;
-import java.util.Set;
-
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.jdt.core.IClasspathEntry;
-import org.eclipse.jdt.core.IJavaElement;
-import org.eclipse.jdt.core.IPackageFragmentRoot;
-import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.IMethodBinding;
-import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
-import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jface.text.Position;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 import kar.method.defragmenter.views.SelectionView;
-import kar.method.defragmenter.visittors.MethodInvocationVisitor;
 import kar.method.defragmenter.visittors.VariableBindingVisitor;
 
 public class CodeFragmentLeaf extends AbstractCodeFragment {
@@ -131,7 +118,7 @@ public class CodeFragmentLeaf extends AbstractCodeFragment {
 	}
 	
 	@Override
-	public boolean verifyFeatureEnvy(int ATFDTreshold, int FDPTreshold, String analyzedClass, boolean staticFields, Integer minBlockSize, boolean libraryCheck, boolean force) {
+	public boolean verifyFeatureEnvy(int ATFDTreshold, int FDPTreshold, String analyzedClass, boolean staticFields, Integer minBlockSize, boolean libraryCheck, boolean local) {
 		return super.verifyFeatureEnvy(ATFDTreshold, FDPTreshold, analyzedClass, staticFields, minBlockSize, libraryCheck, true);
 	}
 	

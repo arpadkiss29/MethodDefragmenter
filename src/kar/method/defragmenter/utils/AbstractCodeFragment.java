@@ -411,8 +411,8 @@ public abstract class AbstractCodeFragment {
 	private int foreignDataProviders = 0;
 	private String targetClass;
 
-	public boolean verifyFeatureEnvy(int ATFDTreshold, int FDPTreshold, String analyzedClass, boolean staticFields, Integer minBlockSize, boolean libraryCheck, boolean force) {
-		if (force) 
+	public boolean verifyFeatureEnvy(int ATFDTreshold, int FDPTreshold, String analyzedClass, boolean staticFields, Integer minBlockSize, boolean libraryCheck, boolean local) {
+		if (local) 
 		{
 			computeDataAccesses(analyzedClass, staticFields, minBlockSize, libraryCheck);
 			for(Integer numberOfAcc: accessClassesMapping.values()){
@@ -463,7 +463,7 @@ public abstract class AbstractCodeFragment {
 		} else {
 			boolean containsEnvy = false;
 			for (int i = 0; i < children.size(); i++){ 
-				if(children.get(i).verifyFeatureEnvy(ATFDTreshold, FDPTreshold, analyzedClass, staticFields, minBlockSize, libraryCheck, force)) {
+				if(children.get(i).verifyFeatureEnvy(ATFDTreshold, FDPTreshold, analyzedClass, staticFields, minBlockSize, libraryCheck, local)) {
 					containsEnvy = true;
 				}
 			}
