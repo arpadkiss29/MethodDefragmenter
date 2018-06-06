@@ -5,10 +5,8 @@ import kar.method.defragmenter.utils.AbstractCodeFragment;
 public class CohesiveBlockLinker implements IBlockLinker{
 
 	@Override
-	public boolean tryToLinkBlocks(AbstractCodeFragment node) {
-		// TODO Auto-generated method stub
-		return false;
+	public AbstractCodeFragment tryToLinkBlocks(AbstractCodeFragment node) {
+		return null;
 	}
-
 
 }

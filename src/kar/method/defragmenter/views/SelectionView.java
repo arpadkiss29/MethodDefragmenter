@@ -1,7 +1,5 @@
 package kar.method.defragmenter.views;
 
-
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -11,7 +9,6 @@ import java.util.Map;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
@@ -19,8 +16,6 @@ import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IMethod;
 import org.eclipse.jdt.core.IPackageFragment;
-import org.eclipse.jdt.core.IPackageFragmentRoot;
-import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
@@ -65,12 +60,10 @@ import org.eclipse.ui.texteditor.SimpleMarkerAnnotation;
 import kar.method.defragmenter.fragmenters.AbstractFragmenter;
 import kar.method.defragmenter.fragmenters.ChunkFragmenter;
 import kar.method.defragmenter.fragmenters.GrainFragmenter;
-import kar.method.defragmenter.linkers.EnviousBlockLinker;
-import kar.method.defragmenter.linkers.IBlockLinker;
+import kar.method.defragmenter.linkers.GroupingAlgorithm1;
 import kar.method.defragmenter.utils.CodeFragmentLeaf;
 import kar.method.defragmenter.utils.AbstractCodeFragment;
 import kar.method.defragmenter.visittors.MethodVisitor;
-
 
 public class SelectionView extends ViewPart {
 
@@ -85,9 +78,6 @@ public class SelectionView extends ViewPart {
 	private MethodTableViewer methodTableViewer;
 	private EnviousNodeTableViewer enviousNodeTableViewer;
 	private Map<String, ICompilationUnit> classList = new HashMap<String, ICompilationUnit>();
-
-	private IWorkbenchPart sourcepartFld;
-	private ISelection selectionFld;
 
 	private boolean applyLongMethodIdentification = false;
 	private boolean expandedFeatureEnvyVerification = false;
@@ -105,8 +95,6 @@ public class SelectionView extends ViewPart {
 		public void selectionChanged(IWorkbenchPart sourcepart, ISelection selection) {
 			if (sourcepart != SelectionView.this) {
 				try {
-					sourcepartFld = sourcepart;
-					selectionFld = selection;
 					showSelection(sourcepart, selection);
 				} catch (JavaModelException e) {
 					e.printStackTrace();
@@ -114,7 +102,6 @@ public class SelectionView extends ViewPart {
 			}
 		}
 	};
-
 
 	public static IMarker createMarker(IResource res, Position position)
 			throws CoreException {
@@ -323,12 +310,13 @@ public class SelectionView extends ViewPart {
 					if(root != null){
 						root.init();
 						String analyzedClass = dcls.get(0).getName().getIdentifier();
-						root.computeDataAccesses(analyzedClass, considerStaticFieldAccesses,
-								minBlockSize, libraryCheck);
-						List<IBlockLinker> matchers = new ArrayList<IBlockLinker>();
-						matchers.add(new EnviousBlockLinker(analyzedClass, ATFD_TRESHOLD, FDP_TREHSOLD));
-						root.verifyFeatureEnvy(ATFD_TRESHOLD, FDP_TREHSOLD, expandedFeatureEnvyVerification, matchers);
-						item.setContainsEnviousBlocks(root.isContainsEnvy());
+						boolean res = root.verifyFeatureEnvy(ATFD_TRESHOLD, FDP_TREHSOLD,  analyzedClass, considerStaticFieldAccesses,
+							minBlockSize, libraryCheck, false);
+						if (expandedFeatureEnvyVerification)
+						{
+							root =  new GroupingAlgorithm1(ATFD_TRESHOLD, FDP_TREHSOLD,  analyzedClass, considerStaticFieldAccesses, minBlockSize, libraryCheck).tryToLinkBlocks(root);
+						}
+						item.setContainsEnviousBlocks(res);
 					}
 				}
 				item.setMethodRoot(root);
@@ -368,19 +356,7 @@ public class SelectionView extends ViewPart {
 				try {
 					root.init();
 					enviousNodeTableViewer.setInput(null);
-					String analyzedClass = clickedItem.getClassName();
-					root.computeDataAccesses(analyzedClass, considerStaticFieldAccesses,
-							minBlockSize, libraryCheck);
-					List<IBlockLinker> matchers = new ArrayList<IBlockLinker>();
-					matchers.add(new EnviousBlockLinker(analyzedClass, ATFD_TRESHOLD, FDP_TREHSOLD));
-				
-					root.verifyFeatureEnvy(ATFD_TRESHOLD, FDP_TREHSOLD, expandedFeatureEnvyVerification, matchers);
-					
-					//CodeFragmentTreeNode.allNodesLeafs.clear();
-					//root.getAllTreeData();
 					List<AbstractCodeFragment> nodes = root.getAllEnviousNodes();
-					//List<CodeFragmentTreeNode> nodes = CodeFragmentTreeNode.allNodesLeafs;
-					nodes.add(root);
 					
 					List<EnviousNodeData> enviousNodeItems = new ArrayList<>();
 					
@@ -394,13 +370,13 @@ public class SelectionView extends ViewPart {
 							enviousItem.setLocalAttrAccess(leaf.getLocalAttrAccess());
 							enviousItem.setTargetClass(leaf.getTargetClass());
 							enviousNodeItems.add(enviousItem);
-						}else if(expandedFeatureEnvyVerification && node.isEnviousNode()){
+						}else if(expandedFeatureEnvyVerification && node.isEnvy()){
 							EnviousNodeData enviousItem = new EnviousNodeData();
 							enviousItem.setLines(parsedUnit.getLineNumber(node.getStartNode()) + " - " + parsedUnit.getLineNumber(node.getEndNode()));
-							enviousItem.setAccessForeignData(node.getNodeAccessForeignData());
-							enviousItem.setForeignDataProviders(node.getNodeForeignDataProviders());
-							enviousItem.setLocalAttrAccess(node.getNodeLocalAttrAccess());
-							enviousItem.setTargetClass(node.getNodeTargetClass());
+							enviousItem.setAccessForeignData(node.getAccessForeignData());
+							enviousItem.setForeignDataProviders(node.getForeignDataProviders());
+							enviousItem.setLocalAttrAccess(node.getLocalAttrAccess());
+							enviousItem.setTargetClass(node.getTargetClass());
 							enviousNodeItems.add(enviousItem);
 						}
 					}

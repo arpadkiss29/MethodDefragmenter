@@ -5,18 +5,29 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.Map.Entry;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.core.IClasspathEntry;
+import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IPackageFragmentRoot;
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jface.text.Position;
 import org.eclipse.ui.texteditor.ITextEditor;
 
-import kar.method.defragmenter.linkers.IBlockLinker;
 import kar.method.defragmenter.views.SelectionView;
+import kar.method.defragmenter.visittors.MethodInvocationVisitor;
+import kar.method.defragmenter.visittors.VariableBindingVisitor;
 
 public abstract class AbstractCodeFragment {
 	
@@ -35,28 +46,22 @@ public abstract class AbstractCodeFragment {
 	protected boolean possiblyRelatedFlag = false;
 	protected List<AbstractCodeFragment> cohesivlyRelatedNodes = new ArrayList<AbstractCodeFragment>();
 
-	// Used by ChunkFragmenter Method 
 	private List<ASTNode> internalASTNodes = new ArrayList<ASTNode>();
+
 	private FixedStructureTypes type;
+	
+	public void setType(FixedStructureTypes type) {
+		this.type = type;
+	}
 
-	// Node Feature envy
-	//private HashMap<String, CodeFragmentTreeNode> enviousRelatedNodes = new HashMap<String, CodeFragmentTreeNode>();
-	private HashMap<String, Integer> nodeAccessClassesMapping = new HashMap<String, Integer>();;
-	private int nodeAccessForeignData    = 0;
-	private int nodeLocalAttrAccess      = 0;
-	private int nodeForeignDataProviders = 0;
-	private String nodeTargetClass;
-	private boolean isEnviousNode;
-
-	protected String analyzedClassName = "";
-	private boolean containsEnvy;
-
+	public FixedStructureTypes getType() {
+		return type;
+	}
 
 	public AbstractCodeFragment()
 	{
 		this.children = new ArrayList<>();
 	}
-
 
 	public void addInternalStatement(ASTNode node){	
 		internalASTNodes.add(node);
@@ -70,6 +75,10 @@ public abstract class AbstractCodeFragment {
 		return children.size();
 	}
 
+	public AbstractCodeFragment getChild(int i) {
+		return children.get(i);
+	}
+
 	public void init(){
 		colorCounter = 0;
 		allNodesLeafs.clear();
@@ -78,8 +87,6 @@ public abstract class AbstractCodeFragment {
 		leafsReceived.clear();
 		possiblyRelatedFlag = false;
 		cohesivlyRelatedNodes.clear();
-
-		clearChildrenData();
 	}
 
 
@@ -255,65 +262,6 @@ public abstract class AbstractCodeFragment {
 			}
 		}
 	}
-
-	public void clearChildrenData(){
-		for (int i = 0; i < children.size(); i++){ 
-			children.get(i).clearChildrenData();
-		}
-
-		nodeAccessClassesMapping.clear();
-
-		nodeAccessForeignData    = 0;
-		nodeForeignDataProviders = 0;
-		nodeLocalAttrAccess      = 0;
-	}
-
-
-
-	public void computeDataAccesses(String analyzedClass, boolean staticFields, Integer minBlockSize, boolean libraryCheck){
-		for (int i = 0; i < children.size(); i++){ 
-			children.get(i).computeDataAccesses(analyzedClass, staticFields, minBlockSize, libraryCheck);
-		}
-
-	}
-
-
-	public boolean verifyFeatureEnvy(int ATFDTreshold, int FDPTreshold, boolean expand, List<IBlockLinker> matchers){
-		for (int i = 0; i < children.size(); i++){ 
-			if(children.get(i).verifyFeatureEnvy(ATFDTreshold, FDPTreshold, expand, matchers)){
-				containsEnvy = true;
-
-				if(children.size() > 1 && expand && type != null){
-					for(IBlockLinker matcher: matchers){
-						if(matcher.tryToLinkBlocks(this)) return true;
-					}
-				}
-			}
-		}
-		return containsEnvy;
-	}
-
-
-	public void colorEnvyLeafNodes(ITextEditor textEditor, IFile file) throws CoreException{
-		if(isEnviousNode){
-			String colorType = "annotationColor_17";
-			if (colorCounter < 17){
-				colorType = "annotationColor_" + colorCounter;
-				colorCounter++;
-			}			
-			int start = this.getStartNode();
-			int end = this.getEndNode();
-			Position fragmentPosition = new Position(start, (end - start));
-			IMarker mymarker = SelectionView.createMarker(file, fragmentPosition);
-			SelectionView.addAnnotation(mymarker, textEditor, colorType, fragmentPosition);
-		}else{
-			for (int i = 0; i < children.size(); i++){ 
-				children.get(i).colorEnvyLeafNodes(textEditor, file);
-			}
-		}
-
-	}
-	
 	
 	public List<AbstractCodeFragment> getAllEnviousNodes(){
 		List<AbstractCodeFragment> nodes = new ArrayList<AbstractCodeFragment>();
@@ -321,9 +269,9 @@ public abstract class AbstractCodeFragment {
 			if(node instanceof CodeFragmentLeaf && ((CodeFragmentLeaf)node).isEnvy()){
 				nodes.add(node);
 			}else{
-				if(node.isEnviousNode()){
+				if(node.isEnvy()) {
 					nodes.add(node);
-				}else{
+				} else {
 					nodes.addAll(node.getAllEnviousNodes());
 				}
 			}
@@ -439,76 +387,233 @@ public abstract class AbstractCodeFragment {
 		return startNode;
 	}
 
-
 	public void setStartNode(int startNode) {
 		this.startNode = startNode;
 	}
-
 
 	public int getEndNode() {
 		return endNode;
 	}
 
-
 	public void setEndNode(int endNode) {
 		this.endNode = endNode;
 	}
 
-
 	public List<AbstractCodeFragment> getPossiblyRelatedNodes() {
 		return cohesivlyRelatedNodes;
 	}
+	
+	// Feature envy
+	private boolean isEnvy;
+	private HashMap<String, Integer> accessClassesMapping = new HashMap<String, Integer>();;
+	private int accessForeignData    = 0;
+	private int localAttrAccess      = 0;
+	private int foreignDataProviders = 0;
+	private String targetClass;
 
-	public boolean isContainsEnvy() {
-		return containsEnvy;
+	public boolean verifyFeatureEnvy(int ATFDTreshold, int FDPTreshold, String analyzedClass, boolean staticFields, Integer minBlockSize, boolean libraryCheck, boolean force) {
+		if (force) 
+		{
+			computeDataAccesses(analyzedClass, staticFields, minBlockSize, libraryCheck);
+			for(Integer numberOfAcc: accessClassesMapping.values()){
+				accessForeignData += numberOfAcc;
+			}
+			int totalAccesses = accessForeignData + localAttrAccess;
+			foreignDataProviders = accessClassesMapping.size();
+	
+			System.out.println("for nodes : " + this.getAllSubTreeASTNodes());
+			System.out.println("accessForeignData : " + accessForeignData);
+			System.out.println("foreignDataProviders : " + foreignDataProviders);
+			System.out.println("localAttrAccess : " + localAttrAccess);
+			System.out.println("totalAccesses: " + totalAccesses);
+			System.out.println();
+	
+			if( accessForeignData > ATFDTreshold &&
+				(localAttrAccess > 0 ? (localAttrAccess * 1.0) / totalAccesses : 0) < (1.0 / 3) &&
+				foreignDataProviders <= FDPTreshold) {
+	
+				String enviousClass  = "";
+				int maxAccess = Integer.MIN_VALUE;
+				if(accessClassesMapping.entrySet().size() == 1){
+					for(Entry<String, Integer> accessedClassEntry: accessClassesMapping.entrySet()){
+						if(accessedClassEntry.getValue() > maxAccess){
+							maxAccess = accessedClassEntry.getValue();
+							enviousClass = accessedClassEntry.getKey();
+						}
+					}
+				}else{
+					int count = 0;
+					for(Entry<String, Integer> accessedClassEntry: accessClassesMapping.entrySet()){
+						if(count > 0) enviousClass += ";";
+						enviousClass += accessedClassEntry.getKey() + " - " + accessedClassEntry.getValue();
+						count++;
+					}
+				}
+	
+				targetClass = enviousClass;
+				isEnvy = true;
+			} else {
+				accessForeignData    = 0;
+				foreignDataProviders = 0;
+				localAttrAccess      = 0;
+			}
+			
+			return isEnvy;
+		
+		} else {
+			boolean containsEnvy = false;
+			for (int i = 0; i < children.size(); i++){ 
+				if(children.get(i).verifyFeatureEnvy(ATFDTreshold, FDPTreshold, analyzedClass, staticFields, minBlockSize, libraryCheck, force)) {
+					containsEnvy = true;
+				}
+			}
+			return containsEnvy;
+		}
+	}
+	
+	protected void computeDataAccesses(String analyzedClass, boolean staticFields, Integer minBlockSize, boolean libraryCheck) {
+
+		HashSet<IVariableBinding> variableBindingsCache = new  HashSet<IVariableBinding>();
+		HashSet<IMethodBinding> methodBindingCache = new HashSet<IMethodBinding>();
+
+		for(ASTNode node:this.getAllSubTreeASTNodes()){
+			MethodInvocationVisitor invocationVisitor = new MethodInvocationVisitor();
+			node.accept(invocationVisitor);
+			List<MethodInvocation> methodInvocations = invocationVisitor.getMethodInvocations();
+			for(MethodInvocation invocation: methodInvocations){
+				if(invocation.getName().getFullyQualifiedName().startsWith("get")){
+
+					IMethodBinding methodBinding = invocation.resolveMethodBinding();
+
+					IJavaElement element = methodBinding.getJavaElement();
+					IPackageFragmentRoot root = (IPackageFragmentRoot) element.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT);
+					IClasspathEntry classpathEntry;
+					try {
+						classpathEntry = root.getRawClasspathEntry();
+						if (classpathEntry.getEntryKind() == IClasspathEntry.CPE_SOURCE || !libraryCheck){
+							if(!methodBindingCache.contains(methodBinding)){
+								if(methodBinding.getParameterTypes().length == 0){
+									if(invocation.getExpression() != null){
+										incrementAccesses(analyzedClass,invocation.getExpression().resolveTypeBinding());
+									}
+								}
+								methodBindingCache.add(methodBinding);
+							}
+						}
+					} catch (JavaModelException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+
+			VariableBindingVisitor variableVisitor = new VariableBindingVisitor();
+			node.accept(variableVisitor);
+			Set<IVariableBinding> variables = variableVisitor.getVariableBindings();
+			for(IVariableBinding binding: variables){
+
+				IJavaElement element = binding.getJavaElement();
+				IPackageFragmentRoot root = (IPackageFragmentRoot) element.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT);
+				IClasspathEntry classpathEntry;
+				try {
+					classpathEntry = root.getRawClasspathEntry();
+
+					if (classpathEntry.getEntryKind() == IClasspathEntry.CPE_SOURCE || !libraryCheck){
+						if(!variableBindingsCache.contains(binding)){
+							ITypeBinding typeBinding = binding.getDeclaringClass();
+							if(typeBinding != null){
+								boolean staticCheck = true; 
+								if(!staticFields){
+									if(Modifier.isStatic(binding.getModifiers())) staticCheck = false;
+								}
+								if(staticCheck){
+									incrementAccesses(analyzedClass, typeBinding);
+								}
+							}
+							variableBindingsCache.add(binding);
+						}
+					}
+
+				} catch (JavaModelException e) {
+					e.printStackTrace();
+				}
+
+			}
+		}
 	}
 
-	public boolean isEnviousNode() {
-		return isEnviousNode;
+	private void incrementAccesses(String analyzedClass, ITypeBinding accessClassBinding){
+		if(checkLocalAccess(analyzedClass, accessClassBinding)){
+			localAttrAccess++;
+		}else{
+			if(accessClassesMapping.get(accessClassBinding.getName()) != null){
+				int nrAccesses = accessClassesMapping.get(accessClassBinding.getName());
+				accessClassesMapping.put(accessClassBinding.getName(), nrAccesses + 1);
+			}else{
+				accessClassesMapping.put(accessClassBinding.getName(), 1);
+			}
+		}
 	}
 
-	public void setEnviousNode(boolean isEnviousNode) {
-		this.isEnviousNode = isEnviousNode;
+	private boolean checkLocalAccess(String analyzedClass, ITypeBinding accessClassBinding){
+		if(accessClassBinding.getSuperclass() != null){
+			if(accessClassBinding.getName().equals(analyzedClass)) return true;
+			checkLocalAccess(analyzedClass, accessClassBinding.getSuperclass());
+		}
+		return false;
 	}
 
-	public int getNodeAccessForeignData() {
-		return nodeAccessForeignData;
+	public void clearChildrenData() {
+		for (int i = 0; i < children.size(); i++){ 
+			children.get(i).clearChildrenData();
+		}
+		accessClassesMapping.clear();
+		accessForeignData    = 0;
+		foreignDataProviders = 0;
+		localAttrAccess      = 0;
 	}
 
-	public void setNodeAccessForeignData(int nodeAccessForeignData) {
-		this.nodeAccessForeignData = nodeAccessForeignData;
+	public void colorEnvyLeafNodes(ITextEditor textEditor, IFile file) throws CoreException{
+		if(isEnvy){
+			String colorType = "annotationColor_17";
+			if (colorCounter < 17){
+				colorType = "annotationColor_" + colorCounter;
+				colorCounter++;
+			}			
+			int start = this.getStartNode();
+			int end = this.getEndNode();
+			Position fragmentPosition = new Position(start, (end - start));
+			IMarker mymarker = SelectionView.createMarker(file, fragmentPosition);
+			SelectionView.addAnnotation(mymarker, textEditor, colorType, fragmentPosition);
+		} else {
+			for (int i = 0; i < children.size(); i++){ 
+				children.get(i).colorEnvyLeafNodes(textEditor, file);
+			}
+		}
+
 	}
 
-	public int getNodeLocalAttrAccess() {
-		return nodeLocalAttrAccess;
+	public boolean isEnvy() {
+		return isEnvy;
 	}
 
-	public void setNodeLocalAttrAccess(int nodeLocalAttrAccess) {
-		this.nodeLocalAttrAccess = nodeLocalAttrAccess;
+	public int getAccessForeignData() {
+		return accessForeignData;
 	}
 
-	public int getNodeForeignDataProviders() {
-		return nodeForeignDataProviders;
+	public int getForeignDataProviders() {
+		return foreignDataProviders;
 	}
 
-	public void setNodeForeignDataProviders(int nodeForeignDataProviders) {
-		this.nodeForeignDataProviders = nodeForeignDataProviders;
+	public int getLocalAttrAccess() {
+		return localAttrAccess;
 	}
 
-	public String getNodeTargetClass() {
-		return nodeTargetClass;
+	public String getTargetClass() {
+		return targetClass;
 	}
 
-	public void setNodeTargetClass(String nodeTargetClass) {
-		this.nodeTargetClass = nodeTargetClass;
-	}
-
-	public void setType(FixedStructureTypes type) {
-		this.type = type;
-	}
-
-	public FixedStructureTypes getType() {
-		return type;
+	public HashMap<String, Integer> getAccessClassesMapping() {
+		return accessClassesMapping;
 	}
 
 }

@@ -10,12 +10,9 @@ import java.util.Set;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
-import org.eclipse.jdt.core.IType;
-import org.eclipse.jdt.core.ITypeHierarchy;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.IMethodBinding;
@@ -26,7 +23,6 @@ import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jface.text.Position;
 import org.eclipse.ui.texteditor.ITextEditor;
 
-import kar.method.defragmenter.linkers.IBlockLinker;
 import kar.method.defragmenter.views.SelectionView;
 import kar.method.defragmenter.visittors.MethodInvocationVisitor;
 import kar.method.defragmenter.visittors.VariableBindingVisitor;
@@ -35,18 +31,7 @@ public class CodeFragmentLeaf extends AbstractCodeFragment {
 
 	private ArrayList<ASTNode> myASTNodes = new ArrayList<ASTNode>();
 
-	private boolean isEnviousLeaf;
-
-	// Feature envy
-	private HashMap<String, Integer> accessClassesMapping = new HashMap<String, Integer>();;
-	private int accessForeignData    = 0;
-	private int localAttrAccess      = 0;
-	private int foreignDataProviders = 0;
-	private String targetClass;
-
-	public CodeFragmentLeaf() {
-	}
-
+	public CodeFragmentLeaf() {}
 
 	public void addStatement(ASTNode node){	
 		myASTNodes.add(node);
@@ -108,226 +93,6 @@ public class CodeFragmentLeaf extends AbstractCodeFragment {
 	}
 
 	@Override
-	public void computeDataAccesses(String analyzedClass, boolean staticFields, Integer minBlockSize, boolean libraryCheck) {
-
-		if(minBlockSize != null){
-			//System.out.println("Applying size filter");
-			if(myASTNodes.size() < minBlockSize) return;
-		}
-
-		HashSet<IVariableBinding> variableBindingsCache = new  HashSet<IVariableBinding>();
-		HashSet<IMethodBinding> methodBindingCache = new HashSet<IMethodBinding>();
-
-		for(ASTNode node:myASTNodes){
-			MethodInvocationVisitor invocationVisitor = new MethodInvocationVisitor();
-			node.accept(invocationVisitor);
-			List<MethodInvocation> methodInvocations = invocationVisitor.getMethodInvocations();
-			for(MethodInvocation invocation: methodInvocations){
-				if(invocation.getName().getFullyQualifiedName().startsWith("get")){
-
-					IMethodBinding methodBinding = invocation.resolveMethodBinding();
-
-					IJavaElement element = methodBinding.getJavaElement();
-					IPackageFragmentRoot root = (IPackageFragmentRoot) element.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT);
-					IClasspathEntry classpathEntry;
-					try {
-						classpathEntry = root.getRawClasspathEntry();
-						if (classpathEntry.getEntryKind() == IClasspathEntry.CPE_SOURCE || !libraryCheck){
-							if(!methodBindingCache.contains(methodBinding)){
-								if(methodBinding.getParameterTypes().length == 0){
-									if(invocation.getExpression() != null){
-										incrementAccesses(analyzedClass,invocation.getExpression().resolveTypeBinding());
-									}
-								}
-								methodBindingCache.add(methodBinding);
-							}
-						}
-					} catch (JavaModelException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-
-			VariableBindingVisitor variableVisitor = new VariableBindingVisitor();
-			node.accept(variableVisitor);
-			Set<IVariableBinding> variables = variableVisitor.getVariableBindings();
-			for(IVariableBinding binding: variables){
-
-				IJavaElement element = binding.getJavaElement();
-				IPackageFragmentRoot root = (IPackageFragmentRoot) element.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT);
-				IClasspathEntry classpathEntry;
-				try {
-					classpathEntry = root.getRawClasspathEntry();
-
-					if (classpathEntry.getEntryKind() == IClasspathEntry.CPE_SOURCE || !libraryCheck){
-						if(!variableBindingsCache.contains(binding)){
-							ITypeBinding typeBinding = binding.getDeclaringClass();
-							if(typeBinding != null){
-								boolean staticCheck = true; 
-								if(!staticFields){
-									if(Modifier.isStatic(binding.getModifiers())) staticCheck = false;
-								}
-								if(staticCheck){
-									incrementAccesses(analyzedClass, typeBinding);
-								}
-							}
-							variableBindingsCache.add(binding);
-						}
-					}
-
-				} catch (JavaModelException e) {
-					e.printStackTrace();
-				}
-
-			}
-		}
-	}
-
-
-	private void incrementAccesses(String analyzedClass, ITypeBinding accessClassBinding){
-		if(checkLocalAccess(analyzedClass, accessClassBinding)){
-			localAttrAccess++;
-		}else{
-			if(accessClassesMapping.get(accessClassBinding.getName()) != null){
-				int nrAccesses = accessClassesMapping.get(accessClassBinding.getName());
-				accessClassesMapping.put(accessClassBinding.getName(), nrAccesses + 1);
-			}else{
-				accessClassesMapping.put(accessClassBinding.getName(), 1);
-			}
-		}
-	}
-
-
-	private boolean checkLocalAccess(String analyzedClass, ITypeBinding accessClassBinding){
-		if(accessClassBinding.getSuperclass() != null){
-			//System.out.println("Checking: " + accessClassBinding.getName());
-			if(accessClassBinding.getName().equals(analyzedClass)) return true;
-			checkLocalAccess(analyzedClass, accessClassBinding.getSuperclass());
-		}
-		return false;
-	}
-
-	private boolean checkLocalHierarchyAccess(String analyzedClass, ITypeBinding accessClassBinding) {
-		IType accessType = (IType)accessClassBinding.getJavaElement();
-		try {
-			ITypeHierarchy typeHierarchy = accessType.newTypeHierarchy(new NullProgressMonitor());
-
-			long startTime = System.currentTimeMillis();
-			IType[] superTypes = typeHierarchy.getSupertypes(accessType);
-			long estimatedTime = System.currentTimeMillis() - startTime;
-			//System.out.println("Get supertypes(ms): " + estimatedTime);
-
-			startTime = System.currentTimeMillis();
-			for(IType classType: superTypes){
-				//System.out.println("Checking: " + classType.getElementName());
-				if(classType.getElementName().equals(analyzedClass)) return true;
-			}
-			estimatedTime = System.currentTimeMillis() - startTime;
-			//System.out.println("For supertypes(ms): " + estimatedTime);
-
-			startTime = System.currentTimeMillis();
-			IType[] subTypes = typeHierarchy.getSubtypes(accessType);
-			estimatedTime = System.currentTimeMillis() - startTime;
-			//System.out.println("Get subtypes(ms): " + estimatedTime);
-
-			startTime = System.currentTimeMillis();
-			for(IType classType: subTypes){
-				//System.out.println("Checking: " + classType.getElementName());
-				if(classType.getElementName().equals(analyzedClass)) return true;
-			}
-			estimatedTime = System.currentTimeMillis() - startTime;
-			//System.out.println("For subtypes(ms): " + estimatedTime);
-
-		} catch (JavaModelException e) {
-			e.printStackTrace();
-		} 
-		return false;
-	}
-
-
-	@Override
-	public boolean verifyFeatureEnvy(int ATFDTreshold, int FDPTreshold, boolean expand, List<IBlockLinker> matchers) {
-		for(Integer numberOfAcc: accessClassesMapping.values()){
-			accessForeignData += numberOfAcc;
-		}
-		int totalAccesses = accessForeignData + localAttrAccess;
-		foreignDataProviders = accessClassesMapping.size();
-
-
-		System.out.println("for nodes : " + myASTNodes);
-		System.out.println("accessForeignData : " + accessForeignData);
-		System.out.println("foreignDataProviders : " + foreignDataProviders);
-		System.out.println("localAttrAccess : " + localAttrAccess);
-		System.out.println("totalAccesses: " + totalAccesses);
-		System.out.println();
-
-		if( accessForeignData > ATFDTreshold &&
-				//(localAttrAccess / totalAccesses)  < (1.0 / 3) &&
-				(localAttrAccess > 0 ? (localAttrAccess * 1.0) / totalAccesses : 0) < (1.0 / 3) &&
-				foreignDataProviders <= FDPTreshold){
-
-			String enviousClass  = "";
-			int maxAccess = Integer.MIN_VALUE;
-			if(accessClassesMapping.entrySet().size() == 1){
-				for(Entry<String, Integer> accessedClassEntry: accessClassesMapping.entrySet()){
-					if(accessedClassEntry.getValue() > maxAccess){
-						maxAccess = accessedClassEntry.getValue();
-						enviousClass = accessedClassEntry.getKey();
-					}
-				}
-			}else{
-				int count = 0;
-				for(Entry<String, Integer> accessedClassEntry: accessClassesMapping.entrySet()){
-					if(count > 0) enviousClass += ";";
-					enviousClass += accessedClassEntry.getKey() + " - " + accessedClassEntry.getValue();
-					count++;
-				}
-			}
-
-			targetClass = enviousClass;
-			isEnviousLeaf = true;
-		}else{
-			accessForeignData    = 0;
-			foreignDataProviders = 0;
-			localAttrAccess      = 0;
-		}
-
-
-
-
-
-		return isEnviousLeaf;
-	}
-
-
-	@Override
-	public void clearChildrenData() {
-		accessClassesMapping.clear();
-
-		accessForeignData    = 0;
-		foreignDataProviders = 0;
-		localAttrAccess      = 0;
-	}
-
-	@Override
-	public void colorEnvyLeafNodes(ITextEditor textEditor, IFile file) throws CoreException {	
-		if(isEnviousLeaf){
-			String colorType = "annotationColor_17";
-
-			if (colorCounter < 17){
-				colorType = "annotationColor_" + colorCounter;
-				colorCounter++;
-			}
-
-			int start = this.getFragmentFirstLine();
-			int end = this.getFragmentLastLine();
-			Position fragmentPosition = new Position(start, (end - start));
-			IMarker mymarker = SelectionView.createMarker(file, fragmentPosition);
-			SelectionView.addAnnotation(mymarker, textEditor, colorType, fragmentPosition);
-		}
-	}
-
-	@Override
 	public void colorLongMethodFragments(ITextEditor textEditor, IFile file,
 			List<AbstractCodeFragment> functionalSegmentNodes) {
 
@@ -364,29 +129,36 @@ public class CodeFragmentLeaf extends AbstractCodeFragment {
 			}
 		}
 	}
+	
+	@Override
+	public boolean verifyFeatureEnvy(int ATFDTreshold, int FDPTreshold, String analyzedClass, boolean staticFields, Integer minBlockSize, boolean libraryCheck, boolean force) {
+		return super.verifyFeatureEnvy(ATFDTreshold, FDPTreshold, analyzedClass, staticFields, minBlockSize, libraryCheck, true);
+	}
+	
+	@Override
+	protected void computeDataAccesses(String analyzedClass, boolean staticFields, Integer minBlockSize, boolean libraryCheck) {
+		if(minBlockSize != null) {
+			if(myASTNodes.size() < minBlockSize) return;
+		}
+		super.computeDataAccesses(analyzedClass, staticFields, minBlockSize, libraryCheck);
+	}
+	
+	@Override
+	public void colorEnvyLeafNodes(ITextEditor textEditor, IFile file) throws CoreException {	
+		if(isEnvy()){
+			String colorType = "annotationColor_17";
 
+			if (colorCounter < 17){
+				colorType = "annotationColor_" + colorCounter;
+				colorCounter++;
+			}
 
-	public boolean isEnvy() {
-		return isEnviousLeaf;
+			int start = this.getFragmentFirstLine();
+			int end = this.getFragmentLastLine();
+			Position fragmentPosition = new Position(start, (end - start));
+			IMarker mymarker = SelectionView.createMarker(file, fragmentPosition);
+			SelectionView.addAnnotation(mymarker, textEditor, colorType, fragmentPosition);
+		}
 	}
 
-	public int getAccessForeignData() {
-		return accessForeignData;
-	}
-
-	public int getForeignDataProviders() {
-		return foreignDataProviders;
-	}
-
-	public int getLocalAttrAccess() {
-		return localAttrAccess;
-	}
-
-	public String getTargetClass() {
-		return targetClass;
-	}
-
-	public HashMap<String, Integer> getAccessClassesMapping() {
-		return accessClassesMapping;
-	}
 }
