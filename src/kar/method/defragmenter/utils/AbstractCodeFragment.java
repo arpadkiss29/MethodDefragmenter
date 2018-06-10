@@ -421,12 +421,12 @@ public abstract class AbstractCodeFragment {
 			int totalAccesses = accessForeignData + localAttrAccess;
 			foreignDataProviders = accessClassesMapping.size();
 	
-			System.out.println("for nodes : " + this.getAllSubTreeASTNodes());
-			System.out.println("accessForeignData : " + accessForeignData);
-			System.out.println("foreignDataProviders : " + foreignDataProviders);
-			System.out.println("localAttrAccess : " + localAttrAccess);
-			System.out.println("totalAccesses: " + totalAccesses);
-			System.out.println();
+//			System.out.println("for nodes : " + this.getAllSubTreeASTNodes());
+//			System.out.println("accessForeignData : " + accessForeignData);
+//			System.out.println("foreignDataProviders : " + foreignDataProviders);
+//			System.out.println("localAttrAccess : " + localAttrAccess);
+//			System.out.println("totalAccesses: " + totalAccesses);
+//			System.out.println();
 	
 			if( accessForeignData > ATFDTreshold &&
 				(localAttrAccess > 0 ? (localAttrAccess * 1.0) / totalAccesses : 0) < (1.0 / 3) &&
@@ -591,9 +591,21 @@ public abstract class AbstractCodeFragment {
 		}
 
 	}
+	
+	public void addChild(AbstractCodeFragment child){
+		children.add(child);
+	}
+	
+	public boolean removeChildren(List<AbstractCodeFragment> childElements){
+		return children.removeAll(childElements);
+	}
 
 	public boolean isEnvy() {
 		return isEnvy;
+	}
+	
+	public void setEnvy(boolean isEnvy) {
+		this.isEnvy = isEnvy;
 	}
 
 	public int getAccessForeignData() {

@@ -102,6 +102,7 @@ public class SelectionView extends ViewPart {
 			}
 		}
 	};
+	
 
 	public static IMarker createMarker(IResource res, Position position)
 			throws CoreException {
@@ -312,14 +313,26 @@ public class SelectionView extends ViewPart {
 						String analyzedClass = dcls.get(0).getName().getIdentifier();
 						boolean res = root.verifyFeatureEnvy(ATFD_TRESHOLD, FDP_TREHSOLD,  analyzedClass, considerStaticFieldAccesses,
 							minBlockSize, libraryCheck, false);
+						item.setMethodRoot(root);
 						if (expandedFeatureEnvyVerification)
 						{
-							root =  new GroupingAlgorithm1(ATFD_TRESHOLD, FDP_TREHSOLD,  analyzedClass, considerStaticFieldAccesses, minBlockSize, libraryCheck).tryToLinkBlocks(root);
+							// Just for safe keeping rerun envy check - Performance issues
+							AbstractFragmenter newVisitorBlock = new ChunkFragmenter(unit, considerBlankLines);
+							method.accept(newVisitorBlock);
+							AbstractCodeFragment newRoot = newVisitorBlock.lastNode.pop();
+							
+							analyzedClass = dcls.get(0).getName().getIdentifier();
+							newRoot.verifyFeatureEnvy(ATFD_TRESHOLD, FDP_TREHSOLD,  analyzedClass, considerStaticFieldAccesses,
+								minBlockSize, libraryCheck, false);
+							
+							AbstractCodeFragment linkedRoot =  new GroupingAlgorithm1(ATFD_TRESHOLD, FDP_TREHSOLD,  analyzedClass, considerStaticFieldAccesses, minBlockSize, libraryCheck).tryToLinkBlocks(newRoot);
+							linkedRoot.print(0);
+							item.setMethodRoot(linkedRoot);
 						}
 						item.setContainsEnviousBlocks(res);
 					}
 				}
-				item.setMethodRoot(root);
+				
 				item.setIMtehodReference((IMethod) method.resolveBinding().getJavaElement());
 				methodItems.add(item);
 			}
@@ -697,10 +710,12 @@ public class SelectionView extends ViewPart {
 		enviousNodeTableViewer = new EnviousNodeTableViewer(enviousNodeTableComp,SWT.MULTI | SWT.BORDER | SWT.FULL_SELECTION);
 		
 	
-		
+		if(listener != null){
+			getSite().getWorkbenchWindow().getSelectionService().addSelectionListener(listener);
+
+		}
 		getSite().setSelectionProvider(enviousNodeTableViewer);
 		getSite().setSelectionProvider(tableViewer);
-		getSite().getWorkbenchWindow().getSelectionService().addSelectionListener(listener);
 	}
 
 	public void setFocus() {

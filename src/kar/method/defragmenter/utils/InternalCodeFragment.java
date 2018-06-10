@@ -7,4 +7,8 @@ public class InternalCodeFragment extends AbstractCodeFragment{
 		children.add(child);
 	}
 
+	public void removeChild(AbstractCodeFragment child)
+	{
+		children.remove(child);
+	}
 }

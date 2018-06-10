@@ -19,7 +19,7 @@ public class VariableBindingVisitor extends ASTVisitor {
 	        if(!variableBindings.contains(variable)){	
 	        	variableBindings.add(variable);
 	        }else{
-	        	System.out.println("already contains");
+	        //	System.out.println("already contains");
 	        }
 	       
 	    }
