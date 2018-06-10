@@ -81,7 +81,7 @@ public class GroupingAlgorithm1 implements IBlockLinker {
 						System.out.println("Expanding from: " + nodeIndex);
 						
 						InternalCodeFragment icf = new InternalCodeFragment();
-					
+						icf.addChild(focused);
 						
 						List<AbstractCodeFragment> toDelete = new ArrayList<AbstractCodeFragment>();
 						
@@ -112,6 +112,7 @@ public class GroupingAlgorithm1 implements IBlockLinker {
 							}
 						}
 						toDelete.add(focused);
+						icf.removeChild(focused);
 						icf.addChild(focused);
 						if(!toDelete.isEmpty()){
 							node.removeChildren(toDelete);
