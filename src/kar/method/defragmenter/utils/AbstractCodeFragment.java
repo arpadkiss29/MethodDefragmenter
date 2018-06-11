@@ -165,7 +165,7 @@ public abstract class AbstractCodeFragment {
 	}
 
 	public void calculteFirstLastLine(){
-		if(children.size() > 1){
+		if(children.size() > 0){
 			startNode = calculateFirstLine();
 			endNode = calculateLastLine();
 		}
@@ -186,23 +186,32 @@ public abstract class AbstractCodeFragment {
 
 	private int calculateFirstLine(){
 		AbstractCodeFragment firstChild = children.get(0);
-		if(firstChild instanceof CodeFragmentLeaf){
+		if(firstChild instanceof CodeFragmentLeaf) {
 			return ((CodeFragmentLeaf)firstChild).getFragmentFirstLine();
-		}else {
-			return firstChild.calculateFirstLine();
+		} else {
+			int tmp = firstChild.calculateFirstLine();
+			if (internalASTNodes.size() > 0)
+			{
+				int tmp1 = internalASTNodes.get(0).getStartPosition();
+				if (tmp1 < tmp) tmp = tmp1;
+			}
+			return tmp; 
 		}
 	}
 	
 	private int calculateLastLine(){
-		if(children.size()-1 < 0){
-			System.out.println("Problem");
-			return 0;
-		}
 		AbstractCodeFragment lastChild = children.get(children.size()-1);
-		if(lastChild instanceof CodeFragmentLeaf){
+		if(lastChild instanceof CodeFragmentLeaf) {
 			return ((CodeFragmentLeaf)lastChild).getFragmentLastLine();
-		}else {
-			return lastChild.calculateLastLine();
+		} else {
+			int tmp = lastChild.calculateLastLine();
+			if (internalASTNodes.size() > 0)
+			{
+				int tmp1 = internalASTNodes.get(internalASTNodes.size() - 1).getStartPosition()
+					+ internalASTNodes.get(internalASTNodes.size() - 1).getLength();
+				if (tmp1 > tmp) tmp = tmp1;
+			}
+			return tmp;
 		}
 	}
 
@@ -418,6 +427,7 @@ public abstract class AbstractCodeFragment {
 	public boolean verifyFeatureEnvy(int ATFDTreshold, int FDPTreshold, String analyzedClass, boolean staticFields, Integer minBlockSize, boolean libraryCheck, boolean local) {
 		if (local) 
 		{
+			isEnvy = false;
 			accessClassesMapping.clear();
 			accessForeignData    = 0;
 			foreignDataProviders = 0;

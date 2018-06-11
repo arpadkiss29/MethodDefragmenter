@@ -93,7 +93,15 @@ public class GroupingAlgorithm2 implements IBlockLinker {
 			for (int i = 0; i < tmpEnv.size(); i++) {
 				allChildEnvious &= tmpEnv.get(i);
 			}
-			hasAllChildrenEnvious.push(allChildEnvious);
+			if (allChildEnvious) {
+				node.verifyFeatureEnvy(ATFDTreshold, FDPTreshold, analyzedClass, staticFields, minBlockSize, libraryCheck, true);
+				if (node.isEnvy()) {
+					node.calculteFirstLastLine();
+				}
+				hasAllChildrenEnvious.push(node.isEnvy());
+			} else {
+				hasAllChildrenEnvious.push(false);
+			}
 			return node;
 		}
 	}
