@@ -78,7 +78,11 @@ public abstract class AbstractCodeFragment {
 	public AbstractCodeFragment getChild(int i) {
 		return children.get(i);
 	}
-
+	
+	public List<AbstractCodeFragment> getChildren() {
+		return children;
+	}
+	
 	public void init(){
 		colorCounter = 0;
 		allNodesLeafs.clear();

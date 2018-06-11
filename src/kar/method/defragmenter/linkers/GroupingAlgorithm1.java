@@ -1,6 +1,7 @@
 package kar.method.defragmenter.linkers;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Stack;
 
@@ -104,6 +105,7 @@ public class GroupingAlgorithm1 implements IBlockLinker {
 						while(backward - 1 >= 0 && testEnvy){
 							backward--;
 							icf.addChild(node.getChild(backward));
+							Collections.reverse(icf.getChildren());
 							if(!icf.verifyFeatureEnvy(ATFDTreshold, FDPTreshold, analyzedClass, staticFields, minBlockSize, libraryCheck, true)){
 								testEnvy = false;
 								icf.removeChild(node.getChild(backward));
