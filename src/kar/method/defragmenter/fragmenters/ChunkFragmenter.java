@@ -101,6 +101,7 @@ public class ChunkFragmenter extends AbstractFragmenter{
 				if(currentFragment != null) {		
 					parent.addChild(currentFragment);
 					currentFragment = null;
+					previousLine = 0;
 				}
 				// Adding the node which was below and contains a block in it.
 				parent.addChild(res);
