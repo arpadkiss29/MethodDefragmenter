@@ -30,7 +30,7 @@ import kar.method.defragmenter.visittors.MethodInvocationVisitor;
 import kar.method.defragmenter.visittors.VariableBindingVisitor;
 
 public abstract class AbstractCodeFragment {
-	
+
 	public static double NCOCP2Treshold = 0.75;
 	//	public static final double NCOCP2TresholdIdentif = 0.5;
 	public static int colorCounter = 0;
@@ -49,7 +49,7 @@ public abstract class AbstractCodeFragment {
 	private List<ASTNode> internalASTNodes = new ArrayList<ASTNode>();
 
 	private FixedStructureTypes type;
-	
+
 	public void setType(FixedStructureTypes type) {
 		this.type = type;
 	}
@@ -78,11 +78,11 @@ public abstract class AbstractCodeFragment {
 	public AbstractCodeFragment getChild(int i) {
 		return children.get(i);
 	}
-	
+
 	public List<AbstractCodeFragment> getChildren() {
 		return children;
 	}
-	
+
 	public void init(){
 		colorCounter = 0;
 		allNodesLeafs.clear();
@@ -169,7 +169,7 @@ public abstract class AbstractCodeFragment {
 			startNode = calculateFirstLine();
 			endNode = calculateLastLine();
 		}
-		
+
 		if(((startNode == 0) || (endNode ==0))  && leafsReceived.size() > 1){
 			if (startNode == 0 && endNode == 0){
 				startNode = children.get(0).getStartNode();
@@ -198,17 +198,23 @@ public abstract class AbstractCodeFragment {
 			return tmp; 
 		}
 	}
-	
+
 	private int calculateLastLine(){
 		AbstractCodeFragment lastChild = children.get(children.size()-1);
 		if(lastChild instanceof CodeFragmentLeaf) {
-			return ((CodeFragmentLeaf)lastChild).getFragmentLastLine();
+			int val = ((CodeFragmentLeaf)lastChild).getFragmentLastLine();
+			if(val == 1){
+				lastChild = children.get(children.size()-2);
+				val = ((CodeFragmentLeaf)lastChild).getFragmentLastLine();
+			}
+			return val;
 		} else {
 			int tmp = lastChild.calculateLastLine();
+
 			if (internalASTNodes.size() > 0)
 			{
 				int tmp1 = internalASTNodes.get(internalASTNodes.size() - 1).getStartPosition()
-					+ internalASTNodes.get(internalASTNodes.size() - 1).getLength();
+						+ internalASTNodes.get(internalASTNodes.size() - 1).getLength();
 				if (tmp1 > tmp) tmp = tmp1;
 			}
 			return tmp;
@@ -275,7 +281,7 @@ public abstract class AbstractCodeFragment {
 			}
 		}
 	}
-	
+
 	public List<AbstractCodeFragment> getAllEnviousNodes(){
 		List<AbstractCodeFragment> nodes = new ArrayList<AbstractCodeFragment>();
 		for(AbstractCodeFragment node: children){
@@ -415,7 +421,7 @@ public abstract class AbstractCodeFragment {
 	public List<AbstractCodeFragment> getPossiblyRelatedNodes() {
 		return cohesivlyRelatedNodes;
 	}
-	
+
 	// Feature envy
 	private boolean isEnvy;
 	private HashMap<String, Integer> accessClassesMapping = new HashMap<String, Integer>();;
@@ -439,11 +445,11 @@ public abstract class AbstractCodeFragment {
 			}
 			int totalAccesses = accessForeignData + localAttrAccess;
 			foreignDataProviders = accessClassesMapping.size();
-		
+
 			if( accessForeignData > ATFDTreshold &&
-				(localAttrAccess > 0 ? (localAttrAccess * 1.0) / totalAccesses : 0) < (1.0 / 3) &&
-				foreignDataProviders <= FDPTreshold) {
-	
+					(localAttrAccess > 0 ? (localAttrAccess * 1.0) / totalAccesses : 0) < (1.0 / 3) &&
+					foreignDataProviders <= FDPTreshold) {
+
 				String enviousClass  = "";
 				int maxAccess = Integer.MIN_VALUE;
 				if(accessClassesMapping.entrySet().size() == 1){
@@ -461,13 +467,13 @@ public abstract class AbstractCodeFragment {
 						count++;
 					}
 				}
-	
+
 				targetClass = enviousClass;
 				isEnvy = true;
 			} 
-			
+
 			return isEnvy;
-		
+
 		} else {
 			boolean containsEnvy = false;
 			for (int i = 0; i < children.size(); i++){ 
@@ -478,7 +484,7 @@ public abstract class AbstractCodeFragment {
 			return containsEnvy;
 		}
 	}
-	
+
 	protected void computeDataAccesses(String analyzedClass, boolean staticFields, Integer minBlockSize, boolean libraryCheck) {
 
 		HashSet<IVariableBinding> variableBindingsCache = new  HashSet<IVariableBinding>();
@@ -589,9 +595,13 @@ public abstract class AbstractCodeFragment {
 			}			
 			int start = this.getStartNode();
 			int end = this.getEndNode();
-			Position fragmentPosition = new Position(start, (end - start));
-			IMarker mymarker = SelectionView.createMarker(file, fragmentPosition);
-			SelectionView.addAnnotation(mymarker, textEditor, colorType, fragmentPosition);
+			try{
+				Position fragmentPosition = new Position(start, (end - start));
+				IMarker mymarker = SelectionView.createMarker(file, fragmentPosition);
+				SelectionView.addAnnotation(mymarker, textEditor, colorType, fragmentPosition);
+			}catch(Exception e){
+				e.printStackTrace();
+			}
 		} else {
 			for (int i = 0; i < children.size(); i++){ 
 				children.get(i).colorEnvyLeafNodes(textEditor, file);
@@ -599,15 +609,15 @@ public abstract class AbstractCodeFragment {
 		}
 
 	}
-	
+
 	public void addChild(AbstractCodeFragment child){
 		children.add(child);
 	}
-	
+
 	public boolean isEnvy() {
 		return isEnvy;
 	}
-	
+
 	public void setEnvy(boolean isEnvy) {
 		this.isEnvy = isEnvy;
 	}
