@@ -202,15 +202,9 @@ public abstract class AbstractCodeFragment {
 	private int calculateLastLine(){
 		AbstractCodeFragment lastChild = children.get(children.size()-1);
 		if(lastChild instanceof CodeFragmentLeaf) {
-			int val = ((CodeFragmentLeaf)lastChild).getFragmentLastLine();
-			if(val == 1){
-				lastChild = children.get(children.size()-2);
-				val = ((CodeFragmentLeaf)lastChild).getFragmentLastLine();
-			}
-			return val;
+			return ((CodeFragmentLeaf)lastChild).getFragmentLastLine();
 		} else {
 			int tmp = lastChild.calculateLastLine();
-
 			if (internalASTNodes.size() > 0)
 			{
 				int tmp1 = internalASTNodes.get(internalASTNodes.size() - 1).getStartPosition()
