@@ -262,84 +262,50 @@ public class SelectionView extends ViewPart {
 	}
 
 	private List<MethodBasicItem> applyDefragmenterForCompUnit(CompilationUnit unit){
+		
 		MethodVisitor visitorMethod = new MethodVisitor();
-		
-		AbstractFragmenter visitorBlock = new GrainFragmenter();
-		if(selectedParsingMethod.equals(METHOD_CHUNK_FRAGMENTER)){
-			visitorBlock = new ChunkFragmenter(unit, considerBlankLines);
-		}
-		
 		List<MethodBasicItem> methodItems = new ArrayList<MethodBasicItem>();
 		unit.accept(visitorMethod);
 		
-
 		for (MethodDeclaration method : visitorMethod.getMethods()) {
-			//System.out.println("Method name: " + method.getName() + " Return type: " + method.getReturnType2());
+
 			MethodBasicItem item = new MethodBasicItem();
-			/*
-			 * Visit all blocks of code in each method
-			 */
-			method.accept(visitorBlock);
 
-			if(!visitorBlock.lastNode.empty()){
-				AbstractCodeFragment root = visitorBlock.lastNode.pop();
+			AbstractFragmenter newVisitorBlock = new ChunkFragmenter(unit, considerBlankLines);
+			method.accept(newVisitorBlock);
+			AbstractCodeFragment newRoot = newVisitorBlock.lastNode.pop();
 
-				//System.out.println(root);
-				//root.print(0);
-
-				List<AbstractTypeDeclaration> dcls = unit.types();
-				item.setClassName(dcls.get(0).getName().getIdentifier());
-				item.setName(method.getName().toString());	
-				item.setLines(unit.getLineNumber(method.getStartPosition()) + " - " + unit.getLineNumber(method.getStartPosition() + method.getLength()));
-				int methodLines = unit.getLineNumber(method.getStartPosition() + method.getLength()) - unit.getLineNumber(method.getStartPosition());
-				item.setLength(methodLines);
-				item.setNumberOfParams(method.parameters().size());
-				if(method.getReturnType2() == null){
-					item.setReturnType("");
-				}else{
-					item.setReturnType(method.getReturnType2().toString());
-				}
-
-				if(applyLongMethodIdentification){
-					root.init();
-					
-					root.getCohesionMetric(unit);
-					List<AbstractCodeFragment> identifiedNodes = root.identifyFunctionalSegments();
-					root.combineNodes(identifiedNodes);
-					item.setRootNCOCP2("" + root.getNodeNCOCP2());
-				}else{
-					item.setRootNCOCP2("-");
-					if(root != null){
-						root.init();
-						String analyzedClass = dcls.get(0).getName().getIdentifier();
-						boolean res = root.verifyFeatureEnvy(ATFD_TRESHOLD, FDP_TREHSOLD,  analyzedClass, considerStaticFieldAccesses,
-							minBlockSize, libraryCheck, false);
-						item.setMethodRoot(root);
-						if (expandedFeatureEnvyVerification)
-						{
-							// Just for safe keeping rerun envy check - Performance issues
-							AbstractFragmenter newVisitorBlock = new ChunkFragmenter(unit, considerBlankLines);
-							method.accept(newVisitorBlock);
-							AbstractCodeFragment newRoot = newVisitorBlock.lastNode.pop();
-							
-							analyzedClass = dcls.get(0).getName().getIdentifier();
-							newRoot.verifyFeatureEnvy(ATFD_TRESHOLD, FDP_TREHSOLD,  analyzedClass, considerStaticFieldAccesses,
-								minBlockSize, libraryCheck, false);
-							
-							AbstractCodeFragment linkedRoot =  new GroupingAlgorithm2(ATFD_TRESHOLD, FDP_TREHSOLD,  analyzedClass, considerStaticFieldAccesses, minBlockSize, libraryCheck).tryToLinkBlocks(newRoot);
-							// linkedRoot.print(0);
-							item.setMethodRoot(linkedRoot);
-						}
-						item.setContainsEnviousBlocks(res);
-					}
-				}
-				
-				item.setIMtehodReference((IMethod) method.resolveBinding().getJavaElement());
-				methodItems.add(item);
+			List<AbstractTypeDeclaration> dcls = unit.types();
+			item.setClassName(dcls.get(0).getName().getIdentifier());
+			item.setName(method.getName().toString());	
+			item.setLines(unit.getLineNumber(method.getStartPosition()) + " - " + unit.getLineNumber(method.getStartPosition() + method.getLength()));
+			int methodLines = unit.getLineNumber(method.getStartPosition() + method.getLength()) - unit.getLineNumber(method.getStartPosition());
+			item.setLength(methodLines);
+			item.setNumberOfParams(method.parameters().size());
+			if(method.getReturnType2() == null){
+				item.setReturnType("");
+			}else{
+				item.setReturnType(method.getReturnType2().toString());
 			}
 
+			if (!expandedFeatureEnvyVerification) {
+				String analyzedClass = dcls.get(0).getName().getIdentifier();
+				boolean res = newRoot.verifyFeatureEnvy(ATFD_TRESHOLD, FDP_TREHSOLD,  analyzedClass, 
+						considerStaticFieldAccesses, minBlockSize, libraryCheck, false);
+				item.setMethodRoot(newRoot);
+				item.setContainsEnviousBlocks(res);
+			} else {
+				String analyzedClass = dcls.get(0).getName().getIdentifier();
+				boolean res = newRoot.verifyFeatureEnvy(ATFD_TRESHOLD, FDP_TREHSOLD,  analyzedClass, considerStaticFieldAccesses,
+						minBlockSize, libraryCheck, false);			
+				AbstractCodeFragment linkedRoot =  new GroupingAlgorithm2(ATFD_TRESHOLD, FDP_TREHSOLD,  analyzedClass, 
+						considerStaticFieldAccesses, minBlockSize, libraryCheck).tryToLinkBlocks(newRoot);
+				item.setMethodRoot(linkedRoot);
+				item.setContainsEnviousBlocks(res);
+			}
+			item.setIMtehodReference((IMethod) method.resolveBinding().getJavaElement());
+			methodItems.add(item);
 		}
-
 		return methodItems;
 	}
 
