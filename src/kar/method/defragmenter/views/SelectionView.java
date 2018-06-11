@@ -326,7 +326,7 @@ public class SelectionView extends ViewPart {
 								minBlockSize, libraryCheck, false);
 							
 							AbstractCodeFragment linkedRoot =  new GroupingAlgorithm1(ATFD_TRESHOLD, FDP_TREHSOLD,  analyzedClass, considerStaticFieldAccesses, minBlockSize, libraryCheck).tryToLinkBlocks(newRoot);
-							linkedRoot.print(0);
+							// linkedRoot.print(0);
 							item.setMethodRoot(linkedRoot);
 						}
 						item.setContainsEnviousBlocks(res);
