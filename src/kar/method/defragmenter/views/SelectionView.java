@@ -61,6 +61,7 @@ import kar.method.defragmenter.fragmenters.AbstractFragmenter;
 import kar.method.defragmenter.fragmenters.ChunkFragmenter;
 import kar.method.defragmenter.fragmenters.GrainFragmenter;
 import kar.method.defragmenter.linkers.GroupingAlgorithm1;
+import kar.method.defragmenter.linkers.GroupingAlgorithm2;
 import kar.method.defragmenter.utils.CodeFragmentLeaf;
 import kar.method.defragmenter.utils.AbstractCodeFragment;
 import kar.method.defragmenter.visittors.MethodVisitor;
@@ -325,7 +326,7 @@ public class SelectionView extends ViewPart {
 							newRoot.verifyFeatureEnvy(ATFD_TRESHOLD, FDP_TREHSOLD,  analyzedClass, considerStaticFieldAccesses,
 								minBlockSize, libraryCheck, false);
 							
-							AbstractCodeFragment linkedRoot =  new GroupingAlgorithm1(ATFD_TRESHOLD, FDP_TREHSOLD,  analyzedClass, considerStaticFieldAccesses, minBlockSize, libraryCheck).tryToLinkBlocks(newRoot);
+							AbstractCodeFragment linkedRoot =  new GroupingAlgorithm2(ATFD_TRESHOLD, FDP_TREHSOLD,  analyzedClass, considerStaticFieldAccesses, minBlockSize, libraryCheck).tryToLinkBlocks(newRoot);
 							// linkedRoot.print(0);
 							item.setMethodRoot(linkedRoot);
 						}

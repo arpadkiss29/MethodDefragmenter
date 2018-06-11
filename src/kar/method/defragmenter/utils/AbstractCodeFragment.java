@@ -418,20 +418,18 @@ public abstract class AbstractCodeFragment {
 	public boolean verifyFeatureEnvy(int ATFDTreshold, int FDPTreshold, String analyzedClass, boolean staticFields, Integer minBlockSize, boolean libraryCheck, boolean local) {
 		if (local) 
 		{
+			accessClassesMapping.clear();
+			accessForeignData    = 0;
+			foreignDataProviders = 0;
+			localAttrAccess      = 0;
+
 			computeDataAccesses(analyzedClass, staticFields, minBlockSize, libraryCheck);
 			for(Integer numberOfAcc: accessClassesMapping.values()){
 				accessForeignData += numberOfAcc;
 			}
 			int totalAccesses = accessForeignData + localAttrAccess;
 			foreignDataProviders = accessClassesMapping.size();
-	
-//			System.out.println("for nodes : " + this.getAllSubTreeASTNodes());
-//			System.out.println("accessForeignData : " + accessForeignData);
-//			System.out.println("foreignDataProviders : " + foreignDataProviders);
-//			System.out.println("localAttrAccess : " + localAttrAccess);
-//			System.out.println("totalAccesses: " + totalAccesses);
-//			System.out.println();
-	
+		
 			if( accessForeignData > ATFDTreshold &&
 				(localAttrAccess > 0 ? (localAttrAccess * 1.0) / totalAccesses : 0) < (1.0 / 3) &&
 				foreignDataProviders <= FDPTreshold) {
@@ -600,10 +598,6 @@ public abstract class AbstractCodeFragment {
 		children.add(child);
 	}
 	
-	public boolean removeChildren(List<AbstractCodeFragment> childElements){
-		return children.removeAll(childElements);
-	}
-
 	public boolean isEnvy() {
 		return isEnvy;
 	}

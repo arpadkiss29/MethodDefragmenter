@@ -117,7 +117,7 @@ public class GroupingAlgorithm1 implements IBlockLinker {
 						icf.removeChild(focused);
 						icf.addChild(focused);
 						if(!toDelete.isEmpty()){
-							node.removeChildren(toDelete);
+							((InternalCodeFragment)node).removeChildren(toDelete);
 							toDelete.clear();
 							icf.setEnvy(true);
 							icf.calculteFirstLastLine();
