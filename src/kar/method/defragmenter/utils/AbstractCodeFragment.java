@@ -464,11 +464,7 @@ public abstract class AbstractCodeFragment {
 	
 				targetClass = enviousClass;
 				isEnvy = true;
-			} else {
-				accessForeignData    = 0;
-				foreignDataProviders = 0;
-				localAttrAccess      = 0;
-			}
+			} 
 			
 			return isEnvy;
 		

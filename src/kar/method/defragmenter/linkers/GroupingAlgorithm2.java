@@ -1,6 +1,7 @@
 package kar.method.defragmenter.linkers;
 
 import java.util.ArrayList;
+import java.util.Set;
 import java.util.Stack;
 
 import kar.method.defragmenter.utils.AbstractCodeFragment;
@@ -37,15 +38,18 @@ public class GroupingAlgorithm2 implements IBlockLinker {
 		} else {
 			
 			ArrayList<Boolean> tmpEnv = new ArrayList<Boolean>();	
+			ArrayList<Set<String>> tmpEnviedClasses = new ArrayList<Set<String>>();	
 			for (int i = 0; i < node.getChildrenSize(); i++) {				
 				tryToLinkBlocks(node.getChild(i));
 				tmpEnv.add(hasAllChildrenEnvious.pop());
+				tmpEnviedClasses.add(node.getChild(i).getAccessClassesMapping().keySet());
 			}
 
 			for (int i = 0; i < node.getChildrenSize(); i++) {				
 				AbstractCodeFragment aChild = node.getChild(i);
 				if (tmpEnv.get(i))
 				{
+					Set<String> enviedClasses = aChild.getAccessClassesMapping().keySet();
 					InternalCodeFragment icf = new InternalCodeFragment();
 					icf.addChild(aChild);
 
@@ -56,7 +60,8 @@ public class GroupingAlgorithm2 implements IBlockLinker {
 					while(testEnvy && backward - 1 >= 0) {
 						backward--;
 						icf.addChild(0, node.getChild(backward));
-						if(!icf.verifyFeatureEnvy(ATFDTreshold, FDPTreshold, analyzedClass, staticFields, minBlockSize, libraryCheck, true)){
+						if(!icf.verifyFeatureEnvy(ATFDTreshold, FDPTreshold, analyzedClass, staticFields, minBlockSize, libraryCheck, true)
+							|| !enviedClasses.containsAll(icf.getAccessClassesMapping().keySet())) {
 							backward++;
 							testEnvy = false;
 							icf.removeChild(node.getChild(backward));
@@ -67,7 +72,8 @@ public class GroupingAlgorithm2 implements IBlockLinker {
 					while(testEnvy && forward + 1 < node.getChildrenSize()) {
 						forward++;
 						icf.addChild(node.getChild(forward));
-						if(!icf.verifyFeatureEnvy(ATFDTreshold, FDPTreshold, analyzedClass, staticFields, minBlockSize, libraryCheck, true)){
+						if(!icf.verifyFeatureEnvy(ATFDTreshold, FDPTreshold, analyzedClass, staticFields, minBlockSize, libraryCheck, true)
+							|| !enviedClasses.containsAll(icf.getAccessClassesMapping().keySet())){
 							forward--;
 							testEnvy = false;
 							icf.removeChild(node.getChild(forward));
@@ -79,24 +85,34 @@ public class GroupingAlgorithm2 implements IBlockLinker {
 						{
 							int ind = ((InternalCodeFragment)node).removeChild(icf.getChildren().get(j));
 							tmpEnv.remove(ind);
+							tmpEnviedClasses.remove(ind);
 						}	
 						icf.setEnvy(true);
 						icf.calculteFirstLastLine();
 						node.addChild(icf);
 						tmpEnv.add(true);
+						tmpEnviedClasses.add(icf.getAccessClassesMapping().keySet());
 						i = backward;
 					}
 				}
 			}	
 				
 			boolean allChildEnvious = true;
+			Set<String> enviousFixed = null;
 			for (int i = 0; i < tmpEnv.size(); i++) {
 				allChildEnvious &= tmpEnv.get(i);
+				if (tmpEnv.get(i)) {
+					if (enviousFixed == null) {
+						enviousFixed = tmpEnviedClasses.get(i);
+					}
+				}
 			}
 			if (allChildEnvious) {
 				node.verifyFeatureEnvy(ATFDTreshold, FDPTreshold, analyzedClass, staticFields, minBlockSize, libraryCheck, true);
-				if (node.isEnvy()) {
+				if (node.isEnvy() && enviousFixed.containsAll(node.getAccessClassesMapping().keySet())) {
 					node.calculteFirstLastLine();
+				} else {
+					node.setEnvy(false);
 				}
 				hasAllChildrenEnvious.push(node.isEnvy());
 			} else {
