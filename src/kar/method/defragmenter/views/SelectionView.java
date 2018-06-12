@@ -274,6 +274,8 @@ public class SelectionView extends ViewPart {
 		
 		for (MethodDeclaration method : visitorMethod.getMethods()) {
 
+			if (method.getBody() == null) continue;
+			
 			MethodBasicItem item = new MethodBasicItem();
 
 			AbstractFragmenter newVisitorBlock = new ChunkFragmenter(unit, considerBlankLines);
