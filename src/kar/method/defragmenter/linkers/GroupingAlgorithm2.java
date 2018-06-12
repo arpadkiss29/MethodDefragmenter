@@ -62,9 +62,9 @@ public class GroupingAlgorithm2 implements IBlockLinker {
 						icf.addChild(0, node.getChild(backward));
 						if(!icf.verifyFeatureEnvy(ATFDTreshold, FDPTreshold, analyzedClass, staticFields, minBlockSize, libraryCheck, true)
 							|| !enviedClasses.containsAll(icf.getAccessClassesMapping().keySet())) {
+							icf.removeChild(node.getChild(backward));
 							backward++;
 							testEnvy = false;
-							icf.removeChild(node.getChild(backward));
 						}
 					}
 
@@ -74,25 +74,25 @@ public class GroupingAlgorithm2 implements IBlockLinker {
 						icf.addChild(node.getChild(forward));
 						if(!icf.verifyFeatureEnvy(ATFDTreshold, FDPTreshold, analyzedClass, staticFields, minBlockSize, libraryCheck, true)
 							|| !enviedClasses.containsAll(icf.getAccessClassesMapping().keySet())){
+							icf.removeChild(node.getChild(forward));
 							forward--;
 							testEnvy = false;
-							icf.removeChild(node.getChild(forward));
 						}
 					}
 
 					if (icf.getChildren().size() > 1) {
-						for(int j = 0; j < icf.getChildren().size(); j++)
+						for(int j = icf.getChildren().size() - 1; j >= 0; j--)
 						{
 							int ind = ((InternalCodeFragment)node).removeChild(icf.getChildren().get(j));
 							tmpEnv.remove(ind);
 							tmpEnviedClasses.remove(ind);
-						}	
-						icf.setEnvy(true);
+						}
+						icf.verifyFeatureEnvy(ATFDTreshold, FDPTreshold, analyzedClass, staticFields, minBlockSize, libraryCheck, true);
 						icf.calculteFirstLastLine();
-						node.addChild(icf);
-						tmpEnv.add(true);
-						tmpEnviedClasses.add(icf.getAccessClassesMapping().keySet());
 						i = backward;
+						((InternalCodeFragment)node).addChild(i,icf);
+						tmpEnv.add(i,true);
+						tmpEnviedClasses.add(i,icf.getAccessClassesMapping().keySet());
 					}
 				}
 			}	

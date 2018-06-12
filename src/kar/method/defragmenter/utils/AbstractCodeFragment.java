@@ -432,6 +432,7 @@ public abstract class AbstractCodeFragment {
 			accessForeignData    = 0;
 			foreignDataProviders = 0;
 			localAttrAccess      = 0;
+			targetClass = "";
 
 			computeDataAccesses(analyzedClass, staticFields, minBlockSize, libraryCheck);
 			for(Integer numberOfAcc: accessClassesMapping.values()){
@@ -563,8 +564,8 @@ public abstract class AbstractCodeFragment {
 	}
 
 	private boolean checkLocalAccess(String analyzedClass, ITypeBinding accessClassBinding){
+		if(accessClassBinding.getName().equals(analyzedClass)) return true;
 		if(accessClassBinding.getSuperclass() != null){
-			if(accessClassBinding.getName().equals(analyzedClass)) return true;
 			checkLocalAccess(analyzedClass, accessClassBinding.getSuperclass());
 		}
 		return false;
