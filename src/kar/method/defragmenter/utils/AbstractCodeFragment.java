@@ -432,6 +432,7 @@ public abstract class AbstractCodeFragment {
 			accessForeignData    = 0;
 			foreignDataProviders = 0;
 			localAttrAccess      = 0;
+			targetClass = "";
 
 			computeDataAccesses(analyzedClass, staticFields, minBlockSize, libraryCheck);
 			for(Integer numberOfAcc: accessClassesMapping.values()){
