@@ -348,15 +348,11 @@ public abstract class AbstractCodeFragment {
 	}
 
 	public void print(int tabs) {
+		for(int j = 0; j < tabs; j++) System.out.print("\t");
+		System.out.println(this.toString().replaceAll("\n", ""));
 		for(int i = 0; i < children.size(); i++){
-			for(int j = 0; j < tabs+1; j++) System.out.print("\t");
-			String child = children.get(i).toString();
-			child = child.replace("\n", " ");
-			System.out.print(child);
-			System.out.println();
 			children.get(i).print(tabs+1);
 		}
-		System.out.println();
 	}
 
 	public AbstractCodeFragment getAllTreeData(){
@@ -650,6 +646,10 @@ public abstract class AbstractCodeFragment {
 
 	public HashMap<String, Integer> getAccessClassesMapping() {
 		return accessClassesMapping;
+	}
+	
+	public String toString() {
+		return internalASTNodes.toString();
 	}
 
 }

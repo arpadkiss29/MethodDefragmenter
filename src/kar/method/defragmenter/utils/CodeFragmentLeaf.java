@@ -28,14 +28,6 @@ public class CodeFragmentLeaf extends AbstractCodeFragment {
 		myASTNodes.remove(node);
 	}
 
-	public void print(int tabs) {
-		for(int i = 0; i < tabs+1; i++) System.out.print("\t");
-		String statement = myASTNodes.toString();
-		statement = statement.replace("\n", "");
-		System.out.print(statement);
-		System.out.println();
-	}
-
 	public HashSet<IVariableBinding> getMyVariables(){
 		HashSet<IVariableBinding> vars = new HashSet<IVariableBinding>();
 		VariableBindingVisitor visitorVariableName = new VariableBindingVisitor();
@@ -145,7 +137,11 @@ public class CodeFragmentLeaf extends AbstractCodeFragment {
 			Position fragmentPosition = new Position(start, (end - start));
 			IMarker mymarker = SelectionView.createMarker(file, fragmentPosition);
 			SelectionView.addAnnotation(mymarker, textEditor, colorType, fragmentPosition);
-		}
+		}		
+	}
+
+	public String toString() {
+		return super.toString() + myASTNodes.toString();
 	}
 
 }
