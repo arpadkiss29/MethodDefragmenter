@@ -490,7 +490,9 @@ public abstract class AbstractCodeFragment {
 			node.accept(invocationVisitor);
 			List<MethodInvocation> methodInvocations = invocationVisitor.getMethodInvocations();
 			for(MethodInvocation invocation: methodInvocations){
-				if(invocation.getName().getFullyQualifiedName().startsWith("get")){
+				boolean isGetter = invocation.getName().getFullyQualifiedName().startsWith("get");
+				boolean isSetter = invocation.getName().getFullyQualifiedName().startsWith("set");
+				if(isGetter || isSetter){
 
 					IMethodBinding methodBinding = invocation.resolveMethodBinding();
 
@@ -500,10 +502,23 @@ public abstract class AbstractCodeFragment {
 					try {
 						classpathEntry = root.getRawClasspathEntry();
 						if (classpathEntry.getEntryKind() == IClasspathEntry.CPE_SOURCE || !libraryCheck){
-							if(!methodBindingCache.contains(methodBinding)){
-								if(methodBinding.getParameterTypes().length == 0){
-									if(invocation.getExpression() != null){
-										incrementAccesses(analyzedClass,invocation.getExpression().resolveTypeBinding());
+							if(!methodBindingCache.contains(methodBinding)) {
+								boolean already = false;
+								for (IMethodBinding mb : methodBindingCache) {
+									if (mb.getDeclaringClass().equals(methodBinding.getDeclaringClass())) {
+										if (mb.getName().substring(3).equals(methodBinding.getName().substring(3)))
+										{
+											already = true;
+										}
+									}
+								}
+								if (!already)
+								{
+									if(isGetter && methodBinding.getParameterTypes().length == 0){
+										incrementAccesses(analyzedClass,methodBinding.getDeclaringClass());
+									}
+									if(isSetter && methodBinding.getParameterTypes().length == 1){
+										incrementAccesses(analyzedClass,methodBinding.getDeclaringClass());
 									}
 								}
 								methodBindingCache.add(methodBinding);
