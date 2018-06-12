@@ -564,8 +564,8 @@ public abstract class AbstractCodeFragment {
 	}
 
 	private boolean checkLocalAccess(String analyzedClass, ITypeBinding accessClassBinding){
+		if(accessClassBinding.getName().equals(analyzedClass)) return true;
 		if(accessClassBinding.getSuperclass() != null){
-			if(accessClassBinding.getName().equals(analyzedClass)) return true;
 			checkLocalAccess(analyzedClass, accessClassBinding.getSuperclass());
 		}
 		return false;
