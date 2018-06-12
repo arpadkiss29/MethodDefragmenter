@@ -31,6 +31,7 @@ import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.ITreeSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
@@ -59,11 +60,9 @@ import org.eclipse.ui.texteditor.SimpleMarkerAnnotation;
 
 import kar.method.defragmenter.fragmenters.AbstractFragmenter;
 import kar.method.defragmenter.fragmenters.ChunkFragmenter;
-import kar.method.defragmenter.fragmenters.GrainFragmenter;
-import kar.method.defragmenter.linkers.GroupingAlgorithm1;
 import kar.method.defragmenter.linkers.GroupingAlgorithm2;
-import kar.method.defragmenter.utils.CodeFragmentLeaf;
 import kar.method.defragmenter.utils.AbstractCodeFragment;
+import kar.method.defragmenter.utils.CodeFragmentLeaf;
 import kar.method.defragmenter.visittors.MethodVisitor;
 
 public class SelectionView extends ViewPart {
@@ -91,17 +90,23 @@ public class SelectionView extends ViewPart {
 	
 	private boolean wholeProjectAnalyzed = false;
 	
+	private ISelection selectedItem;
 
 	private ISelectionListener listener = new ISelectionListener() {
+		
 		public void selectionChanged(IWorkbenchPart sourcepart, ISelection selection) {
-			if (sourcepart != SelectionView.this) {
+			if (sourcepart != SelectionView.this && selection instanceof ITreeSelection
+					&& (selectedItem == null || !selection.equals(selectedItem))) {
 				try {
+					selectedItem = selection;
 					showSelection(sourcepart, selection);
 				} catch (JavaModelException e) {
 					e.printStackTrace();
 				}
 			}
 		}
+		
+		
 	};
 	
 
@@ -679,7 +684,6 @@ public class SelectionView extends ViewPart {
 	
 		if(listener != null){
 			getSite().getWorkbenchWindow().getSelectionService().addSelectionListener(listener);
-
 		}
 		getSite().setSelectionProvider(enviousNodeTableViewer);
 		getSite().setSelectionProvider(tableViewer);
