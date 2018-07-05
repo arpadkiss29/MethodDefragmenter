@@ -17,9 +17,11 @@ import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jface.text.Position;
@@ -193,6 +195,9 @@ public abstract class AbstractCodeFragment {
 			if (internalASTNodes.size() > 0)
 			{
 				int tmp1 = internalASTNodes.get(0).getStartPosition();
+				if(internalASTNodes.get(0) instanceof Expression){
+					tmp1 -= 4;
+				}
 				if (tmp1 < tmp) tmp = tmp1;
 			}
 			return tmp; 
@@ -209,7 +214,12 @@ public abstract class AbstractCodeFragment {
 			{
 				int tmp1 = internalASTNodes.get(internalASTNodes.size() - 1).getStartPosition()
 						+ internalASTNodes.get(internalASTNodes.size() - 1).getLength();
+
 				if (tmp1 > tmp) tmp = tmp1;
+			}
+			if(type != null && type.equals(FixedStructureTypes.IF)){
+				//System.out.println("IF");
+				tmp += 11;
 			}
 			return tmp;
 		}

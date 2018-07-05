@@ -430,29 +430,29 @@ public class SelectionView extends ViewPart {
 		GridData gridData = new GridData(GridData.FILL);
 		gridData.widthHint = 100;
 
-		Label lblDetectionMethod = new Label(firstRow, SWT.NULL);
-		lblDetectionMethod.setText("Detection Method:");
+//		Label lblDetectionMethod = new Label(firstRow, SWT.NULL);
+//		lblDetectionMethod.setText("Detection Method:");
 		GridData detectionMethodGridData = new GridData();
-		detectionMethodGridData.widthHint = 120;
-		lblDetectionMethod.setLayoutData(detectionMethodGridData);
-
-		final Combo cmbMethods = new Combo(firstRow, SWT.NULL);
-		cmbMethods.setItems(new String[] {METHOD_GRAIN_FRAGMENTER, METHOD_CHUNK_FRAGMENTER});
-		GridData cmbGridData = new GridData();
-		gridData.widthHint = 150;
-		cmbMethods.setLayoutData(cmbGridData);
-		cmbMethods.addSelectionListener(new SelectionListener() {
-			
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				selectedParsingMethod = cmbMethods.getText();
-			}
-			
-			@Override
-			public void widgetDefaultSelected(SelectionEvent e) {	
-			}
-		});
-		cmbMethods.select(1);
+//		detectionMethodGridData.widthHint = 120;
+//		lblDetectionMethod.setLayoutData(detectionMethodGridData);
+//
+//		final Combo cmbMethods = new Combo(firstRow, SWT.NULL);
+//		cmbMethods.setItems(new String[] {METHOD_GRAIN_FRAGMENTER, METHOD_CHUNK_FRAGMENTER});
+//		GridData cmbGridData = new GridData();
+//		gridData.widthHint = 150;
+//		cmbMethods.setLayoutData(cmbGridData);
+//		cmbMethods.addSelectionListener(new SelectionListener() {
+//			
+//			@Override
+//			public void widgetSelected(SelectionEvent e) {
+//				selectedParsingMethod = cmbMethods.getText();
+//			}
+//			
+//			@Override
+//			public void widgetDefaultSelected(SelectionEvent e) {	
+//			}
+//		});
+//		cmbMethods.select(1);
 		selectedParsingMethod = METHOD_CHUNK_FRAGMENTER;
 		
 		Button btnExpandedFeatureEnvy = new Button(firstRow, SWT.CHECK | SWT.WRAP | SWT.BORDER);
@@ -507,46 +507,46 @@ public class SelectionView extends ViewPart {
 		});
 			
 		
-		Label lblMinBlockSize = new Label(firstRow, SWT.NULL);
-		lblMinBlockSize.setText("Min. Block Size: ");
-		GridData thresholdGridData = new GridData();
-		thresholdGridData.widthHint = 80;
-		lblMinBlockSize.setLayoutData(thresholdGridData);
-		
-		final Text txtMinBlockSize = new Text(firstRow,  SWT.NULL | SWT.BORDER);
-		GridData txtGridData = new GridData(GridData.FILL);
-		txtGridData.widthHint = 30;
-		txtMinBlockSize.setLayoutData(txtGridData);
-		txtMinBlockSize.addModifyListener(new ModifyListener() {
-			
-			@Override
-			public void modifyText(ModifyEvent e) {
-				minBlockSize = Integer.parseInt(txtMinBlockSize.getText() + "");
-//				applyDefragmenterForCompUnit
-			}
-		});
+//		Label lblMinBlockSize = new Label(firstRow, SWT.NULL);
+//		lblMinBlockSize.setText("Min. Block Size: ");
+//		GridData thresholdGridData = new GridData();
+//		thresholdGridData.widthHint = 80;
+//		lblMinBlockSize.setLayoutData(thresholdGridData);
+//		
+//		final Text txtMinBlockSize = new Text(firstRow,  SWT.NULL | SWT.BORDER);
+//		GridData txtGridData = new GridData(GridData.FILL);
+//		txtGridData.widthHint = 30;
+//		txtMinBlockSize.setLayoutData(txtGridData);
+//		txtMinBlockSize.addModifyListener(new ModifyListener() {
+//			
+//			@Override
+//			public void modifyText(ModifyEvent e) {
+//				minBlockSize = Integer.parseInt(txtMinBlockSize.getText() + "");
+////				applyDefragmenterForCompUnit
+//			}
+//		});
 		
 	
 		
-		Button btnLongMethodIdentif = new Button(firstRow, SWT.CHECK | SWT.WRAP | SWT.BORDER);
-		btnLongMethodIdentif.setAlignment(SWT.RIGHT);
-		btnLongMethodIdentif.setOrientation(SWT.RIGHT_TO_LEFT);
-//		btnLongMethodIdentif.setBackground(new org.eclipse.swt.graphics.Color(btnLongMethodIdentif., 0, 0, 0));
-		btnLongMethodIdentif.setText("Long Method Identification");
-		btnLongMethodIdentif.setLayoutData(detectionMethodGridData);
-		btnLongMethodIdentif.setSelection(applyLongMethodIdentification);
-		btnLongMethodIdentif.addSelectionListener(new SelectionListener() {
-
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				Button btn = (Button) e.getSource();
-				applyLongMethodIdentification = btn.getSelection();
-			}
-
-			@Override
-			public void widgetDefaultSelected(SelectionEvent e) {
-			}
-		});
+//		Button btnLongMethodIdentif = new Button(firstRow, SWT.CHECK | SWT.WRAP | SWT.BORDER);
+//		btnLongMethodIdentif.setAlignment(SWT.RIGHT);
+//		btnLongMethodIdentif.setOrientation(SWT.RIGHT_TO_LEFT);
+////		btnLongMethodIdentif.setBackground(new org.eclipse.swt.graphics.Color(btnLongMethodIdentif., 0, 0, 0));
+//		btnLongMethodIdentif.setText("Long Method Identification");
+//		btnLongMethodIdentif.setLayoutData(detectionMethodGridData);
+//		btnLongMethodIdentif.setSelection(applyLongMethodIdentification);
+//		btnLongMethodIdentif.addSelectionListener(new SelectionListener() {
+//
+//			@Override
+//			public void widgetSelected(SelectionEvent e) {
+//				Button btn = (Button) e.getSource();
+//				applyLongMethodIdentification = btn.getSelection();
+//			}
+//
+//			@Override
+//			public void widgetDefaultSelected(SelectionEvent e) {
+//			}
+//		});
 		
 
 		
