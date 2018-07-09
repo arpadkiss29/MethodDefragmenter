@@ -54,6 +54,9 @@ public class ChunkFragmenter extends AbstractFragmenter{
 	public boolean visit(Block node) {
 		
 		InternalCodeFragment parent = new InternalCodeFragment();
+		
+		parent.setStartNode(node.getStartPosition());
+		parent.setEndNode(node.getStartPosition() + node.getLength());
 
 		CodeFragmentLeaf currentFragment = null;
 		List<Statement> currentStatements = node.statements();
@@ -132,6 +135,9 @@ public class ChunkFragmenter extends AbstractFragmenter{
 	
 	public boolean visit(IfStatement ifStatement){
 		InternalCodeFragment parent = new InternalCodeFragment();
+		
+		parent.setStartNode(ifStatement.getStartPosition());
+		parent.setEndNode(ifStatement.getStartPosition() + ifStatement.getLength());
 		
 		Expression expr = ifStatement.getExpression();
 		if (expr != null){

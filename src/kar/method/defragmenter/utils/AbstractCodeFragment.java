@@ -167,9 +167,12 @@ public abstract class AbstractCodeFragment {
 	}
 
 	public void calculteFirstLastLine(){
-		if(children.size() > 0){
+		if(children.size() > 0 && startNode == 0 && endNode == 0){
 			startNode = calculateFirstLine();
 			endNode = calculateLastLine();
+		}else{
+			System.out.println("Already calculated!");
+			System.out.println(this);
 		}
 
 		if(((startNode == 0) || (endNode ==0))  && leafsReceived.size() > 1){
@@ -192,12 +195,13 @@ public abstract class AbstractCodeFragment {
 			return ((CodeFragmentLeaf)firstChild).getFragmentFirstLine();
 		} else {
 			int tmp = firstChild.calculateFirstLine();
+			if(startNode != 0 && startNode < tmp) tmp = startNode;
 			if (internalASTNodes.size() > 0)
 			{
 				int tmp1 = internalASTNodes.get(0).getStartPosition();
-				if(internalASTNodes.get(0) instanceof Expression){
-					tmp1 -= 4;
-				}
+//				if(internalASTNodes.get(0) instanceof Expression){
+//					tmp1 -= 4;
+//				}
 				if (tmp1 < tmp) tmp = tmp1;
 			}
 			return tmp; 
@@ -210,6 +214,7 @@ public abstract class AbstractCodeFragment {
 			return ((CodeFragmentLeaf)lastChild).getFragmentLastLine();
 		} else {
 			int tmp = lastChild.calculateLastLine();
+			if(endNode != 0 && endNode > tmp) tmp = endNode;
 			if (internalASTNodes.size() > 0)
 			{
 				int tmp1 = internalASTNodes.get(internalASTNodes.size() - 1).getStartPosition()
@@ -217,10 +222,10 @@ public abstract class AbstractCodeFragment {
 
 				if (tmp1 > tmp) tmp = tmp1;
 			}
-			if(type != null && type.equals(FixedStructureTypes.IF)){
-				//System.out.println("IF");
-				tmp += 11;
-			}
+//			if(type != null && type.equals(FixedStructureTypes.IF)){
+//				//System.out.println("IF");
+//				tmp += 11;
+//			}
 			return tmp;
 		}
 	}

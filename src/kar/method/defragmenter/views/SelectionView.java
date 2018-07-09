@@ -80,7 +80,7 @@ public class SelectionView extends ViewPart {
 	private Map<String, ICompilationUnit> classList = new HashMap<String, ICompilationUnit>();
 
 	private boolean applyLongMethodIdentification = false;
-	private boolean expandedFeatureEnvyVerification = false;
+	private boolean expandedFeatureEnvyVerification = true;
 	private boolean considerBlankLines = true;
 	private boolean considerStaticFieldAccesses = false;
 	private boolean libraryCheck = true;
