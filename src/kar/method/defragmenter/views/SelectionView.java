@@ -424,16 +424,16 @@ public class SelectionView extends ViewPart {
 		Composite firstRow = new Composite(parent, SWT.FILL);
 		firstRow.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		GridLayout firstRowLayout = new GridLayout();
-		firstRowLayout.numColumns = 8;
+		firstRowLayout.numColumns = 4;
 		firstRow.setLayout(firstRowLayout);
 
 		GridData gridData = new GridData(GridData.FILL);
-		gridData.widthHint = 100;
+		gridData.widthHint = 250;
 
 //		Label lblDetectionMethod = new Label(firstRow, SWT.NULL);
 //		lblDetectionMethod.setText("Detection Method:");
 		GridData detectionMethodGridData = new GridData();
-//		detectionMethodGridData.widthHint = 120;
+		detectionMethodGridData.widthHint = 250;
 //		lblDetectionMethod.setLayoutData(detectionMethodGridData);
 //
 //		final Combo cmbMethods = new Combo(firstRow, SWT.NULL);
@@ -455,7 +455,7 @@ public class SelectionView extends ViewPart {
 //		cmbMethods.select(1);
 		selectedParsingMethod = METHOD_CHUNK_FRAGMENTER;
 		
-		Button btnExpandedFeatureEnvy = new Button(firstRow, SWT.CHECK | SWT.WRAP | SWT.BORDER);
+		Button btnExpandedFeatureEnvy = new Button(firstRow, SWT.CHECK | SWT.BORDER);
 		btnExpandedFeatureEnvy.setText("Expanded Feature Envy");
 		btnExpandedFeatureEnvy.setLayoutData(detectionMethodGridData);
 		btnExpandedFeatureEnvy.setSelection(expandedFeatureEnvyVerification);
@@ -472,7 +472,7 @@ public class SelectionView extends ViewPart {
 			}
 		});
 		
-		Button btnConsiderBlankLines = new Button(firstRow, SWT.CHECK | SWT.WRAP | SWT.BORDER);
+		Button btnConsiderBlankLines = new Button(firstRow, SWT.CHECK | SWT.BORDER);
 		btnConsiderBlankLines.setText("Consider Blank Lines");
 		btnConsiderBlankLines.setLayoutData(detectionMethodGridData);
 		btnConsiderBlankLines.setSelection(considerBlankLines);
@@ -489,22 +489,22 @@ public class SelectionView extends ViewPart {
 			}
 		});
 			
-		Button btnConsiderStaticFieldAccesses = new Button(firstRow, SWT.CHECK | SWT.WRAP | SWT.BORDER);
-		btnConsiderStaticFieldAccesses.setText("Consider Static Field Accesses");
-		btnConsiderStaticFieldAccesses.setLayoutData(detectionMethodGridData);
-		btnConsiderStaticFieldAccesses.setSelection(considerStaticFieldAccesses);
-		btnConsiderStaticFieldAccesses.addSelectionListener(new SelectionListener() {
-
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				Button btn = (Button) e.getSource();
-				considerStaticFieldAccesses = btn.getSelection();
-			}
-
-			@Override
-			public void widgetDefaultSelected(SelectionEvent e) {
-			}
-		});
+//		Button btnConsiderStaticFieldAccesses = new Button(firstRow, SWT.CHECK | SWT.WRAP | SWT.BORDER);
+//		btnConsiderStaticFieldAccesses.setText("Consider Static Field Accesses");
+//		btnConsiderStaticFieldAccesses.setLayoutData(detectionMethodGridData);
+//		btnConsiderStaticFieldAccesses.setSelection(considerStaticFieldAccesses);
+//		btnConsiderStaticFieldAccesses.addSelectionListener(new SelectionListener() {
+//
+//			@Override
+//			public void widgetSelected(SelectionEvent e) {
+//				Button btn = (Button) e.getSource();
+//				considerStaticFieldAccesses = btn.getSelection();
+//			}
+//
+//			@Override
+//			public void widgetDefaultSelected(SelectionEvent e) {
+//			}
+//		});
 			
 		
 //		Label lblMinBlockSize = new Label(firstRow, SWT.NULL);
