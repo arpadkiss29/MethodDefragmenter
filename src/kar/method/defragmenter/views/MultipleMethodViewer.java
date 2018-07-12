@@ -95,16 +95,16 @@ public class MultipleMethodViewer extends TableViewer{
 		  TableViewerColumn colReturnType = createTableViewerColumn("Return type", 100, 2);
 		  colReturnType.setLabelProvider(methodReturnTypeColumnLabel);
 		  
-		  TableViewerColumn colLines = createTableViewerColumn("Lines (From - to)", 100, 3);
+		  TableViewerColumn colLines = createTableViewerColumn("Lines (From - To)", 100, 3);
 		  colLines.setLabelProvider(methodLinesColumnLabel);
 		  
-		  TableViewerColumn colLength = createTableViewerColumn("Length", 100, 4);
-		  colLength.setLabelProvider(methodLengthColumnLabel);
+		  //TableViewerColumn colLength = createTableViewerColumn("Length", 100, 4);
+		  //colLength.setLabelProvider(methodLengthColumnLabel);
 		  
-		  TableViewerColumn colMetric = createTableViewerColumn("Method NCOCP2", 100, 5);
-		  colMetric.setLabelProvider(rootMetricColumnLabel);
+		  //TableViewerColumn colMetric = createTableViewerColumn("Method NCOCP2", 100, 5);
+		  //colMetric.setLabelProvider(rootMetricColumnLabel);
 		  
-		  TableViewerColumn colEnvy = createTableViewerColumn("Envy Blocks", 100, 6);
+		  TableViewerColumn colEnvy = createTableViewerColumn("Envy Blocks", 100, 4);
 		  colEnvy.setLabelProvider(containEnviousBlocksLabel);
 		  
 		  Layout layout = this.getControl().getParent().getLayout();
@@ -113,10 +113,9 @@ public class MultipleMethodViewer extends TableViewer{
 		    ((TableColumnLayout)layout).setColumnData(colType.getColumn(),new ColumnWeightData(1,100,true));
 		    ((TableColumnLayout)layout).setColumnData(colReturnType.getColumn(),new ColumnWeightData(2,100,true));
 		    ((TableColumnLayout)layout).setColumnData(colLines.getColumn(),new ColumnWeightData(3,100,true));
-		    ((TableColumnLayout)layout).setColumnData(colLength.getColumn(),new ColumnWeightData(4,100,true));
-		    ((TableColumnLayout)layout).setColumnData(colMetric.getColumn(),new ColumnWeightData(5,100,true));
-		    ((TableColumnLayout)layout).setColumnData(colEnvy.getColumn(),new ColumnWeightData(6,100,true));
-
+		    //((TableColumnLayout)layout).setColumnData(colLength.getColumn(),new ColumnWeightData(4,100,true));
+		    //((TableColumnLayout)layout).setColumnData(colMetric.getColumn(),new ColumnWeightData(5,100,true));
+		    ((TableColumnLayout)layout).setColumnData(colEnvy.getColumn(),new ColumnWeightData(4,100,true));
 		  }
 	}
 	

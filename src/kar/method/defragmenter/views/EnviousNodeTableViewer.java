@@ -35,7 +35,7 @@ public class EnviousNodeTableViewer extends TableViewer{
 		 @Override
 		 public String getText(Object element) {
 			 EnviousNodeData item = (EnviousNodeData) element;
-			 return item.getLocalAttrAccess() + "";
+			 return 1.0 * item.getLocalAttrAccess() / (item.getLocalAttrAccess() + item.getAccessForeignData()) + "";
 		 }
 	 };
 	 
@@ -79,25 +79,25 @@ public class EnviousNodeTableViewer extends TableViewer{
 		  TableViewerColumn lineType = createTableViewerColumn("Lines (From - To)", 100, 0);
 		  lineType.setLabelProvider(linesColumnLabel);
 		  
-		  TableViewerColumn acdType = createTableViewerColumn("accessForeignData", 50, 1);
+		  TableViewerColumn acdType = createTableViewerColumn("ATFD", 50, 1);
 		  acdType.setLabelProvider(acdColumnLabel);
 		  
-		  TableViewerColumn localAttrType = createTableViewerColumn("localAttrAccess", 50, 2);
+		  TableViewerColumn localAttrType = createTableViewerColumn("LAA", 50, 2);
 		  localAttrType.setLabelProvider(localAttrColumnLabel);
 		  
-		  TableViewerColumn foreignDataAttrType = createTableViewerColumn("foreignDataProviders", 50, 3);
+		  TableViewerColumn foreignDataAttrType = createTableViewerColumn("FDP", 50, 3);
 		  foreignDataAttrType.setLabelProvider(foreignDataColumnLabel);
 		  		  
-		  TableViewerColumn targetClassType = createTableViewerColumn("targetClass", 250, 4);
+		  TableViewerColumn targetClassType = createTableViewerColumn("Providers", 250, 4);
 		  targetClassType.setLabelProvider(targetClassColumnLabel);
 		  
 		  Layout layout = this.getControl().getParent().getLayout();
 		  if (layout instanceof TableColumnLayout) {
 		    ((TableColumnLayout)layout).setColumnData(lineType.getColumn(),new ColumnWeightData(0,100,true));
-		    ((TableColumnLayout)layout).setColumnData(acdType.getColumn(),new ColumnWeightData(1,100,true));
-		    ((TableColumnLayout)layout).setColumnData(localAttrType.getColumn(),new ColumnWeightData(2,100,true));
-		    ((TableColumnLayout)layout).setColumnData(foreignDataAttrType.getColumn(),new ColumnWeightData(3,100,true));
-		    ((TableColumnLayout)layout).setColumnData(targetClassType.getColumn(),new ColumnWeightData(4,100,true));
+		    ((TableColumnLayout)layout).setColumnData(acdType.getColumn(),new ColumnWeightData(1,50,true));
+		    ((TableColumnLayout)layout).setColumnData(localAttrType.getColumn(),new ColumnWeightData(2,50,true));
+		    ((TableColumnLayout)layout).setColumnData(foreignDataAttrType.getColumn(),new ColumnWeightData(3,50,true));
+		    ((TableColumnLayout)layout).setColumnData(targetClassType.getColumn(),new ColumnWeightData(4,250,true));
 
 		  }
 	}

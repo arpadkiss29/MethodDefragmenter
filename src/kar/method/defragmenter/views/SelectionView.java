@@ -149,7 +149,7 @@ public class SelectionView extends ViewPart {
 	}
 
 	public void showSelection(IWorkbenchPart sourcepart, ISelection selection) throws JavaModelException {
-		setContentDescription(sourcepart.getTitle() + " (" + selection.getClass().getName() + ")");
+		//setContentDescription(sourcepart.getTitle() + " (" + selection.getClass().getName() + ")");
 		if (selection instanceof IStructuredSelection) {
 			IStructuredSelection ss = (IStructuredSelection) selection;
 			if (ss.getFirstElement() instanceof IJavaProject && !wholeProjectAnalyzed){
