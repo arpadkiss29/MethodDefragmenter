@@ -9,11 +9,11 @@
             id="selectionPlugin">
       </category>
       <view
-            name="Method Defragmenter"
-            icon="icons/defrag_icon.gif"
             category="selectionPlugin"
             class="kar.method.defragmenter.views.SelectionView"
-            id="selectionplugin.views.SelectionView">
+            icon="icons/gd.png"
+            id="selectionplugin.views.SelectionView"
+            name="Method Defragmenter">
       </view>
    </extension>
    <extension
