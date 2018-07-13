@@ -72,7 +72,7 @@ public class SelectionView extends ViewPart {
 	private static final String MARKER = "kar.method.defragmenter.marker";
 
 	private static final int ATFD_TRESHOLD = 2;
-	private static final int FDP_TREHSOLD  = 3;
+	private static final int FDP_TREHSOLD  = 2;
 	
 	private MultipleMethodViewer tableViewer;
 	private MethodTableViewer methodTableViewer;
