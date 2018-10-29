@@ -434,7 +434,13 @@ public abstract class AbstractCodeFragment {
 	private int localAttrAccess      = 0;
 	private int foreignDataProviders = 0;
 	private String targetClass;
-
+	
+	public int getFdp(String analyzedClass,boolean staticFields, Integer minBlockSize, boolean libraryCheck) {
+		computeDataAccesses(analyzedClass, staticFields, minBlockSize, libraryCheck);
+		foreignDataProviders = accessClassesMapping.size();
+		return foreignDataProviders;
+	}
+	
 	public boolean verifyFeatureEnvy(int ATFDTreshold, int FDPTreshold, String analyzedClass, boolean staticFields, Integer minBlockSize, boolean libraryCheck, boolean local) {
 		if (local) 
 		{

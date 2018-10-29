@@ -60,6 +60,7 @@ import org.eclipse.ui.texteditor.SimpleMarkerAnnotation;
 
 import kar.method.defragmenter.fragmenters.AbstractFragmenter;
 import kar.method.defragmenter.fragmenters.ChunkFragmenter;
+import kar.method.defragmenter.fragmenters.FdpFragmenter;
 import kar.method.defragmenter.linkers.GroupingAlgorithm2;
 import kar.method.defragmenter.utils.AbstractCodeFragment;
 import kar.method.defragmenter.utils.CodeFragmentLeaf;
@@ -277,12 +278,13 @@ public class SelectionView extends ViewPart {
 			if (method.getBody() == null) continue;
 			
 			MethodBasicItem item = new MethodBasicItem();
-
-			AbstractFragmenter newVisitorBlock = new ChunkFragmenter(unit, considerBlankLines);
+			
+			List<AbstractTypeDeclaration> dcls = unit.types();
+			String analyzedClass = dcls.get(0).getName().getIdentifier();
+			AbstractFragmenter newVisitorBlock = new FdpFragmenter(unit,  considerStaticFieldAccesses, true, analyzedClass, FDP_TREHSOLD);
 			method.accept(newVisitorBlock);
 			AbstractCodeFragment newRoot = newVisitorBlock.lastNode.pop();
 
-			List<AbstractTypeDeclaration> dcls = unit.types();
 			item.setClassName(dcls.get(0).getName().getIdentifier());
 			item.setName(method.getName().toString());	
 			item.setLines(unit.getLineNumber(method.getStartPosition()) + " - " + unit.getLineNumber(method.getStartPosition() + method.getLength()));
@@ -296,13 +298,13 @@ public class SelectionView extends ViewPart {
 			}
 
 			if (!expandedFeatureEnvyVerification) {
-				String analyzedClass = dcls.get(0).getName().getIdentifier();
+				analyzedClass = dcls.get(0).getName().getIdentifier();
 				boolean res = newRoot.verifyFeatureEnvy(ATFD_TRESHOLD, FDP_TREHSOLD,  analyzedClass, 
 						considerStaticFieldAccesses, minBlockSize, libraryCheck, false);
 				item.setMethodRoot(newRoot);
 				item.setContainsEnviousBlocks(res);
 			} else {
-				String analyzedClass = dcls.get(0).getName().getIdentifier();
+				analyzedClass = dcls.get(0).getName().getIdentifier();
 				boolean res = newRoot.verifyFeatureEnvy(ATFD_TRESHOLD, FDP_TREHSOLD,  analyzedClass, considerStaticFieldAccesses,
 						minBlockSize, libraryCheck, false);			
 				AbstractCodeFragment linkedRoot =  new GroupingAlgorithm2(ATFD_TRESHOLD, FDP_TREHSOLD,  analyzedClass, 
