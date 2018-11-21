@@ -12,12 +12,13 @@ public class InternalCodeFragment extends AbstractCodeFragment{
 	{
 		children.add(index, child);
 	}
-
+	
+	@Override
 	public void addChild(AbstractCodeFragment child)
 	{
 		children.add(child);
 	}
-
+	
 	public int removeChild(AbstractCodeFragment child)
 	{
 		int ind = children.indexOf(child);

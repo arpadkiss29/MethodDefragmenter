@@ -294,7 +294,7 @@ public abstract class AbstractCodeFragment {
 	public List<AbstractCodeFragment> getAllEnviousNodes(){
 		List<AbstractCodeFragment> nodes = new ArrayList<AbstractCodeFragment>();
 		for(AbstractCodeFragment node: children){
-			if(node instanceof CodeFragmentLeaf && ((CodeFragmentLeaf)node).isEnvy()){
+			if(/*node instanceof CodeFragmentLeaf && */(/*	(CodeFragmentLeaf)*/node).isEnvy()){
 				nodes.add(node);
 			}else{
 				if(node.isEnvy()) {
@@ -435,10 +435,15 @@ public abstract class AbstractCodeFragment {
 	private int foreignDataProviders = 0;
 	private String targetClass;
 	
-	public int getFdp(String analyzedClass,boolean staticFields, Integer minBlockSize, boolean libraryCheck) {
+	public int getFdpSize(String analyzedClass,boolean staticFields, Integer minBlockSize, boolean libraryCheck) {
 		computeDataAccesses(analyzedClass, staticFields, minBlockSize, libraryCheck);
 		foreignDataProviders = accessClassesMapping.size();
 		return foreignDataProviders;
+	}
+	
+	public HashMap<String, Integer> getFdp(String analyzedClass,boolean staticFields, Integer minBlockSize, boolean libraryCheck) {
+		computeDataAccesses(analyzedClass, staticFields, minBlockSize, libraryCheck);
+		return accessClassesMapping;
 	}
 	
 	public boolean verifyFeatureEnvy(int ATFDTreshold, int FDPTreshold, String analyzedClass, boolean staticFields, Integer minBlockSize, boolean libraryCheck, boolean local) {
@@ -498,7 +503,7 @@ public abstract class AbstractCodeFragment {
 	}
 
 	protected void computeDataAccesses(String analyzedClass, boolean staticFields, Integer minBlockSize, boolean libraryCheck) {
-
+//what is going on here
 		HashSet<IVariableBinding> variableBindingsCache = new  HashSet<IVariableBinding>();
 		HashSet<IMethodBinding> methodBindingCache = new HashSet<IMethodBinding>();
 
@@ -510,9 +515,7 @@ public abstract class AbstractCodeFragment {
 				boolean isGetter = invocation.getName().getFullyQualifiedName().startsWith("get");
 				boolean isSetter = invocation.getName().getFullyQualifiedName().startsWith("set");
 				if(isGetter || isSetter){
-
 					IMethodBinding methodBinding = invocation.resolveMethodBinding();
-
 					IJavaElement element = methodBinding.getJavaElement();
 					IPackageFragmentRoot root = (IPackageFragmentRoot) element.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT);
 					IClasspathEntry classpathEntry;
@@ -531,6 +534,7 @@ public abstract class AbstractCodeFragment {
 								}
 								if (!already)
 								{
+									//why do we care about params?
 									if(isGetter && methodBinding.getParameterTypes().length == 0){
 										incrementAccesses(analyzedClass,methodBinding.getDeclaringClass());
 									}
@@ -614,7 +618,7 @@ public abstract class AbstractCodeFragment {
 	}
 
 	public void colorEnvyLeafNodes(ITextEditor textEditor, IFile file) throws CoreException{
-		if(isEnvy){
+		if(/*isEnvy&&*/this instanceof CodeFragmentLeaf){
 			String colorType = "annotationColor_17";
 			if (colorCounter < 17){
 				colorType = "annotationColor_" + colorCounter;

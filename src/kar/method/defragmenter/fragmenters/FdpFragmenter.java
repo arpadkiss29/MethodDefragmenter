@@ -1,5 +1,7 @@
 package kar.method.defragmenter.fragmenters;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -39,178 +41,223 @@ import kar.method.defragmenter.utils.FixedStructureTypes;
 import kar.method.defragmenter.utils.InternalCodeFragment;
 
 @SuppressWarnings("unchecked")
-public class FdpFragmenter extends AbstractFragmenter{
-	
+public class FdpFragmenter extends AbstractFragmenter {
+
 	private CompilationUnit unit;
-	private boolean considerFDP;
 	private boolean considerStaticFields;
 	private String analyzedClass;
-	private int FDP_TREHSOLD;
-	
-	public FdpFragmenter(CompilationUnit unit, boolean considerStaticFields, boolean considerFDP, String analyzedClass, int FDP_TREHSOLD) {
+	private int FDP_TRESHOLD;
+
+	public FdpFragmenter(CompilationUnit unit, boolean considerStaticFields, String analyzedClass, int FDP_TREHSOLD) {
 		this.analyzedClass = analyzedClass;
 		this.unit = unit;
-		this.considerFDP = considerFDP;
 		this.considerStaticFields = considerStaticFields;
-		this.FDP_TREHSOLD = FDP_TREHSOLD;
+		this.FDP_TRESHOLD = FDP_TREHSOLD;
+	}
+
+	private boolean canBeMerged(AbstractCodeFragment parent, AbstractCodeFragment resThen) {
+		if (resThen.getChildrenSize() != 1 || !(resThen.getChild(0) instanceof CodeFragmentLeaf)
+				|| !canBeAddedToBlock(parent, resThen.getAllSubTreeASTNodes())) {
+			return false;
+		}
+		return true;
+	}
+
+	private boolean canBeAddedToBlock(AbstractCodeFragment currentFragment, Statement currentStatements) {
+		List<ASTNode> statement = new ArrayList<ASTNode>();
+		statement.add(currentStatements);
+		return canBeAddedToBlock(currentFragment, statement);
+	}
+
+	// could I use Statement in ArrayList? generics?
+	private boolean canBeAddedToBlock(AbstractCodeFragment currentFragment, List<ASTNode> currentStatements) {
+		HashMap<String, Integer> fdpBefore = currentFragment.getFdp(analyzedClass, considerStaticFields, null, false);
+		CodeFragmentLeaf tempFragment = new CodeFragmentLeaf();
+		tempFragment.addStatements(currentStatements);
+		HashMap<String, Integer> fdpAfter = tempFragment.getFdp(analyzedClass, considerStaticFields, null, false);
+		if (fdpBefore.size() == 0) {
+			return true;
+		}
+		for (String key : fdpAfter.keySet()) {
+			if (!fdpBefore.containsKey(key)) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	@Override
 	public boolean visit(Block node) {
-		
+
 		InternalCodeFragment parent = new InternalCodeFragment();
-		
+
 		parent.setStartNode(node.getStartPosition());
 		parent.setEndNode(node.getStartPosition() + node.getLength());
 
 		CodeFragmentLeaf currentFragment = null;
 		List<Statement> currentStatements = node.statements();
-		int previousLine = 0;
-		int lineDiff = 0;
-		
-		for(int i=0; i<currentStatements.size(); i++){
-			
+
+		for (int i = 0; i < currentStatements.size(); i++) {
+			Statement statement = currentStatements.get(i);
+
 			// Visit each statement in current block
-			((ASTNode) currentStatements.get(i)).accept(this);
-			
+			((ASTNode) statement).accept(this);
+
 			// Get subtree from below
 			AbstractCodeFragment res = null;
-			if(!lastNode.isEmpty()){
+			if (!lastNode.isEmpty()) {
 				res = lastNode.pop();
 			}
-			
-			
+
 			// If there is no block below, this means there are only statements
-			if(res == null) {		
-				// If current statement belongs to the part of code before the block; 
-				if(currentFragment == null) {
+			if (res == null) {
+				// If current statement belongs to the part of code before the block;
+				if (currentFragment == null) {
 					currentFragment = new CodeFragmentLeaf();
 				}
-				
-				if(considerFDP){
-					int fdpBefore = currentFragment.getFdp(analyzedClass, considerStaticFields, null, false);
-					currentFragment.addStatement(currentStatements.get(i));
-					int fdpAfter = currentFragment.getFdp(analyzedClass, considerStaticFields, null, false);
-					currentFragment.removeStatement(currentStatements.get(i));
-					if(fdpAfter>FDP_TREHSOLD  && fdpBefore < fdpAfter){
-						parent.addChild(currentFragment);
-						currentFragment = new CodeFragmentLeaf();
-					}
-					previousLine = unit.getLineNumber(currentStatements.get(i).getStartPosition());
-					int endLine = unit.getLineNumber(currentStatements.get(i).getStartPosition() + currentStatements.get(i).getLength());
-					if(endLine - previousLine > 0){
-						lineDiff = endLine - previousLine;
-						//System.out.println("Line diff: " + lineDiff);
-					}else{
-						lineDiff = 0;
-					}
+				boolean canBeAdded = canBeAddedToBlock(currentFragment, statement);
+				if (!canBeAdded) {
+					parent.addChild(currentFragment);
+					currentFragment = new CodeFragmentLeaf();
 				}
 
 				// Adding it to the current leaf
-				currentFragment.addStatement(currentStatements.get(i));
+				currentFragment.addStatement(statement);
 			} else {
-				// There is a block below, if there are statements before and they are grouped in a leaf, the leaf must be added.
-				if(currentFragment != null) {		
+				// There is a block below, if there are statements before and they are grouped
+				// in a leaf, the leaf must be added.
+				if (currentFragment != null) {
 					parent.addChild(currentFragment);
 					currentFragment = null;
-					previousLine = 0;
 				}
 				// Adding the node which was below and contains a block in it.
 				parent.addChild(res);
 			}
 		}
-		
-		// Fragment constructed based on statements but never added to parent, this is why its needed to be added here.
-		if(currentFragment != null) {
+
+		// Fragment constructed based on statements but never added to parent, this is
+		// why its needed to be added here.
+		if (currentFragment != null) {
 			parent.addChild(currentFragment);
 			currentFragment = null;
 		}
-		
+
 		lastNode.push(parent);
 		return false;
 	}
 
-	public boolean visit(Assignment assignment){
+	public boolean visit(Assignment assignment) {
 		lastNode.push(null);
 		return false;
 	}
-	
 
-	public boolean visit(Expression expression){
+	public boolean visit(Expression expression) {
 		lastNode.push(null);
 		return false;
 	}
-	
-	
-	public boolean visit(IfStatement ifStatement){
-		InternalCodeFragment parent = new InternalCodeFragment();
-		
+
+	public boolean visit(IfStatement ifStatement) {
+		AbstractCodeFragment parent = new InternalCodeFragment();
+
 		parent.setStartNode(ifStatement.getStartPosition());
 		parent.setEndNode(ifStatement.getStartPosition() + ifStatement.getLength());
-		
+
 		Expression expr = ifStatement.getExpression();
-		if (expr != null){
+		if (expr != null) {
 			parent.addInternalStatement(expr);
 		}
-
-		if(ifStatement.getThenStatement() != null){
-			ifStatement.getThenStatement().accept(this);
+		boolean canBeMerged = true;
+		Statement thenStatement = ifStatement.getThenStatement();
+		if (thenStatement != null) {
+			thenStatement.accept(this);
 			AbstractCodeFragment resThen = lastNode.pop();
-			if (resThen != null){
+			if (resThen != null) {
+				if (resThen.getChildrenSize() != 1 || !(resThen.getChild(0) instanceof CodeFragmentLeaf)
+						|| !canBeAddedToBlock(parent, resThen.getAllSubTreeASTNodes())) {
+					canBeMerged = false;
+				}
 				resThen.setType(FixedStructureTypes.IF_THEN);
 				parent.addChild(resThen);
-			}else{
-				InternalCodeFragment thenNode = new InternalCodeFragment();
-				CodeFragmentLeaf thenStatement = new CodeFragmentLeaf();
-				thenStatement.addStatement(ifStatement.getThenStatement());
-				thenNode.addChild(thenStatement);
-				thenNode.setType(FixedStructureTypes.IF_THEN);
-				parent.addChild(thenNode);
+			} else {
+				if (!canBeAddedToBlock(parent, thenStatement)) {
+					canBeMerged = false;
+					InternalCodeFragment thenNode = new InternalCodeFragment();
+					CodeFragmentLeaf thenStatementLeaf = new CodeFragmentLeaf();
+					thenStatementLeaf.addStatement(thenStatement);
+					thenStatementLeaf.setType(FixedStructureTypes.IF_THEN);
+					thenNode.addChild(thenStatementLeaf);
+					parent.addChild(thenNode);
+				}
+
 			}
 		}
 
-		if(ifStatement.getElseStatement() != null){
-			ifStatement.getElseStatement().accept(this);
+		if (ifStatement.getElseStatement() != null) {
+			Statement elseStatement = ifStatement.getElseStatement();
+			elseStatement.accept(this);
 			AbstractCodeFragment resElse = lastNode.pop();
-			if (resElse != null){
+			if (resElse != null) {
+				if (resElse.getChildrenSize() != 1 || !(resElse.getChild(0) instanceof CodeFragmentLeaf)
+						|| !canBeAddedToBlock(parent, resElse.getAllSubTreeASTNodes())) {
+					canBeMerged = false;
+				}
 				resElse.setType(FixedStructureTypes.IF_ELSE);
 				parent.addChild(resElse);
-			}else{
-				InternalCodeFragment elseNode = new InternalCodeFragment();
-				CodeFragmentLeaf elseStatement = new CodeFragmentLeaf();
-				elseStatement.addStatement(ifStatement.getElseStatement());
-				elseNode.addChild(elseStatement);
-				elseNode.setType(FixedStructureTypes.IF_ELSE);
-				parent.addChild(elseNode);
+			} else {
+				if (!canBeMerged || !canBeAddedToBlock(parent, elseStatement)) {
+					canBeMerged = false;
+					InternalCodeFragment elseNode = new InternalCodeFragment();
+					CodeFragmentLeaf elseStatementLeaf = new CodeFragmentLeaf();
+					elseStatementLeaf.addStatement(elseStatement);
+					elseStatementLeaf.setType(FixedStructureTypes.IF_ELSE);
+					elseNode.addChild(elseStatementLeaf);
+					parent.addChild(elseNode);
+				}
 			}
 		}
-		
+
+		if (canBeMerged) {
+			lastNode.push(null);
+			return false;
+		}
+
 		parent.setType(FixedStructureTypes.IF);
 		lastNode.push(parent);
 		return false;
 	}
-	
+
 	@Override
 	public boolean visit(DoStatement doStatement) {
 		InternalCodeFragment parent = new InternalCodeFragment();
-		
+
 		Expression expr = doStatement.getExpression();
-		if (expr != null){
+		if (expr != null) {
 			parent.addInternalStatement(expr);
 		}
-		
+
+		boolean canBeMerged = true;
 		doStatement.getBody().accept(this);
 		AbstractCodeFragment doWhileBody = lastNode.pop();
-		if (doWhileBody != null){
+		if (doWhileBody != null) {
+			if (!canBeMerged(parent, doWhileBody))
+				canBeMerged = false;
 			parent.addChild(doWhileBody);
-		}else{
-			InternalCodeFragment doNode = new InternalCodeFragment();
-			CodeFragmentLeaf simpleDoWhileStatement = new CodeFragmentLeaf();
-			simpleDoWhileStatement.addStatement(doStatement.getBody());
-			doNode.addChild(simpleDoWhileStatement);
-			parent.addChild(doNode);
+		} else {
+			if (!canBeAddedToBlock(parent, doStatement.getBody())) {
+				canBeMerged = false;
+				InternalCodeFragment doNode = new InternalCodeFragment();
+				CodeFragmentLeaf simpleDoWhileStatement = new CodeFragmentLeaf();
+				simpleDoWhileStatement.addStatement(doStatement.getBody());
+				doNode.addChild(simpleDoWhileStatement);
+				parent.addChild(doNode);
+			}
 		}
-		
+
+		if (canBeMerged) {
+			lastNode.push(null);
+			return false;
+		}
+
 		lastNode.push(parent);
 		return false;
 	}
@@ -224,34 +271,44 @@ public class FdpFragmenter extends AbstractFragmenter{
 	@Override
 	public boolean visit(ForStatement forStatement) {
 		InternalCodeFragment parent = new InternalCodeFragment();
-		
+
 		Expression expr = forStatement.getExpression();
-		if (expr != null){
+		if (expr != null) {
 			parent.addInternalStatement(expr);
 		}
-		
+
 		List<Expression> inits = forStatement.initializers();
-		for(Expression each : inits){
-			parent.addInternalStatement(each);
-		}
-		
-		List<Expression> updates = forStatement.updaters();
-		for(Expression each : updates){
+		for (Expression each : inits) {
 			parent.addInternalStatement(each);
 		}
 
-		forStatement.getBody().accept(this);
-		AbstractCodeFragment forBody = lastNode.pop();
-		if (forBody != null){
-			parent.addChild(forBody);
-		}else{
-			InternalCodeFragment forNode = new InternalCodeFragment();
-			CodeFragmentLeaf simpleForStatement = new CodeFragmentLeaf();
-			simpleForStatement.addStatement(forStatement.getBody());
-			forNode.addChild(simpleForStatement);
-			parent.addChild(forNode);
+		List<Expression> updates = forStatement.updaters();
+		for (Expression each : updates) {
+			parent.addInternalStatement(each);
 		}
-		
+
+		boolean canBeMerged = true;
+		Statement forBodyStatement = forStatement.getBody();
+		forBodyStatement.accept(this);
+		AbstractCodeFragment forBody = lastNode.pop();
+		if (forBody != null) {
+			if (!canBeMerged(parent, forBody))
+				canBeMerged = false;
+			parent.addChild(forBody);
+		} else {
+			if (!canBeMerged || !canBeAddedToBlock(parent, forBodyStatement)) {
+				canBeMerged = false;
+				InternalCodeFragment forNode = new InternalCodeFragment();
+				CodeFragmentLeaf simpleForStatement = new CodeFragmentLeaf();
+				simpleForStatement.addStatement(forBodyStatement);
+				forNode.addChild(simpleForStatement);
+				parent.addChild(forNode);
+			}
+		}
+		if (canBeMerged) {
+			lastNode.push(null);
+			return false;
+		}
 		lastNode.push(parent);
 		return false;
 	}
@@ -259,67 +316,75 @@ public class FdpFragmenter extends AbstractFragmenter{
 	@Override
 	public boolean visit(WhileStatement whileStatement) {
 		InternalCodeFragment parent = new InternalCodeFragment();
-		
+
 		Expression expr = whileStatement.getExpression();
-		if (expr != null){
+		if (expr != null) {
 			parent.addInternalStatement(expr);
 		}
-		
-		
-		whileStatement.getBody().accept(this);
+
+		boolean canBeMerged = true;
+		Statement body = whileStatement.getBody();
+		body.accept(this);
 		AbstractCodeFragment bodyWhile = lastNode.pop();
-		if (bodyWhile != null){
+		if (bodyWhile != null) {
+			if (!canBeMerged(parent, bodyWhile))
+				canBeMerged = false;
 			parent.addChild(bodyWhile);
-		}else{
-			InternalCodeFragment whileNode = new InternalCodeFragment();
-			CodeFragmentLeaf simpleWhileStatement = new CodeFragmentLeaf();
-			simpleWhileStatement.addStatement(whileStatement.getBody());
-			whileNode.addChild(simpleWhileStatement);
-			parent.addChild(whileNode);
+		} else {
+			if (!canBeMerged || !canBeAddedToBlock(parent, body)) {
+				canBeMerged = false;
+				InternalCodeFragment whileNode = new InternalCodeFragment();
+				CodeFragmentLeaf simpleWhileStatement = new CodeFragmentLeaf();
+				simpleWhileStatement.addStatement(body);
+				whileNode.addChild(simpleWhileStatement);
+				parent.addChild(whileNode);
+			}
+		}
+
+		if (canBeMerged) {
+			lastNode.push(null);
+			return false;
 		}
 		
 		lastNode.push(parent);
 		return false;
 	}
-	
-	
-	
+
 	@Override
 	public boolean visit(ArrayAccess node) {
 		InternalCodeFragment parent = new InternalCodeFragment();
 		CodeFragmentLeaf currentExpressionFragment = new CodeFragmentLeaf();
-		
+
 		Expression exprArray = node.getArray();
 		Expression exprIndex = node.getIndex();
-		if ((exprArray != null) &&(exprIndex != null)){
-				currentExpressionFragment.addStatement(exprArray);
-				currentExpressionFragment.addStatement(exprIndex);
+		if ((exprArray != null) && (exprIndex != null)) {
+			currentExpressionFragment.addStatement(exprArray);
+			currentExpressionFragment.addStatement(exprIndex);
 		}
 		parent.addChild(currentExpressionFragment);
-		
+
 		lastNode.push(parent);
 		return false;
 	}
-	
+
 	@Override
 	public boolean visit(ArrayCreation node) {
 		lastNode.push(null);
 		return false;
 	}
 
-	
 	@Override
 	public boolean visit(ArrayInitializer node) {
 		InternalCodeFragment parent = new InternalCodeFragment();
 		CodeFragmentLeaf currentExpressionFragment = new CodeFragmentLeaf();
-		
+
 		List<Expression> exprList = node.expressions();
-		if (exprList != null){
-			for (Expression e : exprList){
+		if (exprList != null) {
+			for (Expression e : exprList) {
 				currentExpressionFragment.addStatement(e);
 			}
 		}
-		
+
 		parent.addChild(currentExpressionFragment);
 		lastNode.push(parent);
 		return false;
@@ -331,7 +396,6 @@ public class FdpFragmenter extends AbstractFragmenter{
 		return false;
 	}
 
-
 	@Override
 	public boolean visit(BreakStatement node) {
 		lastNode.push(null);
@@ -340,25 +404,22 @@ public class FdpFragmenter extends AbstractFragmenter{
 
 	@Override
 	public boolean visit(CatchClause node) {
-		InternalCodeFragment parent = new InternalCodeFragment();
-		
-		SingleVariableDeclaration exceptVar = node.getException();
-		if (exceptVar != null){
-			parent.addInternalStatement(exceptVar);
-		}
-		
+		AbstractCodeFragment parent;
+
 		node.getBody().accept(this);
 		AbstractCodeFragment bodyCatch = lastNode.pop();
-		if (bodyCatch != null){
-			parent.addChild(bodyCatch);
-		}else{
-			InternalCodeFragment CatchNode = new InternalCodeFragment();
+		if (bodyCatch != null) {
+			parent=bodyCatch;
+		} else {
+			parent = new InternalCodeFragment();
 			CodeFragmentLeaf simpleCatchStatement = new CodeFragmentLeaf();
 			simpleCatchStatement.addStatement(node.getBody());
-			CatchNode.addChild(simpleCatchStatement);
-			parent.addChild(CatchNode);
+			parent.addChild(simpleCatchStatement);
 		}
-		
+		SingleVariableDeclaration exceptVar = node.getException();
+		if (exceptVar != null) {
+			parent.addInternalStatement(exceptVar);
+		}
 		lastNode.push(parent);
 		return false;
 	}
@@ -370,7 +431,7 @@ public class FdpFragmenter extends AbstractFragmenter{
 	}
 
 	@Override
-	public boolean visit(CompilationUnit node){
+	public boolean visit(CompilationUnit node) {
 		throw new DontGetHereException("CompilationUnit - It should never get here inside a Block!");
 	}
 
@@ -380,29 +441,25 @@ public class FdpFragmenter extends AbstractFragmenter{
 		return false;
 	}
 
-	
 	@Override
 	public boolean visit(MethodInvocation node) {
 		InternalCodeFragment parent = new InternalCodeFragment();
 		CodeFragmentLeaf currentFragment = new CodeFragmentLeaf();
-		//what happend here?
+		// what happend here?
 		List<Expression> exprList = node.arguments();
-		if (exprList != null){
-			for (Expression e : exprList){
+		if (exprList != null) {
+			for (Expression e : exprList) {
 				currentFragment.addStatement(e);
 			}
 		}
-		
+
 		parent.addChild(currentFragment);
 		lastNode.push(parent);
 		return false;
 	}
-	
-	
 
 	@Override
 	public boolean visit(ReturnStatement node) {
-		//why null? why false?
 		lastNode.push(null);
 		return false;
 	}
@@ -422,33 +479,51 @@ public class FdpFragmenter extends AbstractFragmenter{
 	@Override
 	public boolean visit(TryStatement tryStatement) {
 		InternalCodeFragment parent = new InternalCodeFragment();
-		
+
 		List<CatchClause> catchList = tryStatement.catchClauses();
-		if (catchList != null){
-			for (CatchClause c : catchList){
-				parent.addInternalStatement(c);
+		boolean canBeMerged=true;
+		if (catchList != null) {
+			for (CatchClause c : catchList) {
+				c.accept(this);
+				AbstractCodeFragment catchNode = lastNode.pop();
+				if (catchNode != null) {
+					if (!canBeMerged(parent, catchNode))
+						canBeMerged = false;
+				}
+				parent.addChild(catchNode);
 			}
 		}
 
 		tryStatement.getBody().accept(this);
 		AbstractCodeFragment bodyTry = lastNode.pop();
-		if (bodyTry != null){
+		if (bodyTry != null) {
+			if (bodyTry != null) {
+				if (!canBeMerged(parent, bodyTry))
+					canBeMerged = false;
+			}
 			parent.addChild(bodyTry);
-		}else{
+		} else {
+			if (!canBeAddedToBlock(parent, tryStatement))
+				canBeMerged = false;
 			InternalCodeFragment tryNode = new InternalCodeFragment();
 			CodeFragmentLeaf simpleTryStatement = new CodeFragmentLeaf();
 			simpleTryStatement.addStatement(tryStatement.getBody());
 			tryNode.addChild(simpleTryStatement);
 			parent.addChild(tryNode);
 		}
-		
-		if(tryStatement.getFinally() != null){
+
+		if (tryStatement.getFinally() != null) {
 			tryStatement.getFinally().accept(this);
 			AbstractCodeFragment bodyFinally = lastNode.pop();
-			if (bodyFinally != null){
+			if (bodyFinally != null) {
+				if (bodyFinally != null) {
+					if (!canBeMerged(parent, bodyFinally))
+						canBeMerged = false;
+				}
 				parent.addChild(bodyFinally);
-			}else{
-				//what happens when finally is empty?
+			} else {
+				if (!canBeAddedToBlock(parent, tryStatement.getFinally()))
+					canBeMerged = false;
 				InternalCodeFragment finallyNode = new InternalCodeFragment();
 				CodeFragmentLeaf simpleFinallyStatement = new CodeFragmentLeaf();
 				simpleFinallyStatement.addStatement(tryStatement.getFinally());
@@ -456,12 +531,15 @@ public class FdpFragmenter extends AbstractFragmenter{
 				parent.addChild(finallyNode);
 			}
 		}
+
+		if (canBeMerged) {
+			lastNode.push(null);
+			return false;
+		}
 		
 		lastNode.push(parent);
 		return false;
 	}
-	
-	
 
 	@Override
 	public boolean visit(SuperConstructorInvocation node) {
@@ -473,54 +551,50 @@ public class FdpFragmenter extends AbstractFragmenter{
 	public boolean visit(SwitchCase switchCase) {
 		InternalCodeFragment parent = new InternalCodeFragment();
 		CodeFragmentLeaf currentExpressionFragment = new CodeFragmentLeaf();
-		
+
 		Expression expr = switchCase.getExpression();
-		if (expr != null){
+		if (expr != null) {
 			currentExpressionFragment.addStatement(expr);
 			parent.addChild(currentExpressionFragment);
 			lastNode.push(parent);
-		}else{
+		} else {
 			lastNode.push(null);
 		}
-		
+
 		return false;
 	}
 
-	
 	@Override
 	public boolean visit(SwitchStatement switchStatement) {
 		InternalCodeFragment parent = new InternalCodeFragment();
-		
+
 		Expression expr = switchStatement.getExpression();
-		if (expr != null){
+		if (expr != null) {
 			parent.addInternalStatement(expr);
 		}
-		
+
 		List<Statement> switchStatements = switchStatement.statements();
 		InternalCodeFragment nodeStatements = new InternalCodeFragment();
 		CodeFragmentLeaf allSwitchStatements = new CodeFragmentLeaf();
-		for(int i=0; i< switchStatements.size(); i++){
+		for (int i = 0; i < switchStatements.size(); i++) {
 			switchStatements.get(i).accept(this);
-			
+
 			AbstractCodeFragment res = lastNode.pop();
-			if(res == null){
+			if (res == null) {
 				allSwitchStatements.addStatement(switchStatements.get(i));
-			}else{
+			} else {
 				parent.addChild(res);
 			}
 		}
-		
-		if (allSwitchStatements.getChildrenSize() != 0){
+
+		if (allSwitchStatements.getChildrenSize() != 0) {
 			nodeStatements.addChild(allSwitchStatements);
 			parent.addChild(nodeStatements);
 		}
 		lastNode.push(parent);
 		return false;
 	}
-	
-	
 
-	
 	@Override
 	public boolean visit(EmptyStatement node) {
 		lastNode.push(null);

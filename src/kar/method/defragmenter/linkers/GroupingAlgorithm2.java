@@ -44,7 +44,7 @@ public class GroupingAlgorithm2 implements IBlockLinker {
 				tmpEnv.add(hasAllChildrenEnvious.pop());
 				tmpEnviedClasses.add(node.getChild(i).getAccessClassesMapping().keySet());
 			}
-
+			//what happens here?
 			for (int i = 0; i < node.getChildrenSize(); i++) {				
 				AbstractCodeFragment aChild = node.getChild(i);
 				if (tmpEnv.get(i))

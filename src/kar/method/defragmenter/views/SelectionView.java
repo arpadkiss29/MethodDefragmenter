@@ -81,7 +81,9 @@ public class SelectionView extends ViewPart {
 	private Map<String, ICompilationUnit> classList = new HashMap<String, ICompilationUnit>();
 
 	private boolean applyLongMethodIdentification = false;
-	private boolean expandedFeatureEnvyVerification = true;
+	private boolean expandedFeatureEnvyVerification = false;
+	//what is this for?
+
 	private boolean considerBlankLines = true;
 	private boolean considerStaticFieldAccesses = false;
 	private boolean libraryCheck = true;
@@ -281,7 +283,7 @@ public class SelectionView extends ViewPart {
 			
 			List<AbstractTypeDeclaration> dcls = unit.types();
 			String analyzedClass = dcls.get(0).getName().getIdentifier();
-			AbstractFragmenter newVisitorBlock = new FdpFragmenter(unit,  considerStaticFieldAccesses, true, analyzedClass, FDP_TREHSOLD);
+			AbstractFragmenter newVisitorBlock = new FdpFragmenter(unit,  considerStaticFieldAccesses, analyzedClass, FDP_TREHSOLD);
 			method.accept(newVisitorBlock);
 			AbstractCodeFragment newRoot = newVisitorBlock.lastNode.pop();
 
@@ -309,6 +311,7 @@ public class SelectionView extends ViewPart {
 						minBlockSize, libraryCheck, false);			
 				AbstractCodeFragment linkedRoot =  new GroupingAlgorithm2(ATFD_TRESHOLD, FDP_TREHSOLD,  analyzedClass, 
 						considerStaticFieldAccesses, minBlockSize, libraryCheck).tryToLinkBlocks(newRoot);
+				linkedRoot.print(0);
 				item.setMethodRoot(linkedRoot);
 				item.setContainsEnviousBlocks(res);
 			}
@@ -350,7 +353,7 @@ public class SelectionView extends ViewPart {
 					List<EnviousNodeData> enviousNodeItems = new ArrayList<>();
 					
 					for(AbstractCodeFragment node : nodes){
-						if(node instanceof CodeFragmentLeaf && ((CodeFragmentLeaf)node).isEnvy()){
+						if(node instanceof CodeFragmentLeaf &&(node).isEnvy()){
 							CodeFragmentLeaf leaf = (CodeFragmentLeaf)node;
 							EnviousNodeData enviousItem = new EnviousNodeData();
 							enviousItem.setLines(parsedUnit.getLineNumber(((CodeFragmentLeaf)node).getFragmentFirstLine()) + " - " + parsedUnit.getLineNumber(((CodeFragmentLeaf)node).getFragmentLastLine()));
