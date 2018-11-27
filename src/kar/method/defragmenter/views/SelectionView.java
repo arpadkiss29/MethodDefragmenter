@@ -353,7 +353,7 @@ public class SelectionView extends ViewPart {
 					List<EnviousNodeData> enviousNodeItems = new ArrayList<>();
 					
 					for(AbstractCodeFragment node : nodes){
-						if(node instanceof CodeFragmentLeaf &&(node).isEnvy()){
+						if(node instanceof CodeFragmentLeaf /*&&(node).isEnvy()*/){
 							CodeFragmentLeaf leaf = (CodeFragmentLeaf)node;
 							EnviousNodeData enviousItem = new EnviousNodeData();
 							enviousItem.setLines(parsedUnit.getLineNumber(((CodeFragmentLeaf)node).getFragmentFirstLine()) + " - " + parsedUnit.getLineNumber(((CodeFragmentLeaf)node).getFragmentLastLine()));
@@ -362,7 +362,7 @@ public class SelectionView extends ViewPart {
 							enviousItem.setLocalAttrAccess(leaf.getLocalAttrAccess());
 							enviousItem.setTargetClass(leaf.getTargetClass());
 							enviousNodeItems.add(enviousItem);
-						}else if(expandedFeatureEnvyVerification && node.isEnvy()){
+						}else if(expandedFeatureEnvyVerification /*&& node.isEnvy()*/){
 							EnviousNodeData enviousItem = new EnviousNodeData();
 							enviousItem.setLines(parsedUnit.getLineNumber(node.getStartNode()) + " - " + parsedUnit.getLineNumber(node.getEndNode()));
 							enviousItem.setAccessForeignData(node.getAccessForeignData());

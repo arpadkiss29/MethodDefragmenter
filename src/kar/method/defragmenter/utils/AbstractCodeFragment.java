@@ -294,7 +294,7 @@ public abstract class AbstractCodeFragment {
 	public List<AbstractCodeFragment> getAllEnviousNodes(){
 		List<AbstractCodeFragment> nodes = new ArrayList<AbstractCodeFragment>();
 		for(AbstractCodeFragment node: children){
-			if(/*node instanceof CodeFragmentLeaf && */(/*	(CodeFragmentLeaf)*/node).isEnvy()){
+			if(node instanceof CodeFragmentLeaf /*&& (	(CodeFragmentLeaf)node).isEnvy()*/){
 				nodes.add(node);
 			}else{
 				if(node.isEnvy()) {

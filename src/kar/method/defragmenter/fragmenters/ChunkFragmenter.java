@@ -498,7 +498,7 @@ public class ChunkFragmenter extends AbstractFragmenter{
 				parent.addChild(res);
 			}
 		}
-		
+		//why do we care about children size if we don't add any child?
 		if (allSwitchStatements.getChildrenSize() != 0){
 			nodeStatements.addChild(allSwitchStatements);
 			parent.addChild(nodeStatements);
