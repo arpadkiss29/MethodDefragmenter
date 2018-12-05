@@ -57,9 +57,9 @@ public class FdpFragmenter extends AbstractFragmenter {
 		this.FDP_TRESHOLD = FDP_TREHSOLD;
 	}
 
-	private boolean canBeMerged(AbstractCodeFragment parent, AbstractCodeFragment resThen) {
-		if (resThen.getChildrenSize() != 1 || !(resThen.getChild(0) instanceof CodeFragmentLeaf)
-				|| !canBeAddedToBlock(parent, resThen.getAllSubTreeASTNodes())) {
+	private boolean canBeMerged(AbstractCodeFragment parent, AbstractCodeFragment toBeMerged) {
+		if (toBeMerged.getChildrenSize() != 1 || !(toBeMerged.getChild(0) instanceof CodeFragmentLeaf)
+				|| !canBeAddedToBlock(parent, toBeMerged.getAllSubTreeASTNodes())) {
 			return false;
 		}
 		return true;
@@ -73,10 +73,10 @@ public class FdpFragmenter extends AbstractFragmenter {
 
 	// could I use Statement in ArrayList? generics?
 	private boolean canBeAddedToBlock(AbstractCodeFragment currentFragment, List<ASTNode> currentStatements) {
-		HashMap<String, Integer> fdpBefore = currentFragment.getFdp(analyzedClass, considerStaticFields, null, false);
+		HashMap<String, Integer> fdpBefore = currentFragment.getFdp(analyzedClass, considerStaticFields, null, true);
 		CodeFragmentLeaf tempFragment = new CodeFragmentLeaf();
 		tempFragment.addStatements(currentStatements);
-		HashMap<String, Integer> fdpAfter = tempFragment.getFdp(analyzedClass, considerStaticFields, null, false);
+		HashMap<String, Integer> fdpAfter = tempFragment.getFdp(analyzedClass, considerStaticFields, null, true);
 		if (fdpBefore.size() == 0) {
 			return true;
 		}
@@ -174,8 +174,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 			thenStatement.accept(this);
 			AbstractCodeFragment resThen = lastNode.pop();
 			if (resThen != null) {
-				if (resThen.getChildrenSize() != 1 || !(resThen.getChild(0) instanceof CodeFragmentLeaf)
-						|| !canBeAddedToBlock(parent, resThen.getAllSubTreeASTNodes())) {
+				if (!canBeMerged(parent, resThen)) {
 					canBeMerged = false;
 				}
 				resThen.setType(FixedStructureTypes.IF_THEN);
@@ -199,8 +198,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 			elseStatement.accept(this);
 			AbstractCodeFragment resElse = lastNode.pop();
 			if (resElse != null) {
-				if (resElse.getChildrenSize() != 1 || !(resElse.getChild(0) instanceof CodeFragmentLeaf)
-						|| !canBeAddedToBlock(parent, resElse.getAllSubTreeASTNodes())) {
+				if (!canBeMerged(parent, resElse)) {
 					canBeMerged = false;
 				}
 				resElse.setType(FixedStructureTypes.IF_ELSE);
