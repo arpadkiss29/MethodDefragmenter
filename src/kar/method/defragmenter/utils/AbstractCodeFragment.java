@@ -442,6 +442,15 @@ public abstract class AbstractCodeFragment {
 	private int localAttrAccess = 0;
 	private int foreignDataProviders = 0;
 	private String targetClass;
+	private HashMap<String, Integer> storedFDP=null;
+	
+	public HashMap<String, Integer> getStoredFDP() {
+		return storedFDP;
+	}
+
+	public void setStoredFDP(HashMap<String, Integer> storedFDP) {
+		this.storedFDP = storedFDP;
+	}
 
 	public int getFdpSize(String analyzedClass, boolean staticFields, Integer minBlockSize, boolean libraryCheck) {
 		computeDataAccesses(analyzedClass, staticFields, minBlockSize, libraryCheck);
@@ -452,6 +461,7 @@ public abstract class AbstractCodeFragment {
 	public HashMap<String, Integer> getFdp(String analyzedClass, boolean staticFields, Integer minBlockSize,
 			boolean libraryCheck) {
 		computeDataAccesses(analyzedClass, staticFields, minBlockSize, libraryCheck);
+		storedFDP=accessClassesMapping;
 		return accessClassesMapping;
 	}
 

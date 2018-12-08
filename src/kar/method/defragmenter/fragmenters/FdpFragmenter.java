@@ -73,18 +73,28 @@ public class FdpFragmenter extends AbstractFragmenter {
 
 	// could I use Statement in ArrayList? generics?
 	private boolean canBeAddedToBlock(AbstractCodeFragment currentFragment, List<ASTNode> currentStatements) {
-		HashMap<String, Integer> fdpBefore = currentFragment.getFdp(analyzedClass, considerStaticFields, null, true);
+		if (currentFragment.getStoredFDP() == null) {
+			currentFragment.getFdp(analyzedClass, considerStaticFields, null, true);
+		}
+		HashMap<String, Integer> fdpBefore = currentFragment.getStoredFDP();
 		CodeFragmentLeaf tempFragment = new CodeFragmentLeaf();
 		tempFragment.addStatements(currentStatements);
 		HashMap<String, Integer> fdpAfter = tempFragment.getFdp(analyzedClass, considerStaticFields, null, true);
 		if (fdpBefore.size() == 0) {
+			currentFragment.setStoredFDP(fdpAfter);
 			return true;
+		} else {
+			if (fdpAfter.size()!=0&&fdpBefore.size() != fdpAfter.size()) {
+				return false;
+			}
 		}
 		for (String key : fdpAfter.keySet()) {
 			if (!fdpBefore.containsKey(key)) {
 				return false;
 			}
 		}
+		fdpBefore.putAll(fdpAfter);
+		currentFragment.setStoredFDP(fdpBefore);
 		return true;
 	}
 
@@ -177,7 +187,6 @@ public class FdpFragmenter extends AbstractFragmenter {
 				if (!canBeMerged(parent, resThen)) {
 					canBeMerged = false;
 				}
-				resThen.setType(FixedStructureTypes.IF_THEN);
 				parent.addChild(resThen);
 			} else {
 				if (!canBeAddedToBlock(parent, thenStatement)) {
@@ -185,7 +194,6 @@ public class FdpFragmenter extends AbstractFragmenter {
 					InternalCodeFragment thenNode = new InternalCodeFragment();
 					CodeFragmentLeaf thenStatementLeaf = new CodeFragmentLeaf();
 					thenStatementLeaf.addStatement(thenStatement);
-					thenStatementLeaf.setType(FixedStructureTypes.IF_THEN);
 					thenNode.addChild(thenStatementLeaf);
 					parent.addChild(thenNode);
 				}
@@ -201,7 +209,6 @@ public class FdpFragmenter extends AbstractFragmenter {
 				if (!canBeMerged(parent, resElse)) {
 					canBeMerged = false;
 				}
-				resElse.setType(FixedStructureTypes.IF_ELSE);
 				parent.addChild(resElse);
 			} else {
 				if (!canBeMerged || !canBeAddedToBlock(parent, elseStatement)) {
@@ -209,7 +216,6 @@ public class FdpFragmenter extends AbstractFragmenter {
 					InternalCodeFragment elseNode = new InternalCodeFragment();
 					CodeFragmentLeaf elseStatementLeaf = new CodeFragmentLeaf();
 					elseStatementLeaf.addStatement(elseStatement);
-					elseStatementLeaf.setType(FixedStructureTypes.IF_ELSE);
 					elseNode.addChild(elseStatementLeaf);
 					parent.addChild(elseNode);
 				}
@@ -221,7 +227,6 @@ public class FdpFragmenter extends AbstractFragmenter {
 			return false;
 		}
 
-		parent.setType(FixedStructureTypes.IF);
 		lastNode.push(parent);
 		return false;
 	}
@@ -590,7 +595,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 		InternalCodeFragment parent = new InternalCodeFragment();
 		CodeFragmentLeaf currentExpressionFragment = new CodeFragmentLeaf();
 
-		//what do we care about expr?
+		// what do we care about expr?
 		Expression expr = switchCase.getExpression();
 		if (expr != null) {
 			currentExpressionFragment.addStatement(expr);
@@ -629,9 +634,9 @@ public class FdpFragmenter extends AbstractFragmenter {
 					}
 					currentStatements = new CodeFragmentLeaf();
 					currentStatements.addStatement(statement);
-					if(!canBeAddedToBlock)
+					if (!canBeAddedToBlock)
 						canBeMerged = false;
-				}else {
+				} else {
 					currentStatements.addStatement(statement);
 				}
 			} else {
