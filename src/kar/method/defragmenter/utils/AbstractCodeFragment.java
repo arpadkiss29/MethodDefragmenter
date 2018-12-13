@@ -642,7 +642,7 @@ public abstract class AbstractCodeFragment {
 	}
 
 	public void colorEnvyLeafNodes(ITextEditor textEditor, IFile file) throws CoreException {
-		if (/* isEnvy&& */this instanceof CodeFragmentLeaf) {
+		if ( isEnvy && this instanceof CodeFragmentLeaf) {
 			String colorType = "annotationColor_17";
 			if (colorCounter < 17) {
 				colorType = "annotationColor_" + colorCounter;

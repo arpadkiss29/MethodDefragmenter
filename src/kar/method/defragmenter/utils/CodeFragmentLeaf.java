@@ -133,7 +133,7 @@ public class CodeFragmentLeaf extends AbstractCodeFragment {
 	
 	@Override
 	public void colorEnvyLeafNodes(ITextEditor textEditor, IFile file) throws CoreException {	
-		if(true/*isEnvy()*/){
+		if(isEnvy()){
 			String colorType = "annotationColor_17";
 
 			if (colorCounter < 17){
