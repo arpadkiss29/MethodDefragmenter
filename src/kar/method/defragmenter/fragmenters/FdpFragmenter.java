@@ -57,9 +57,17 @@ public class FdpFragmenter extends AbstractFragmenter {
 		this.FDP_TRESHOLD = FDP_TREHSOLD;
 	}
 
+	private void addStatementToCodeFragment(AbstractCodeFragment parent, Statement statement) {
+		InternalCodeFragment childNode = new InternalCodeFragment();
+		CodeFragmentLeaf childLeaf = new CodeFragmentLeaf();
+		childLeaf.addStatement(statement);
+		childNode.addChild(childLeaf);
+		parent.addChild(childNode);
+	}
+	
 	private boolean canBeMerged(AbstractCodeFragment parent, AbstractCodeFragment toBeMerged) {
 		if (toBeMerged.getChildrenSize() != 1 || !(toBeMerged.getChild(0) instanceof CodeFragmentLeaf)
-				|| !canBeAddedToBlock(parent, toBeMerged.getAllSubTreeASTNodes())) {
+				|| !canBeAddedToBlockWith2FDP(parent, toBeMerged.getAllSubTreeASTNodes())) {
 			return false;
 		}
 		return true;
@@ -68,10 +76,9 @@ public class FdpFragmenter extends AbstractFragmenter {
 	private boolean canBeAddedToBlock(AbstractCodeFragment currentFragment, Statement currentStatements) {
 		List<ASTNode> statement = new ArrayList<ASTNode>();
 		statement.add(currentStatements);
-		return canBeAddedToBlock(currentFragment, statement);
+		return canBeAddedToBlockWith2FDP(currentFragment, statement);
 	}
 
-	// could I use Statement in ArrayList? generics?
 	private boolean canBeAddedToBlock(AbstractCodeFragment currentFragment, List<ASTNode> currentStatements) {
 		if (currentFragment.getStoredFDP() == null) {
 			currentFragment.getFdp(analyzedClass, considerStaticFields, null, true);
@@ -97,7 +104,36 @@ public class FdpFragmenter extends AbstractFragmenter {
 		currentFragment.setStoredFDP(fdpBefore);
 		return true;
 	}
-
+	private boolean canBeAddedToBlockWith2FDP(AbstractCodeFragment currentFragment, List<ASTNode> currentStatements) {
+		if (currentFragment.getStoredFDP() == null) {
+			currentFragment.getFdp(analyzedClass, considerStaticFields, null, true);
+		}
+		HashMap<String, Integer> fdpBefore = currentFragment.getStoredFDP();
+		CodeFragmentLeaf tempFragment = new CodeFragmentLeaf();
+		tempFragment.addStatements(currentStatements);
+		HashMap<String, Integer> fdpAfter = tempFragment.getFdp(analyzedClass, considerStaticFields, null, true);
+		
+		if (fdpBefore.size() == 0) {
+			currentFragment.setStoredFDP(fdpAfter);
+			return true;
+		} 
+		if(fdpBefore.size()>2 || fdpAfter.size()>2) {
+			return false;
+		}
+		
+		int i=fdpBefore.size();
+		for (String key : fdpAfter.keySet()) {
+			if (!fdpBefore.containsKey(key)) {
+				i++;
+			}
+		}
+		if(i>2) {
+			return false;
+		}
+		fdpBefore.putAll(fdpAfter);
+		currentFragment.setStoredFDP(fdpBefore);
+		return true;
+	}
 	@Override
 	public boolean visit(Block node) {
 
@@ -191,11 +227,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 			} else {
 				if (!canBeAddedToBlock(parent, thenStatement)) {
 					canBeMerged = false;
-					InternalCodeFragment thenNode = new InternalCodeFragment();
-					CodeFragmentLeaf thenStatementLeaf = new CodeFragmentLeaf();
-					thenStatementLeaf.addStatement(thenStatement);
-					thenNode.addChild(thenStatementLeaf);
-					parent.addChild(thenNode);
+					addStatementToCodeFragment(parent, thenStatement);
 				}
 
 			}
@@ -213,11 +245,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 			} else {
 				if (!canBeMerged || !canBeAddedToBlock(parent, elseStatement)) {
 					canBeMerged = false;
-					InternalCodeFragment elseNode = new InternalCodeFragment();
-					CodeFragmentLeaf elseStatementLeaf = new CodeFragmentLeaf();
-					elseStatementLeaf.addStatement(elseStatement);
-					elseNode.addChild(elseStatementLeaf);
-					parent.addChild(elseNode);
+					addStatementToCodeFragment(parent, elseStatement);
 				}
 			}
 		}
@@ -250,11 +278,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 		} else {
 			if (!canBeAddedToBlock(parent, doStatement.getBody())) {
 				canBeMerged = false;
-				InternalCodeFragment doNode = new InternalCodeFragment();
-				CodeFragmentLeaf simpleDoWhileStatement = new CodeFragmentLeaf();
-				simpleDoWhileStatement.addStatement(doStatement.getBody());
-				doNode.addChild(simpleDoWhileStatement);
-				parent.addChild(doNode);
+				addStatementToCodeFragment(parent,doStatement.getBody());
 			}
 		}
 
@@ -303,11 +327,9 @@ public class FdpFragmenter extends AbstractFragmenter {
 		} else {
 			if (!canBeMerged || !canBeAddedToBlock(parent, forBodyStatement)) {
 				canBeMerged = false;
-				InternalCodeFragment forNode = new InternalCodeFragment();
-				CodeFragmentLeaf simpleForStatement = new CodeFragmentLeaf();
-				simpleForStatement.addStatement(forBodyStatement);
-				forNode.addChild(simpleForStatement);
-				parent.addChild(forNode);
+				addStatementToCodeFragment(parent,forBodyStatement);
+
+				
 			}
 		}
 		if (canBeMerged) {
@@ -341,11 +363,8 @@ public class FdpFragmenter extends AbstractFragmenter {
 		} else {
 			if (!canBeMerged || !canBeAddedToBlock(parent, forBodyStatement)) {
 				canBeMerged = false;
-				InternalCodeFragment forNode = new InternalCodeFragment();
-				CodeFragmentLeaf simpleForStatement = new CodeFragmentLeaf();
-				simpleForStatement.addStatement(forBodyStatement);
-				forNode.addChild(simpleForStatement);
-				parent.addChild(forNode);
+				addStatementToCodeFragment(parent, forBodyStatement);
+				
 			}
 		}
 		if (canBeMerged) {
@@ -376,11 +395,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 		} else {
 			if (!canBeMerged || !canBeAddedToBlock(parent, body)) {
 				canBeMerged = false;
-				InternalCodeFragment whileNode = new InternalCodeFragment();
-				CodeFragmentLeaf simpleWhileStatement = new CodeFragmentLeaf();
-				simpleWhileStatement.addStatement(body);
-				whileNode.addChild(simpleWhileStatement);
-				parent.addChild(whileNode);
+				addStatementToCodeFragment(parent,body);
 			}
 		}
 
@@ -546,13 +561,9 @@ public class FdpFragmenter extends AbstractFragmenter {
 			}
 			parent.addChild(bodyTry);
 		} else {
-			if (!canBeAddedToBlock(parent, tryStatement))
+			if (!canBeAddedToBlock(parent, tryStatement.getBody()))
 				canBeMerged = false;
-			InternalCodeFragment tryNode = new InternalCodeFragment();
-			CodeFragmentLeaf simpleTryStatement = new CodeFragmentLeaf();
-			simpleTryStatement.addStatement(tryStatement.getBody());
-			tryNode.addChild(simpleTryStatement);
-			parent.addChild(tryNode);
+			addStatementToCodeFragment(parent, tryStatement.getBody());
 		}
 
 		if (tryStatement.getFinally() != null) {
@@ -567,11 +578,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 			} else {
 				if (!canBeAddedToBlock(parent, tryStatement.getFinally()))
 					canBeMerged = false;
-				InternalCodeFragment finallyNode = new InternalCodeFragment();
-				CodeFragmentLeaf simpleFinallyStatement = new CodeFragmentLeaf();
-				simpleFinallyStatement.addStatement(tryStatement.getFinally());
-				finallyNode.addChild(simpleFinallyStatement);
-				parent.addChild(finallyNode);
+				addStatementToCodeFragment(parent, tryStatement.getFinally());
 			}
 		}
 

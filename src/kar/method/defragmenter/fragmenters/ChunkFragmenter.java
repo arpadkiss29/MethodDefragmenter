@@ -91,7 +91,6 @@ public class ChunkFragmenter extends AbstractFragmenter{
 					int endLine = unit.getLineNumber(currentStatements.get(i).getStartPosition() + currentStatements.get(i).getLength());
 					if(endLine - previousLine > 0){
 						lineDiff = endLine - previousLine;
-						//System.out.println("Line diff: " + lineDiff);
 					}else{
 						lineDiff = 0;
 					}

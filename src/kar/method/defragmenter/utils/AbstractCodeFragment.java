@@ -525,7 +525,6 @@ public abstract class AbstractCodeFragment {
 
 	protected void computeDataAccesses(String analyzedClass, boolean staticFields, Integer minBlockSize,
 			boolean libraryCheck) {
-//what is going on here
 		HashSet<IVariableBinding> variableBindingsCache = new HashSet<IVariableBinding>();
 		HashSet<IMethodBinding> methodBindingCache = new HashSet<IMethodBinding>();
 
@@ -555,7 +554,6 @@ public abstract class AbstractCodeFragment {
 									}
 								}
 								if (!already) {
-									// why do we care about params?
 									if (isGetter && methodBinding.getParameterTypes().length == 0) {
 										incrementAccesses(analyzedClass, methodBinding.getDeclaringClass());
 									}
