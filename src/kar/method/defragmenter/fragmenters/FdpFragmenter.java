@@ -67,7 +67,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 	
 	private boolean canBeMerged(AbstractCodeFragment parent, AbstractCodeFragment toBeMerged) {
 		if (toBeMerged.getChildrenSize() != 1 || !(toBeMerged.getChild(0) instanceof CodeFragmentLeaf)
-				|| !canBeAddedToBlock(parent, toBeMerged.getAllSubTreeASTNodes())) {
+				|| !canBeAddedToBlockWith2FDP(parent, toBeMerged.getAllSubTreeASTNodes())) {
 			return false;
 		}
 		return true;
@@ -76,7 +76,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 	private boolean canBeAddedToBlock(AbstractCodeFragment currentFragment, Statement currentStatements) {
 		List<ASTNode> statement = new ArrayList<ASTNode>();
 		statement.add(currentStatements);
-		return canBeAddedToBlock(currentFragment, statement);
+		return canBeAddedToBlockWith2FDP(currentFragment, statement);
 	}
 
 	private boolean canBeAddedToBlock(AbstractCodeFragment currentFragment, List<ASTNode> currentStatements) {
