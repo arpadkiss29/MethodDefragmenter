@@ -67,7 +67,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 	
 	private boolean canBeMerged(AbstractCodeFragment parent, AbstractCodeFragment toBeMerged) {
 		if (toBeMerged.getChildrenSize() != 1 || !(toBeMerged.getChild(0) instanceof CodeFragmentLeaf)
-				|| !canBeAddedToBlockWith2FDP(parent, toBeMerged.getAllSubTreeASTNodes())) {
+				|| !canBeAddedToBlockWith2FDP(parent, toBeMerged.getAllSubTreeASTNodes(),false)) {
 			return false;
 		}
 		return true;
@@ -76,7 +76,13 @@ public class FdpFragmenter extends AbstractFragmenter {
 	private boolean canBeAddedToBlock(AbstractCodeFragment currentFragment, Statement currentStatements) {
 		List<ASTNode> statement = new ArrayList<ASTNode>();
 		statement.add(currentStatements);
-		return canBeAddedToBlockWith2FDP(currentFragment, statement);
+		return canBeAddedToBlockWith2FDP(currentFragment, statement, false);
+	}
+	
+	private boolean canBeAddedToBlock(AbstractCodeFragment currentFragment, Statement currentStatements, boolean reduceLimits) {
+		List<ASTNode> statement = new ArrayList<ASTNode>();
+		statement.add(currentStatements);
+		return canBeAddedToBlockWith2FDP(currentFragment, statement, reduceLimits);
 	}
 
 	private boolean canBeAddedToBlock(AbstractCodeFragment currentFragment, List<ASTNode> currentStatements) {
@@ -104,7 +110,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 		currentFragment.setStoredFDP(fdpBefore);
 		return true;
 	}
-	private boolean canBeAddedToBlockWith2FDP(AbstractCodeFragment currentFragment, List<ASTNode> currentStatements) {
+	private boolean canBeAddedToBlockWith2FDP(AbstractCodeFragment currentFragment, List<ASTNode> currentStatements, boolean reduceLimits) {
 		if (currentFragment.getStoredFDP() == null) {
 			currentFragment.getFdp(analyzedClass, considerStaticFields, null, true);
 		}
@@ -112,6 +118,11 @@ public class FdpFragmenter extends AbstractFragmenter {
 		CodeFragmentLeaf tempFragment = new CodeFragmentLeaf();
 		tempFragment.addStatements(currentStatements);
 		HashMap<String, Integer> fdpAfter = tempFragment.getFdp(analyzedClass, considerStaticFields, null, true);
+		
+		if (reduceLimits && fdpBefore.size() == 0 && fdpAfter.size()>=1) {
+			currentFragment.setStoredFDP(fdpAfter);
+			return false;
+		} 
 		
 		if (fdpBefore.size() == 0) {
 			currentFragment.setStoredFDP(fdpAfter);
@@ -163,7 +174,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 				if (currentFragment == null) {
 					currentFragment = new CodeFragmentLeaf();
 				}
-				boolean canBeAdded = canBeAddedToBlock(currentFragment, statement);
+				boolean canBeAdded = canBeAddedToBlock(currentFragment, statement, true);
 				if (!canBeAdded) {
 					parent.addChild(currentFragment);
 					currentFragment = new CodeFragmentLeaf();
