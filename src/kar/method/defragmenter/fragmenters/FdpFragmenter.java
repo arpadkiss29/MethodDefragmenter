@@ -39,7 +39,6 @@ import org.eclipse.jdt.core.dom.WhileStatement;
 import kar.method.defragmenter.utils.CodeFragmentLeaf;
 import kar.method.defragmenter.utils.AbstractCodeFragment;
 import kar.method.defragmenter.utils.DontGetHereException;
-import kar.method.defragmenter.utils.FixedStructureTypes;
 import kar.method.defragmenter.utils.InternalCodeFragment;
 
 @SuppressWarnings("unchecked")
@@ -119,7 +118,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 		tempFragment.addStatements(currentStatements);
 		HashMap<String, Integer> fdpAfter = tempFragment.getFdp(analyzedClass, considerStaticFields, null, true);
 		
-		if (reduceLimits && fdpBefore.size() == 0 && fdpAfter.size()>=1) {
+		if (reduceLimits && currentFragment instanceof CodeFragmentLeaf && ((CodeFragmentLeaf) currentFragment).getStatementsLength()!=0 &&fdpBefore.size() == 0 && fdpAfter.size()>=1) {
 			currentFragment.setStoredFDP(fdpAfter);
 			return false;
 		} 
