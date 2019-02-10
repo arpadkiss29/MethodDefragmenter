@@ -118,7 +118,10 @@ public class FdpFragmenter extends AbstractFragmenter {
 		tempFragment.addStatements(currentStatements);
 		HashMap<String, Integer> fdpAfter = tempFragment.getFdp(analyzedClass, considerStaticFields, null, true);
 		
-		if (reduceLimits && currentFragment instanceof CodeFragmentLeaf && ((CodeFragmentLeaf) currentFragment).getStatementsLength()!=0 &&fdpBefore.size() == 0 && fdpAfter.size()>=1) {
+		if (reduceLimits 
+				&& ((currentFragment instanceof CodeFragmentLeaf && ((CodeFragmentLeaf) currentFragment).getStatementsLength()!=0)
+				|| currentFragment.getInternalAstNodesSize()!=0)
+				&& fdpBefore.size() == 0 && fdpAfter.size()>=1) {
 			currentFragment.setStoredFDP(fdpAfter);
 			return false;
 		} 

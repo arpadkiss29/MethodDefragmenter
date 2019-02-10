@@ -64,6 +64,10 @@ public abstract class AbstractCodeFragment {
 		this.children = new ArrayList<>();
 	}
 
+	public int getInternalAstNodesSize(){
+		return internalASTNodes.size();
+	}
+	
 	public void addInternalStatement(ASTNode node) {
 		internalASTNodes.add(node);
 	}
