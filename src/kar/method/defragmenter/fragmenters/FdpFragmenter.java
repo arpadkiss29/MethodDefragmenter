@@ -62,6 +62,23 @@ public class FdpFragmenter extends AbstractFragmenter {
 		return childLeaf.getFdp(analyzedClass, considerStaticFields, null, true);
 	}
 
+	private void mergeLeafInAccumulator(CodeFragmentLeaf accumulator, CodeFragmentLeaf leafToBeMerged) {
+		accumulator.addStatements(leafToBeMerged.getStatements());
+		HashMap<String, Integer> storedFDP = accumulator.getStoredFDP();
+		if (storedFDP != null) {
+			HashMap<String, Integer> storedFDP2 = leafToBeMerged.getStoredFDP();
+			if (storedFDP2 == null) {
+				storedFDP2 = getFdpOfFragment(leafToBeMerged);
+			}
+			storedFDP.putAll(storedFDP2);
+			accumulator.setStoredFDP(storedFDP);
+		}
+	}
+
+	private HashMap<String, Integer> getFdpOfFragment(AbstractCodeFragment fragment) {
+		return fragment.getFdp(analyzedClass, considerStaticFields, null, true);
+	}
+
 	private void addStatementToCodeFragment(AbstractCodeFragment parent, Statement statement) {
 		InternalCodeFragment childNode = new InternalCodeFragment();
 		CodeFragmentLeaf childLeaf = new CodeFragmentLeaf();
@@ -125,6 +142,11 @@ public class FdpFragmenter extends AbstractFragmenter {
 		HashMap<String, Integer> fdpBefore = currentFragment.getStoredFDP();
 		CodeFragmentLeaf tempFragment = new CodeFragmentLeaf();
 		tempFragment.addStatements(currentStatements);
+		return canBeAddedToBlockWith2FDP(currentFragment, reduceLimits, fdpBefore, tempFragment);
+	}
+
+	private boolean canBeAddedToBlockWith2FDP(AbstractCodeFragment currentFragment, boolean reduceLimits,
+			HashMap<String, Integer> fdpBefore, CodeFragmentLeaf tempFragment) {
 		HashMap<String, Integer> fdpAfter = tempFragment.getFdp(analyzedClass, considerStaticFields, null, true);
 
 		if (reduceLimits
@@ -136,7 +158,6 @@ public class FdpFragmenter extends AbstractFragmenter {
 		}
 
 		if (fdpBefore.size() == 0) {
-			currentFragment.setStoredFDP(fdpAfter);
 			return true;
 		}
 		if (fdpBefore.size() > 2 || fdpAfter.size() > 2) {
@@ -153,7 +174,6 @@ public class FdpFragmenter extends AbstractFragmenter {
 			return false;
 		}
 		fdpBefore.putAll(fdpAfter);
-		currentFragment.setStoredFDP(fdpBefore);
 		return true;
 	}
 
@@ -167,11 +187,11 @@ public class FdpFragmenter extends AbstractFragmenter {
 
 		CodeFragmentLeaf currentFragment = null;
 		List<Statement> currentStatements = node.statements();
-		boolean isBlockBelow = true;
 
+		List<AbstractCodeFragment> codeFragments = new ArrayList<AbstractCodeFragment>();
 		for (int i = 0; i < currentStatements.size(); i++) {
 			Statement statement = currentStatements.get(i);
-			isBlockBelow = true;
+
 			// Visit each statement in current block
 			((ASTNode) statement).accept(this);
 
@@ -183,118 +203,115 @@ public class FdpFragmenter extends AbstractFragmenter {
 
 			// If there is no block below, this means there are only statements
 			if (res == null) {
-				// If current statement belongs to the part of code before the
-				// block;
-				if (currentFragment == null) {
-					currentFragment = new CodeFragmentLeaf();
-				}
-				HashMap<String, Integer> storedFDP = currentFragment.getStoredFDP();
-				if (storedFDP == null) {
-					storedFDP = currentFragment.getFdp(analyzedClass, considerStaticFields, null, true);
-				}
-				if (storedFDP != null && storedFDP.size() > 0) {
-					HashMap<String, Integer> fdpOfStatement = getFdpOfStatement(statement);
-					if (fdpOfStatement.size() == 0) {
-						List<ASTNode> statementsList = new ArrayList<ASTNode>();
-						statementsList.add(statement);
-						for (int j = i + 1; j < currentStatements.size(); j++) {
-							Statement currentStatement = currentStatements.get(j);
-							
-							if(currentFragment==null){
-								currentFragment= new CodeFragmentLeaf();
-							}
-							
-							// Visit each statement in current block
-							((ASTNode) currentStatement).accept(this);
+				currentFragment = new CodeFragmentLeaf();
+				// Adding it to the current leaf
+				currentFragment.addStatement(statement);
+				codeFragments.add(currentFragment);
+			} else {
+				// Adding the node which was below and contains a block in it.
+				codeFragments.add(res);
+			}
+		}
 
-							// Get subtree from below
-							AbstractCodeFragment result = null;
-							if (!lastNode.isEmpty()) {
-								result = lastNode.pop();
-							}
-							if (result != null) {
-								isBlockBelow = false;
-								parent.addChild(currentFragment);
-								currentFragment = new CodeFragmentLeaf();
-								if (statementsList.size() != 0) {
-									currentFragment.addStatements(statementsList);
-									statementsList.clear();
-									parent.addChild(currentFragment);
-									currentFragment = new CodeFragmentLeaf();
-								}
-								parent.addChild(result);
-								i = j;
-								break;
-							}
+		currentFragment = new CodeFragmentLeaf();
+		HashMap<String, Integer> fdpOfCurrentLeaf;
+		HashMap<String, Integer> storedFDP = new HashMap<String, Integer>();
+		for (int i = 0; i < codeFragments.size(); i++) {
+			AbstractCodeFragment currentAbstractFragment = codeFragments.get(i);
+			
+			if (currentFragment == null) {
+				currentFragment = new CodeFragmentLeaf();
+				storedFDP = new HashMap<String, Integer>();
+			}
+			storedFDP = currentFragment.getStoredFDP();
+			if(storedFDP==null){
+				storedFDP = getFdpOfFragment(currentFragment);
+			}
 
-							HashMap<String, Integer> currentStatementFdp = getFdpOfStatement(currentStatement);
-							if (currentStatementFdp.size() != 0) {
-								currentStatementFdp.putAll(storedFDP);
-								if (currentStatementFdp.size() > 2) {
+			if (currentAbstractFragment instanceof CodeFragmentLeaf) {
+				CodeFragmentLeaf currentLeaf = (CodeFragmentLeaf) currentAbstractFragment;
+				fdpOfCurrentLeaf = getFdpOfFragment(currentLeaf);
+
+				if (storedFDP.size() > 0 && fdpOfCurrentLeaf.size() == 0) {
+					CodeFragmentLeaf accumulatorLeaf = currentLeaf;
+					if (i == currentStatements.size() - 1) {
+			        	parent.addChild(currentFragment);
+			        	currentFragment=null;
+						parent.addChild(currentLeaf);
+					}
+					for (int j = i + 1; j < codeFragments.size(); j++) {
+						AbstractCodeFragment nextFragment = codeFragments.get(j);
+
+						if (!(nextFragment instanceof CodeFragmentLeaf)) {
+							parent.addChild(currentFragment);
+							currentFragment = null;
+							parent.addChild(accumulatorLeaf);
+							accumulatorLeaf = null;
+							parent.addChild(nextFragment);
+							i = j;
+							break;
+						} else {
+							CodeFragmentLeaf nextLeaf = (CodeFragmentLeaf) nextFragment;
+							HashMap<String, Integer> nextStatementFdp = getFdpOfFragment(nextLeaf);
+							if (nextStatementFdp.size() != 0) {
+								HashMap<String, Integer> tempStoredFDP = new HashMap<String, Integer>();
+								tempStoredFDP.putAll(nextStatementFdp);
+								tempStoredFDP.putAll(storedFDP);
+								if (tempStoredFDP.size() > 2) {
 									parent.addChild(currentFragment);
 									currentFragment = new CodeFragmentLeaf();
-									currentFragment.addStatements(statementsList);
-									statementsList.clear();
-									parent.addChild(currentFragment);
-									currentFragment = new CodeFragmentLeaf();
+									parent.addChild(accumulatorLeaf);
+									accumulatorLeaf = null;
 									i = j;
-									statement = currentStatements.get(i);
+									currentFragment.addStatements(nextLeaf.getStatements());
+									currentFragment.setStoredFDP(nextStatementFdp);
 									break;
 								} else {
-									currentFragment.addStatements(statementsList);
-									statementsList.clear();
+									currentFragment.addStatements(accumulatorLeaf.getStatements());
+									currentFragment.addStatements(nextLeaf.getStatements());
+									currentFragment.setStoredFDP(tempStoredFDP);
 									i = j;
-									statement = currentStatements.get(i);
 									break;
 								}
+
 							} else {
 								if (j == currentStatements.size() - 1) {
 									parent.addChild(currentFragment);
-									currentFragment = new CodeFragmentLeaf();
-									currentFragment.addStatements(statementsList);
-									statementsList.clear();
-									parent.addChild(currentFragment);
+									currentFragment = null;
+									accumulatorLeaf.addStatements(nextLeaf.getStatements());
+									parent.addChild(accumulatorLeaf);
 									i = j;
-									statement = currentStatements.get(i);
+									break;
 								} else {
-									statementsList.add(currentStatement);
+									accumulatorLeaf.addStatements(nextLeaf.getStatements());
 								}
 							}
 						}
 					}
-				}
-
-				if (isBlockBelow) {
-					boolean canBeAdded = canBeAddedToBlock(currentFragment, statement, true);
+				} else {
+					ArrayList<ASTNode> statements = currentLeaf.getStatements();
+					boolean canBeAdded = canBeAddedToBlockWith2FDP(currentFragment, statements, true);
 					if (!canBeAdded) {
 						parent.addChild(currentFragment);
 						currentFragment = new CodeFragmentLeaf();
 					}
 
 					// Adding it to the current leaf
-					currentFragment.addStatement(statement);
+					currentFragment.addStatements(statements);
+					storedFDP = getFdpOfFragment(currentFragment);
 				}
 			} else {
-				// There is a block below, if there are statements before and
-				// they are grouped
-				// in a leaf, the leaf must be added.
 				if (currentFragment != null) {
 					parent.addChild(currentFragment);
-					currentFragment = null;
+					currentFragment = new CodeFragmentLeaf();
+					storedFDP = new HashMap<String, Integer>();
 				}
-				// Adding the node which was below and contains a block in it.
-				parent.addChild(res);
+				parent.addChild(currentAbstractFragment);
 			}
 		}
-
-		// Fragment constructed based on statements but never added to parent,
-		// this is
-		// why its needed to be added here.
-		if (currentFragment != null) {
-			parent.addChild(currentFragment);
-			currentFragment = null;
-		}
-
+        if(currentFragment!=null){
+        	parent.addChild(currentFragment);
+        }
 		lastNode.push(parent);
 		return false;
 	}

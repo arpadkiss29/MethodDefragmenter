@@ -33,6 +33,10 @@ public class CodeFragmentLeaf extends AbstractCodeFragment {
 		return myASTNodes.size();
 	}
 	
+	public ArrayList<ASTNode> getStatements() {
+		return myASTNodes;
+	}
+	
 	public void removeStatement(ASTNode node){
 		myASTNodes.remove(node);
 	}
