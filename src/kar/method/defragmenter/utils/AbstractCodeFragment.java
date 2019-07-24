@@ -52,6 +52,19 @@ public abstract class AbstractCodeFragment {
 
 	private FixedStructureTypes type;
 
+	public boolean isEmptyNode() {
+		if (children.size() == 0 && internalASTNodes.size() == 0) {
+			if (this instanceof CodeFragmentLeaf) {
+				if (((CodeFragmentLeaf) this).getStatementsLength() == 0) {
+					return true;
+				}
+			} else {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public void setType(FixedStructureTypes type) {
 		this.type = type;
 	}
@@ -62,6 +75,10 @@ public abstract class AbstractCodeFragment {
 
 	public AbstractCodeFragment() {
 		this.children = new ArrayList<>();
+	}
+
+	public int getInternalAstNodesSize() {
+		return internalASTNodes.size();
 	}
 
 	public void addInternalStatement(ASTNode node) {
@@ -124,7 +141,8 @@ public abstract class AbstractCodeFragment {
 	}
 
 	public List<CodeFragmentLeaf> getCohesionMetric(CompilationUnit unit) {
-		// List<CodeFragmentLeaf> receivedNodes = new ArrayList<CodeFragmentLeaf>();
+		// List<CodeFragmentLeaf> receivedNodes = new
+		// ArrayList<CodeFragmentLeaf>();
 
 		for (int i = 0; i < children.size(); i++) {
 			if (!(children.get(i) instanceof CodeFragmentLeaf)) {
@@ -199,9 +217,9 @@ public abstract class AbstractCodeFragment {
 				tmp = startNode;
 			if (internalASTNodes.size() > 0) {
 				int tmp1 = internalASTNodes.get(0).getStartPosition();
-//				if(internalASTNodes.get(0) instanceof Expression){
-//					tmp1 -= 4;
-//				}
+				// if(internalASTNodes.get(0) instanceof Expression){
+				// tmp1 -= 4;
+				// }
 				if (tmp1 < tmp)
 					tmp = tmp1;
 			}
@@ -224,10 +242,10 @@ public abstract class AbstractCodeFragment {
 				if (tmp1 > tmp)
 					tmp = tmp1;
 			}
-//			if(type != null && type.equals(FixedStructureTypes.IF)){
-//				//System.out.println("IF");
-//				tmp += 11;
-//			}
+			// if(type != null && type.equals(FixedStructureTypes.IF)){
+			// //System.out.println("IF");
+			// tmp += 11;
+			// }
 			return tmp;
 		}
 	}
@@ -298,7 +316,10 @@ public abstract class AbstractCodeFragment {
 	public List<AbstractCodeFragment> getAllEnviousNodes() {
 		List<AbstractCodeFragment> nodes = new ArrayList<AbstractCodeFragment>();
 		for (AbstractCodeFragment node : children) {
-			if (node instanceof CodeFragmentLeaf /* && ( (CodeFragmentLeaf)node).isEnvy() */) {
+			if (node instanceof CodeFragmentLeaf && (
+													  (CodeFragmentLeaf)node).
+													  isEnvy()
+													 ) {
 				nodes.add(node);
 			} else {
 				if (node.isEnvy()) {
@@ -442,8 +463,8 @@ public abstract class AbstractCodeFragment {
 	private int localAttrAccess = 0;
 	private int foreignDataProviders = 0;
 	private String targetClass;
-	private HashMap<String, Integer> storedFDP=null;
-	
+	private HashMap<String, Integer> storedFDP = null;
+
 	public HashMap<String, Integer> getStoredFDP() {
 		return storedFDP;
 	}
@@ -461,7 +482,7 @@ public abstract class AbstractCodeFragment {
 	public HashMap<String, Integer> getFdp(String analyzedClass, boolean staticFields, Integer minBlockSize,
 			boolean libraryCheck) {
 		computeDataAccesses(analyzedClass, staticFields, minBlockSize, libraryCheck);
-		storedFDP=accessClassesMapping;
+		storedFDP = accessClassesMapping;
 		return accessClassesMapping;
 	}
 
@@ -642,7 +663,7 @@ public abstract class AbstractCodeFragment {
 	}
 
 	public void colorEnvyLeafNodes(ITextEditor textEditor, IFile file) throws CoreException {
-		if ( isEnvy /*&& this instanceof CodeFragmentLeaf*/) {
+		if (isEnvy  && this instanceof CodeFragmentLeaf ) {
 			String colorType = "annotationColor_17";
 			if (colorCounter < 17) {
 				colorType = "annotationColor_" + colorCounter;

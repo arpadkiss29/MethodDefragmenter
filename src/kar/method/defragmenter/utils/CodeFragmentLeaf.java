@@ -33,6 +33,10 @@ public class CodeFragmentLeaf extends AbstractCodeFragment {
 		return myASTNodes.size();
 	}
 	
+	public ArrayList<ASTNode> getStatements() {
+		return myASTNodes;
+	}
+	
 	public void removeStatement(ASTNode node){
 		myASTNodes.remove(node);
 	}
@@ -133,7 +137,7 @@ public class CodeFragmentLeaf extends AbstractCodeFragment {
 	
 	@Override
 	public void colorEnvyLeafNodes(ITextEditor textEditor, IFile file) throws CoreException {	
-		if(true/*isEnvy()*/){
+		if(isEnvy()){
 			String colorType = "annotationColor_17";
 
 			if (colorCounter < 17){
