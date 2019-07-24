@@ -723,7 +723,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 		InternalCodeFragment parent = new InternalCodeFragment();
 		CodeFragmentLeaf currentExpressionFragment = new CodeFragmentLeaf();
 
-		// what do we care about expr?
+		// why do we care about expr?
 		Expression expr = switchCase.getExpression();
 		if (expr != null) {
 			currentExpressionFragment.addStatement(expr);
@@ -818,18 +818,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 			if (!canBeMerged(parent, bodySynchronized))
 				canBeMerged = false;
 			parent.addChild(bodySynchronized);
-		} // else {
-			// if (!canBeMerged || !canBeAddedToBlock(parent, body)) {
-			// canBeMerged = false;
-			// InternalCodeFragment synchronizedNode = new
-			// InternalCodeFragment();
-			// CodeFragmentLeaf simpleSynchronizedStatement = new
-			// CodeFragmentLeaf();
-			// simpleSynchronizedStatement.addStatement(body);
-			// synchronizedNode.addChild(simpleSynchronizedStatement);
-			// parent.addChild(synchronizedNode);
-			// }
-			// }
+		}
 
 		if (canBeMerged) {
 			lastNode.push(null);
