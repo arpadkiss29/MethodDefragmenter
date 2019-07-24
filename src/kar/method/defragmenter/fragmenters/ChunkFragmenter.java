@@ -91,7 +91,6 @@ public class ChunkFragmenter extends AbstractFragmenter{
 					int endLine = unit.getLineNumber(currentStatements.get(i).getStartPosition() + currentStatements.get(i).getLength());
 					if(endLine - previousLine > 0){
 						lineDiff = endLine - previousLine;
-						//System.out.println("Line diff: " + lineDiff);
 					}else{
 						lineDiff = 0;
 					}
@@ -498,7 +497,7 @@ public class ChunkFragmenter extends AbstractFragmenter{
 				parent.addChild(res);
 			}
 		}
-		
+		//why do we care about children size if we don't add any child?
 		if (allSwitchStatements.getChildrenSize() != 0){
 			nodeStatements.addChild(allSwitchStatements);
 			parent.addChild(nodeStatements);

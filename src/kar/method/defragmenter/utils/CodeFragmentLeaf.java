@@ -8,6 +8,7 @@ import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jface.text.Position;
 import org.eclipse.ui.texteditor.ITextEditor;
 
@@ -15,7 +16,7 @@ import kar.method.defragmenter.views.SelectionView;
 import kar.method.defragmenter.visittors.VariableBindingVisitor;
 
 public class CodeFragmentLeaf extends AbstractCodeFragment {
-
+	//how could I write here   T extends ASTNode???
 	private ArrayList<ASTNode> myASTNodes = new ArrayList<ASTNode>();
 
 	public CodeFragmentLeaf() {}
@@ -24,6 +25,18 @@ public class CodeFragmentLeaf extends AbstractCodeFragment {
 		myASTNodes.add(node);
 	}
 
+	public void addStatements(List<ASTNode> statements){	
+		myASTNodes.addAll(statements);
+	}
+	
+	public int getStatementsLength() {
+		return myASTNodes.size();
+	}
+	
+	public ArrayList<ASTNode> getStatements() {
+		return myASTNodes;
+	}
+	
 	public void removeStatement(ASTNode node){
 		myASTNodes.remove(node);
 	}
