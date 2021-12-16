@@ -8,7 +8,7 @@ import ro.lrg.xcore.metametamodel.PropertyComputer;
 public class ToString implements IPropertyComputer<String, MFragment>{
 	@Override
 	public String compute(MFragment arg0) {
-		return arg0.getUnderlyingObject();
+		return arg0.getUnderlyingObject().toString();
 	}
 }
 

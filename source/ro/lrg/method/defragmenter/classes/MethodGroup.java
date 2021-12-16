@@ -2,7 +2,6 @@ package ro.lrg.method.defragmenter.classes;
 
 import org.eclipse.jdt.core.IMethod;
 import org.eclipse.jdt.core.JavaModelException;
-
 import methoddefragmenter.metamodel.entity.MClass;
 import methoddefragmenter.metamodel.entity.MMethod;
 import methoddefragmenter.metamodel.factory.Factory;

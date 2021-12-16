@@ -5,6 +5,7 @@ import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IMethod;
 import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.ui.IStartup;
 
 import methoddefragmenter.metamodel.factory.Factory;
@@ -34,8 +35,8 @@ public class Startup1 implements IStartup{
 								default:
 									System.err.println("There is something else!");
 							}
-						} else if(element instanceof String) {
-							return Factory.getInstance().createMFragment((String) element);
+						} else if(element instanceof Block) {
+							return Factory.getInstance().createMFragment((Block) element);
 						}
 						return null;
 					}

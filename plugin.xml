@@ -354,4 +354,10 @@
           name="kar.method.defragmenter.annotation" 
           markerType="kar.method.defragmenter.marker"/>
 	</extension>
+ <extension
+       point="org.eclipse.ui.startup">
+    <startup
+          class="ro.lrg.method.defragmenter.startup.Startup1">
+    </startup>
+ </extension>
 </plugin>
