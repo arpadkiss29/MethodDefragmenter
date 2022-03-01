@@ -357,7 +357,15 @@
  <extension
        point="org.eclipse.ui.startup">
     <startup
-          class="ro.lrg.method.defragmenter.startup.Startup1">
+          class="ro.lrg.method.defragmenter.startup.Startup">
     </startup>
+ </extension>
+ <extension
+       point="org.eclipse.ui.propertyPages">
+    <page
+          class="ro.lrg.method.defragmenter.preferences.PreferencesPage"
+          id="ro.lrg.method.defragmenter.preferences.PreferencesPage"
+          name="Method defragmenter" >
+    </page>
  </extension>
 </plugin>

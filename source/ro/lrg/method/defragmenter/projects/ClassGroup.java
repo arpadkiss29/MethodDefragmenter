@@ -15,7 +15,7 @@ import ro.lrg.xcore.metametamodel.IRelationBuilder;
 import ro.lrg.xcore.metametamodel.RelationBuilder;
 
 @RelationBuilder
-public class ClassGroup implements IRelationBuilder<MClass, MProject>{
+public class ClassGroup implements IRelationBuilder<MClass, MProject> {
 	@Override
 	public Group<MClass> buildGroup(MProject arg0) {
 		Group<MClass> group = new Group<>();
@@ -24,10 +24,10 @@ public class ClassGroup implements IRelationBuilder<MClass, MProject>{
 			for (IPackageFragment iPackageFragment : iPackageFragments) {
 				boolean isLocalPackage = true;
 				IJavaElement parent = iPackageFragment.getParent();
-		        if (parent instanceof IPackageFragmentRoot && ((IPackageFragmentRoot) parent).isExternal()) {
-		        	isLocalPackage = false;
-		        }
-				if(isLocalPackage) {
+				if (parent instanceof IPackageFragmentRoot && ((IPackageFragmentRoot) parent).isExternal()) {
+					isLocalPackage = false;
+				}
+				if (isLocalPackage) {
 					ICompilationUnit[] files = iPackageFragment.getCompilationUnits();
 					for (ICompilationUnit file : files) {
 						IType[] classes = file.getAllTypes();

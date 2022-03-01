@@ -5,10 +5,9 @@ import ro.lrg.xcore.metametamodel.IPropertyComputer;
 import ro.lrg.xcore.metametamodel.PropertyComputer;
 
 @PropertyComputer
-public class ToString implements IPropertyComputer<String, MFragment> {
+public class FDP implements IPropertyComputer<Integer, MFragment> {
 	@Override
-	public String compute(MFragment arg0) {
-		return arg0.getUnderlyingObject().toString();
+	public Integer compute(MFragment arg0) {
+		return arg0.getUnderlyingObject().getForeignDataProviders();
 	}
 }
-

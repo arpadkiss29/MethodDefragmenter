@@ -10,12 +10,12 @@ import ro.lrg.xcore.metametamodel.HListEmpty;
 import ro.lrg.xcore.metametamodel.IActionPerformer;
 
 @ActionPerformer
-public class ShowInEditor implements IActionPerformer<Void, MMethod, HListEmpty>{
+public class ShowInEditor implements IActionPerformer<Void, MMethod, HListEmpty> {
 	@Override
 	public Void performAction(MMethod arg0, HListEmpty arg1) {
 		try {
 			JavaUI.openInEditor(arg0.getUnderlyingObject(), true, true);
-		} catch(PartInitException | JavaModelException e) {
+		} catch (PartInitException | JavaModelException e) {
 			e.printStackTrace();
 		}
 		return null;
