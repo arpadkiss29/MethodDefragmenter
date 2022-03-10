@@ -363,9 +363,9 @@
  <extension
        point="org.eclipse.ui.propertyPages">
     <page
-          class="ro.lrg.method.defragmenter.preferences.PreferencesPage"
-          id="ro.lrg.method.defragmenter.preferences.PreferencesPage"
-          name="Method defragmenter" >
+          class="ro.lrg.method.defragmenter.preferences.ui.PreferencesPage"
+          id="ro.lrg.method.defragmenter"
+          name="MethodDefragmenter" >
     </page>
  </extension>
 </plugin>

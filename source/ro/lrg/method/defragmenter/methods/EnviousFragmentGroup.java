@@ -16,8 +16,9 @@ import methoddefragmenter.metamodel.entity.MFragment;
 import methoddefragmenter.metamodel.entity.MMethod;
 import methoddefragmenter.metamodel.factory.Factory;
 import ro.lrg.method.defragmenter.fragmenters.FdpFragmenter;
-import ro.lrg.method.defragmenter.preferences.PreferencesPage.MethodDefragmenterPropertyStore;
+import ro.lrg.method.defragmenter.preferences.MethodDefragmenterPropertyStore;
 import ro.lrg.method.defragmenter.utils.AbstractInternalCodeFragment;
+import ro.lrg.method.defragmenter.utils.InternalCodeFragment;
 import ro.lrg.xcore.metametamodel.Group;
 import ro.lrg.xcore.metametamodel.IRelationBuilder;
 import ro.lrg.xcore.metametamodel.RelationBuilder;
@@ -40,32 +41,32 @@ public class EnviousFragmentGroup implements IRelationBuilder<MFragment, MMethod
         String methodName = method.getElementName();
         Block block = findBlock(compilationUnit, className, methodName);
         
-        IFile iFile = (IFile) method.getResource();
-        IJavaProject iJavaProject = method.getJavaProject();
-        FdpFragmenter fdpFragmenter = new FdpFragmenter(false, className, iFile, iJavaProject);
-        block.accept(fdpFragmenter);
-        
         MethodDefragmenterPropertyStore propertyStore = new MethodDefragmenterPropertyStore(arg0.getUnderlyingObject().getJavaProject());
         
-        AbstractInternalCodeFragment root = fdpFragmenter.getLastNode().pop();
-        root.verifyFeatureEnvy(propertyStore.getATFD(), propertyStore.getFDP(), 
-        		propertyStore.getLAA(), className, propertyStore.isConsiderStaticFieldAccesses(), 
-        		propertyStore.getMinBlockSize(), propertyStore.isLibraryCheck(), false);
+        IFile iFile = (IFile) method.getResource();
+        IJavaProject iJavaProject = method.getJavaProject();
+        FdpFragmenter fdpFragmenter = new FdpFragmenter(className, iFile, iJavaProject,
+        		propertyStore.isConsiderStaticFieldAccesses(), propertyStore.isLibraryCheck(), propertyStore.getMinBlockSize());
+        block.accept(fdpFragmenter);
+        
+        InternalCodeFragment root = (InternalCodeFragment) fdpFragmenter.getLastNode().pop();
+        root.verifyFeatureEnvy(propertyStore.getATFD(), propertyStore.getFDP(), propertyStore.getLAA(), className, 
+        		propertyStore.isConsiderStaticFieldAccesses(), propertyStore.isLibraryCheck(), propertyStore.getMinBlockSize(), false);
 
 		List<AbstractInternalCodeFragment> ACFs = null;
 		
 		if(!propertyStore.isApplyLongMethodIdentification()){
-			AbstractInternalCodeFragment.colorCounter = 0;
+			AbstractInternalCodeFragment.setColorCounter(0);
 			root.init();
 			ACFs = root.getAllEnviousNodes();
 		} else {
-			System.out.println("Calculating Long Method Fragmentation! Threshold: " + AbstractInternalCodeFragment.NCOCP2Treshold);
+			System.out.println("Calculating Long Method Fragmentation! Threshold: " + InternalCodeFragment.getNcocp2treshold());
 			root.init();
 			root.getCohesionMetric(compilationUnit);
 			List<AbstractInternalCodeFragment> identifiedNodes = root.identifyFunctionalSegments();
 			root.combineNodes(identifiedNodes);
-			root.getAllTreeData();
-			ACFs = AbstractInternalCodeFragment.allNodesLeafs;
+			root.constructTree();
+			ACFs = InternalCodeFragment.getAllNodesLeafs();
 			ACFs.add(root);
 		}
 		

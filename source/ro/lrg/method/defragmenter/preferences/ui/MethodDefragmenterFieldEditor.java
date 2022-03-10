@@ -1,4 +1,4 @@
-package ro.lrg.method.defragmenter.preferences;
+package ro.lrg.method.defragmenter.preferences.ui;
 
 import java.util.Map;
 
@@ -15,9 +15,10 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Spinner;
 
-import ro.lrg.method.defragmenter.preferences.PreferencesPage.MethodDefragmenterPropertyStore;
+import ro.lrg.method.defragmenter.preferences.DefaultPreferences;
+import ro.lrg.method.defragmenter.preferences.MethodDefragmenterPropertyStore;
 
-public class MethodDefragmenterFieldEditor extends FieldEditor implements Defaults {
+public class MethodDefragmenterFieldEditor extends FieldEditor implements DefaultPreferences {
 	private static final int numberOfDecimalsOfLAA = 5;
 	private Spinner ATFDTresholdSpinner;
 	private Spinner FDPTresholdSpinner;

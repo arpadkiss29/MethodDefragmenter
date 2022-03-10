@@ -1,12 +1,16 @@
 package ro.lrg.method.defragmenter.fragmenters;
 
 import java.util.ArrayList;
+import java.util.EmptyStackException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Stack;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.ArrayAccess;
 import org.eclipse.jdt.core.dom.ArrayCreation;
 import org.eclipse.jdt.core.dom.ArrayInitializer;
@@ -44,35 +48,45 @@ import ro.lrg.method.defragmenter.utils.DontGetHereException;
 import ro.lrg.method.defragmenter.utils.InternalCodeFragment;
 
 @SuppressWarnings("unchecked")
-public class FdpFragmenter extends AbstractFragmenter {
-
+public class FdpFragmenter extends ASTVisitor {
+	public Stack<AbstractInternalCodeFragment> lastNode;
+	public Stack<AbstractInternalCodeFragment> getLastNode() {
+		return lastNode;
+	}
+	
+	private String analyzedClass;
 	private IFile iFile;
 	private IJavaProject iJavaProject;
-	private boolean considerStaticFields;
-	private String analyzedClass;
+	private boolean considerStaticFieldAccess;
+	private boolean libraryCheck;
+	private int minBlockSize;
 
-	public FdpFragmenter(boolean considerStaticFields, String analyzedClass, IFile iFile, IJavaProject iJavaProject) {
+	public FdpFragmenter(String analyzedClass, IFile iFile, IJavaProject iJavaProject,
+			boolean considerStaticFieldsAccess, boolean libraryCheck, int minBlockSize) {
+		lastNode = new Stack<AbstractInternalCodeFragment>();
 		this.analyzedClass = analyzedClass;
-		this.considerStaticFields = considerStaticFields;
 		this.iFile = iFile;
 		this.iJavaProject = iJavaProject;
+		this.considerStaticFieldAccess = considerStaticFieldsAccess;
+		this.libraryCheck = libraryCheck;
+		this.minBlockSize = minBlockSize;
 	}
-
-	private HashMap<String, Integer> getFdpOfFragment(AbstractInternalCodeFragment fragment) {
-		return fragment.getFdp(analyzedClass, considerStaticFields, null, true);
+	
+	private Map<String, Integer> getFDPClassesOfFragment(AbstractInternalCodeFragment fragment) {
+		return fragment.getFDPClasses(analyzedClass, considerStaticFieldAccess, libraryCheck, minBlockSize);
 	}
 
 	private void addStatementToCodeFragment(AbstractInternalCodeFragment parent, Statement statement) {
 		InternalCodeFragment childNode = new InternalCodeFragment(iFile, iJavaProject);
 		InternalCodeFragmentLeaf childLeaf = new InternalCodeFragmentLeaf(iFile, iJavaProject);
-		childLeaf.addStatement(statement);
+		childLeaf.addInternalStatement(statement);
 		childNode.addChild(childLeaf);
-		parent.addChild(childNode);
+		((InternalCodeFragment) parent).addChild(childNode);
 	}
 
 	private boolean canBeMerged(AbstractInternalCodeFragment parent, AbstractInternalCodeFragment toBeMerged) {
-		if (toBeMerged.getChildrenSize() != 1 || !(toBeMerged.getChild(0) instanceof InternalCodeFragmentLeaf)
-				|| !canBeAddedToBlockWith2FDP(parent, toBeMerged.getAllSubTreeASTNodes(), false)) {
+		if (((InternalCodeFragment) toBeMerged).getChildrenSize() != 1 || !(((InternalCodeFragment) toBeMerged).getChild(0) instanceof InternalCodeFragmentLeaf)
+				|| !canBeAddedToBlockWith2FDP(parent, toBeMerged.getAllInternalStatements(), false)) {
 			return false;
 		}
 		return true;
@@ -87,22 +101,22 @@ public class FdpFragmenter extends AbstractFragmenter {
 	private boolean canBeAddedToBlockWith2FDP(AbstractInternalCodeFragment currentFragment, List<ASTNode> currentStatements,
 			boolean reduceLimits) {
 		if (currentFragment.getStoredFDP() == null) {
-			currentFragment.getFdp(analyzedClass, considerStaticFields, null, true);
+			currentFragment.getFDPClasses(analyzedClass, considerStaticFieldAccess, libraryCheck, minBlockSize);
 		}
-		HashMap<String, Integer> fdpBefore = currentFragment.getStoredFDP();
+		Map<String, Integer> fdpBefore = currentFragment.getStoredFDP();
 		InternalCodeFragmentLeaf tempFragment = new InternalCodeFragmentLeaf(iFile, iJavaProject);
-		tempFragment.addStatements(currentStatements);
+		tempFragment.addInternalStatements(currentStatements);
 		return canBeAddedToBlockWith2FDP(currentFragment, reduceLimits, fdpBefore, tempFragment);
 	}
 
 	private boolean canBeAddedToBlockWith2FDP(AbstractInternalCodeFragment currentFragment, boolean reduceLimits,
-			HashMap<String, Integer> fdpBefore, InternalCodeFragmentLeaf tempFragment) {
-		HashMap<String, Integer> fdpAfter = tempFragment.getFdp(analyzedClass, considerStaticFields, null, true);
+		Map<String, Integer> fdpBefore, InternalCodeFragmentLeaf tempFragment) {
+		Map<String, Integer> fdpAfter = tempFragment.getFDPClasses(analyzedClass, considerStaticFieldAccess, libraryCheck, minBlockSize);
 
 		if (reduceLimits
 				&& ((currentFragment instanceof InternalCodeFragmentLeaf
-						&& ((InternalCodeFragmentLeaf) currentFragment).getStatementsLength() != 0)
-						|| currentFragment.getInternalAstNodesSize() != 0)
+						&& ((InternalCodeFragmentLeaf) currentFragment).getInternalStatementsSize() != 0)
+						|| currentFragment.getInternalStatementsSize() != 0)
 				&& fdpBefore.size() == 0 && fdpAfter.size() >= 1) {
 			return false;
 		}
@@ -138,7 +152,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 		InternalCodeFragmentLeaf currentFragment = null;
 		List<Statement> currentStatements = node.statements();
 
-		List<AbstractInternalCodeFragment> codeFragments = new ArrayList<AbstractInternalCodeFragment>();
+		List<AbstractInternalCodeFragment> codeFragments = new ArrayList<>();
 		for (int i = 0; i < currentStatements.size(); i++) {
 			Statement statement = currentStatements.get(i);
 
@@ -155,7 +169,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 			if (res == null) {
 				currentFragment = new InternalCodeFragmentLeaf(iFile, iJavaProject);
 				// Adding it to the current leaf
-				currentFragment.addStatement(statement);
+				currentFragment.addInternalStatement(statement);
 				codeFragments.add(currentFragment);
 			} else {
 				// Adding the node which was below and contains a block in it.
@@ -164,8 +178,8 @@ public class FdpFragmenter extends AbstractFragmenter {
 		}
 
 		currentFragment = new InternalCodeFragmentLeaf(iFile, iJavaProject);
-		HashMap<String, Integer> fdpOfCurrentLeaf;
-		HashMap<String, Integer> storedFDP = new HashMap<String, Integer>();
+		Map<String, Integer> fdpOfCurrentLeaf;
+		Map<String, Integer> storedFDP = new HashMap<String, Integer>();
 		for (int i = 0; i < codeFragments.size(); i++) {
 			AbstractInternalCodeFragment currentAbstractFragment = codeFragments.get(i);
 			
@@ -175,12 +189,12 @@ public class FdpFragmenter extends AbstractFragmenter {
 			}
 			storedFDP = currentFragment.getStoredFDP();
 			if(storedFDP==null){
-				storedFDP = getFdpOfFragment(currentFragment);
+				storedFDP = getFDPClassesOfFragment(currentFragment);
 			}
 
 			if (currentAbstractFragment instanceof InternalCodeFragmentLeaf) {
 				InternalCodeFragmentLeaf currentLeaf = (InternalCodeFragmentLeaf) currentAbstractFragment;
-				fdpOfCurrentLeaf = getFdpOfFragment(currentLeaf);
+				fdpOfCurrentLeaf = getFDPClassesOfFragment(currentLeaf);
 
 				if (storedFDP.size() > 0 && fdpOfCurrentLeaf.size() == 0) {
 					InternalCodeFragmentLeaf accumulatorLeaf = currentLeaf;
@@ -202,7 +216,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 							break;
 						} else {
 							InternalCodeFragmentLeaf nextLeaf = (InternalCodeFragmentLeaf) nextFragment;
-							HashMap<String, Integer> nextStatementFdp = getFdpOfFragment(nextLeaf);
+							Map<String, Integer> nextStatementFdp = getFDPClassesOfFragment(nextLeaf);
 							if (nextStatementFdp.size() != 0) {
 								HashMap<String, Integer> tempStoredFDP = new HashMap<String, Integer>();
 								tempStoredFDP.putAll(nextStatementFdp);
@@ -213,12 +227,12 @@ public class FdpFragmenter extends AbstractFragmenter {
 									parent.addChild(accumulatorLeaf);
 									accumulatorLeaf = null;
 									i = j;
-									currentFragment.addStatements(nextLeaf.getStatements());
+									currentFragment.addInternalStatements(nextLeaf.getAllInternalStatements());
 									currentFragment.setStoredFDP(nextStatementFdp);
 									break;
 								} else {
-									currentFragment.addStatements(accumulatorLeaf.getStatements());
-									currentFragment.addStatements(nextLeaf.getStatements());
+									currentFragment.addInternalStatements(accumulatorLeaf.getAllInternalStatements());
+									currentFragment.addInternalStatements(nextLeaf.getAllInternalStatements());
 									currentFragment.setStoredFDP(tempStoredFDP);
 									i = j;
 									break;
@@ -228,18 +242,18 @@ public class FdpFragmenter extends AbstractFragmenter {
 								if (j == currentStatements.size() - 1) {
 									parent.addChild(currentFragment);
 									currentFragment = null;
-									accumulatorLeaf.addStatements(nextLeaf.getStatements());
+									accumulatorLeaf.addInternalStatements(nextLeaf.getAllInternalStatements());
 									parent.addChild(accumulatorLeaf);
 									i = j;
 									break;
 								} else {
-									accumulatorLeaf.addStatements(nextLeaf.getStatements());
+									accumulatorLeaf.addInternalStatements(nextLeaf.getAllInternalStatements());
 								}
 							}
 						}
 					}
 				} else {
-					ArrayList<ASTNode> statements = currentLeaf.getStatements();
+					List<ASTNode> statements = currentLeaf.getAllInternalStatements();
 					boolean canBeAdded = canBeAddedToBlockWith2FDP(currentFragment, statements, true);
 					if (!canBeAdded) {
 						parent.addChild(currentFragment);
@@ -247,8 +261,8 @@ public class FdpFragmenter extends AbstractFragmenter {
 					}
 
 					// Adding it to the current leaf
-					currentFragment.addStatements(statements);
-					storedFDP = getFdpOfFragment(currentFragment);
+					currentFragment.addInternalStatements(statements);
+					storedFDP = getFDPClassesOfFragment(currentFragment);
 				}
 			} else {
 				if (currentFragment != null) {
@@ -264,16 +278,51 @@ public class FdpFragmenter extends AbstractFragmenter {
         }
 		lastNode.push(parent);
 		return false;
-	}
-
-	public boolean visit(Assignment assignment) {
-		lastNode.push(null);
-		return false;
-	}
-
-	public boolean visit(Expression expression) {
-		lastNode.push(null);
-		return false;
+		//----------------------------------
+//		InternalCodeFragment parent = new InternalCodeFragment(iFile, iJavaProject);
+//
+//		parent.setStartNode(node.getStartPosition());
+//		parent.setEndNode(node.getStartPosition() + node.getLength());
+//
+//		List<AbstractInternalCodeFragment> abstractInternalCodeFragments = new ArrayList<AbstractInternalCodeFragment>();
+//		
+//		List<Statement> statements = node.statements();
+//		for (Statement statement : statements) {
+//			((ASTNode) statement).accept(this);
+//
+//			AbstractInternalCodeFragment abstractInternalCodeFragment;
+//			try {
+//				abstractInternalCodeFragment = lastNode.pop();
+//				abstractInternalCodeFragments.add(abstractInternalCodeFragment);
+//			} catch (EmptyStackException e) {
+//				abstractInternalCodeFragment = new InternalCodeFragmentLeaf(iFile, iJavaProject);
+//				((InternalCodeFragmentLeaf) abstractInternalCodeFragment).addInternalStatement(statement);
+//				abstractInternalCodeFragments.add(abstractInternalCodeFragment);
+//			}
+//		}
+//		
+//		for (AbstractInternalCodeFragment abstractInternalCodeFragment : abstractInternalCodeFragments) {
+//			if (!(abstractInternalCodeFragment instanceof InternalCodeFragmentLeaf)) {
+//				parent.addChild(abstractInternalCodeFragment);
+//			} else {
+//				InternalCodeFragmentLeaf internalCodeFragmentLeaf = (InternalCodeFragmentLeaf) abstractInternalCodeFragment;
+//				int i = abstractInternalCodeFragments.indexOf(internalCodeFragmentLeaf);
+//				for (int j = i + 1; j < abstractInternalCodeFragments.size(); j++) {
+//					AbstractInternalCodeFragment nextAbstractInternalCodeFragment = abstractInternalCodeFragments.get(j);
+//
+//					if (!(nextAbstractInternalCodeFragment instanceof InternalCodeFragmentLeaf)) {
+//						parent.addChild(internalCodeFragmentLeaf);
+//						break;
+//					} else {
+//						InternalCodeFragmentLeaf nextLeaf = (InternalCodeFragmentLeaf) nextAbstractInternalCodeFragment;
+//						internalCodeFragmentLeaf.joinWithLeaf(nextLeaf);
+//						parent.addChild(internalCodeFragmentLeaf);
+//					}
+//				}
+//			}
+//		}
+//		lastNode.push(parent);
+//		return false;
 	}
 
 	public boolean visit(IfStatement ifStatement) {
@@ -295,7 +344,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 				if (!canBeMerged(parent, resThen)) {
 					canBeMerged = false;
 				}
-				parent.addChild(resThen);
+				((InternalCodeFragment) parent).addChild(resThen);
 			} else {
 				if (!canBeAddedToBlock(parent, thenStatement)) {
 					canBeMerged = false;
@@ -313,7 +362,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 				if (!canBeMerged(parent, resElse)) {
 					canBeMerged = false;
 				}
-				parent.addChild(resElse);
+				((InternalCodeFragment) parent).addChild(resElse);
 			} else {
 				if (!canBeMerged || !canBeAddedToBlock(parent, elseStatement)) {
 					canBeMerged = false;
@@ -363,11 +412,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 		return false;
 	}
 
-	@Override
-	public boolean visit(ExpressionStatement node) {
-		lastNode.push(null);
-		return false;
-	}
+	
 
 	@Override
 	public boolean visit(ForStatement forStatement) {
@@ -487,8 +532,8 @@ public class FdpFragmenter extends AbstractFragmenter {
 		Expression exprArray = node.getArray();
 		Expression exprIndex = node.getIndex();
 		if ((exprArray != null) && (exprIndex != null)) {
-			currentExpressionFragment.addStatement(exprArray);
-			currentExpressionFragment.addStatement(exprIndex);
+			currentExpressionFragment.addInternalStatement(exprArray);
+			currentExpressionFragment.addInternalStatement(exprIndex);
 		}
 		parent.addChild(currentExpressionFragment);
 
@@ -496,11 +541,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 		return false;
 	}
 
-	@Override
-	public boolean visit(ArrayCreation node) {
-		lastNode.push(null);
-		return false;
-	}
+	
 
 	@Override
 	public boolean visit(ArrayInitializer node) {
@@ -510,7 +551,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 		List<Expression> exprList = node.expressions();
 		if (exprList != null) {
 			for (Expression e : exprList) {
-				currentExpressionFragment.addStatement(e);
+				currentExpressionFragment.addInternalStatement(e);
 			}
 		}
 
@@ -519,17 +560,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 		return false;
 	}
 
-	@Override
-	public boolean visit(ArrayType node) {
-		lastNode.push(null);
-		return false;
-	}
-
-	@Override
-	public boolean visit(BreakStatement node) {
-		lastNode.push(null);
-		return false;
-	}
+	
 
 	@Override
 	public boolean visit(CatchClause node) {
@@ -542,8 +573,8 @@ public class FdpFragmenter extends AbstractFragmenter {
 		} else {
 			parent = new InternalCodeFragment(iFile, iJavaProject);
 			InternalCodeFragmentLeaf simpleCatchStatement = new InternalCodeFragmentLeaf(iFile, iJavaProject);
-			simpleCatchStatement.addStatement(node.getBody());
-			parent.addChild(simpleCatchStatement);
+			simpleCatchStatement.addInternalStatement(node.getBody());
+			((InternalCodeFragment) parent).addChild(simpleCatchStatement);
 		}
 		SingleVariableDeclaration exceptVar = node.getException();
 		if (exceptVar != null) {
@@ -553,32 +584,17 @@ public class FdpFragmenter extends AbstractFragmenter {
 		return false;
 	}
 
-	@Override
-	public boolean visit(VariableDeclarationStatement node) {
-		lastNode.push(null);
-		return false;
-	}
-
-	@Override
-	public boolean visit(CompilationUnit node) {
-		throw new DontGetHereException("CompilationUnit - It should never get here inside a Block!");
-	}
-
-	@Override
-	public boolean visit(ContinueStatement node) {
-		lastNode.push(null);
-		return false;
-	}
+	
 
 	@Override
 	public boolean visit(MethodInvocation node) {
 		InternalCodeFragment parent = new InternalCodeFragment(iFile, iJavaProject);
 		InternalCodeFragmentLeaf currentFragment = new InternalCodeFragmentLeaf(iFile, iJavaProject);
-		// what happend here?
+		// what happened here?
 		List<Expression> exprList = node.arguments();
 		if (exprList != null) {
 			for (Expression e : exprList) {
-				currentFragment.addStatement(e);
+				currentFragment.addInternalStatement(e);
 			}
 		}
 
@@ -587,23 +603,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 		return false;
 	}
 
-	@Override
-	public boolean visit(ReturnStatement node) {
-		lastNode.push(null);
-		return false;
-	}
-
-	@Override
-	public boolean visit(ThisExpression node) {
-		lastNode.push(null);
-		return false;
-	}
-
-	@Override
-	public boolean visit(ThrowStatement node) {
-		lastNode.push(null);
-		return false;
-	}
+	
 
 	@Override
 	public boolean visit(TryStatement tryStatement) {
@@ -662,11 +662,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 		return false;
 	}
 
-	@Override
-	public boolean visit(SuperConstructorInvocation node) {
-		lastNode.push(null);
-		return false;
-	}
+
 
 	@Override
 	public boolean visit(SwitchCase switchCase) {
@@ -676,7 +672,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 		// why do we care about expr?
 		Expression expr = switchCase.getExpression();
 		if (expr != null) {
-			currentExpressionFragment.addStatement(expr);
+			currentExpressionFragment.addInternalStatement(expr);
 			parent.addChild(currentExpressionFragment);
 			lastNode.push(null);
 		} else {
@@ -707,20 +703,20 @@ public class FdpFragmenter extends AbstractFragmenter {
 			if (res == null) {
 				boolean canBeAddedToBlock = canBeAddedToBlock(currentStatements, statement);
 				if (statement instanceof SwitchCase || !canBeAddedToBlock) {
-					if (currentStatements.getStatementsLength() != 0) {
+					if (currentStatements.getInternalStatementsSize() != 0) {
 						nodeStatements.addChild(currentStatements);
 					}
 					currentStatements = new InternalCodeFragmentLeaf(iFile, iJavaProject);
-					currentStatements.addStatement(statement);
+					currentStatements.addInternalStatement(statement);
 					if (!canBeAddedToBlock)
 						canBeMerged = false;
 				} else {
-					currentStatements.addStatement(statement);
+					currentStatements.addInternalStatement(statement);
 				}
 			} else {
 				if (!canBeMerged(nodeStatements, res))
 					canBeMerged = false;
-				if (currentStatements.getStatementsLength() != 0) {
+				if (currentStatements.getInternalStatementsSize() != 0) {
 					nodeStatements.addChild(currentStatements);
 					currentStatements = new InternalCodeFragmentLeaf(iFile, iJavaProject);
 				}
@@ -728,7 +724,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 			}
 		}
 
-		if (currentStatements.getStatementsLength() != 0) {
+		if (currentStatements.getInternalStatementsSize() != 0) {
 			nodeStatements.addChild(currentStatements);
 		}
 		if (nodeStatements != null && nodeStatements.getChildrenSize() != 0) {
@@ -744,12 +740,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 		return false;
 	}
 
-	@Override
-	public boolean visit(EmptyStatement node) {
-		lastNode.push(null);
-		System.out.println("Found empty statement!!!!");
-		return false;
-	}
+	
 
 	@Override
 	public boolean visit(SynchronizedStatement synchronizedStatement) {
@@ -778,4 +769,74 @@ public class FdpFragmenter extends AbstractFragmenter {
 		lastNode.push(parent);
 		return false;
 	}
+	
+	@Override
+	public boolean visit(ArrayCreation node) {
+		lastNode.push(null);
+		return false;
+	}
+	@Override
+	public boolean visit(ArrayType node) {
+		lastNode.push(null);
+		return false;
+	}
+	@Override
+	public boolean visit(Assignment node) {
+		lastNode.push(null);
+		return false;
+	}
+	@Override
+	public boolean visit(BreakStatement node) {
+		lastNode.push(null);
+		return false;
+	}
+	@Override
+	public boolean visit(CompilationUnit node) {
+		throw new DontGetHereException("A CompilationUnit can't exist inside a block inside a Block!");
+	}
+	@Override
+	public boolean visit(ContinueStatement node) {
+		lastNode.push(null);
+		return false;
+	}
+	@Override
+	public boolean visit(EmptyStatement node) {
+		lastNode.push(null);
+		return false;
+	}
+	public boolean visit(Expression node) {
+		lastNode.push(null);
+		return false;
+	}
+	@Override
+	public boolean visit(ExpressionStatement node) {
+		lastNode.push(null);
+		return false;
+	}
+	@Override
+	public boolean visit(ReturnStatement node) {
+		lastNode.push(null);
+		return false;
+	}
+	@Override
+	public boolean visit(SuperConstructorInvocation node) {
+		lastNode.push(null);
+		return false;
+	}
+	@Override
+	public boolean visit(ThisExpression node) {
+		lastNode.push(null);
+		return false;
+	}
+	@Override
+	public boolean visit(ThrowStatement node) {
+		lastNode.push(null);
+		return false;
+	}
+	@Override
+	public boolean visit(VariableDeclarationStatement node) {
+		lastNode.push(null);
+		return false;
+	}
+
 }

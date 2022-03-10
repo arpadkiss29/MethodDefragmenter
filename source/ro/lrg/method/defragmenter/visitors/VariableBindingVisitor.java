@@ -1,6 +1,7 @@
 package ro.lrg.method.defragmenter.visitors;
 
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.IBinding;
@@ -9,7 +10,7 @@ import org.eclipse.jdt.core.dom.SimpleName;
 
 public class VariableBindingVisitor extends ASTVisitor {
 
-	private HashSet<IVariableBinding> variableBindings = new HashSet<IVariableBinding>();
+	private List<IVariableBinding> variableBindings = new ArrayList<>();
 
 	public boolean visit(SimpleName node) {
 		IBinding binding = node.resolveBinding();
@@ -17,15 +18,12 @@ public class VariableBindingVisitor extends ASTVisitor {
 			IVariableBinding variable = (IVariableBinding) binding;
 			if (!variableBindings.contains(variable)) {
 				variableBindings.add(variable);
-			} else {
-				//	System.out.println("already contains");
 			}
-
 		}
 		return super.visit(node);
 	}
 
-	public HashSet<IVariableBinding> getVariableBindings() {
+	public List<IVariableBinding> getVariableBindings() {
 		return variableBindings;
 	}
 }

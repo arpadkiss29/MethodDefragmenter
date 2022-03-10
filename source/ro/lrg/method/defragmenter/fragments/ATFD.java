@@ -8,6 +8,6 @@ import ro.lrg.xcore.metametamodel.PropertyComputer;
 public class ATFD implements IPropertyComputer<Integer, MFragment> {
 	@Override
 	public Integer compute(MFragment arg0) {
-		return arg0.getUnderlyingObject().getAccessForeignData();
+		return arg0.getUnderlyingObject().getATFD();
 	}
 }

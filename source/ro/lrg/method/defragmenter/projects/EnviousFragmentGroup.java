@@ -4,7 +4,6 @@ import java.util.List;
 
 import methoddefragmenter.metamodel.entity.MClass;
 import methoddefragmenter.metamodel.entity.MFragment;
-import methoddefragmenter.metamodel.entity.MMethod;
 import methoddefragmenter.metamodel.entity.MProject;
 import ro.lrg.xcore.metametamodel.Group;
 import ro.lrg.xcore.metametamodel.IRelationBuilder;

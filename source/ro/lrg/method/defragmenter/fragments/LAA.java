@@ -8,6 +8,6 @@ import ro.lrg.xcore.metametamodel.PropertyComputer;
 public class LAA implements IPropertyComputer<Integer, MFragment> {
 	@Override
 	public Integer compute(MFragment arg0) {
-		return arg0.getUnderlyingObject().getLocalAttrAccess();
+		return arg0.getUnderlyingObject().getLAA();
 	}
 }

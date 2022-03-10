@@ -11,9 +11,10 @@ import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 import methoddefragmenter.metamodel.entity.MFragment;
-import ro.lrg.method.defragmenter.preferences.PreferencesPage.MethodDefragmenterPropertyStore;
+import ro.lrg.method.defragmenter.preferences.MethodDefragmenterPropertyStore;
 import ro.lrg.method.defragmenter.utils.AbstractInternalCodeFragment;
 import ro.lrg.method.defragmenter.utils.InternalCodeFragmentLeaf;
+import ro.lrg.method.defragmenter.views.ColouredFragments;
 import ro.lrg.xcore.metametamodel.ActionPerformer;
 import ro.lrg.xcore.metametamodel.HListEmpty;
 import ro.lrg.xcore.metametamodel.IActionPerformer;
@@ -45,6 +46,7 @@ public class ShowInEditor implements IActionPerformer<Void, MFragment, HListEmpt
 			List<AbstractInternalCodeFragment> identifiedNodes = fragment.identifyFunctionalSegments();
 			fragment.colorLongMethodFragments(textEditor, iFile, identifiedNodes);
 		}
+		ColouredFragments.addFragment(arg0);
 		return null;
 	}
 }

@@ -3,7 +3,7 @@ package ro.lrg.method.defragmenter.preferences;
 import java.util.HashMap;
 import java.util.Map;
 
-public interface Defaults {
+public interface DefaultPreferences {
 	String NULL = "null";
 	
 	//treshold preferences

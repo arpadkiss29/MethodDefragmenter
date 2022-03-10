@@ -8,7 +8,6 @@ import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.IVariableBinding;
-import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jface.text.Position;
 import org.eclipse.ui.texteditor.ITextEditor;
 
