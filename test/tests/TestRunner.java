@@ -18,11 +18,12 @@ import methoddefragmenter.metamodel.entity.MClass;
 import methoddefragmenter.metamodel.entity.MMethod;
 import methoddefragmenter.metamodel.entity.MProject;
 import methoddefragmenter.metamodel.factory.Factory;
+import ro.lrg.method.defragmenter.preferences.DefaultPreferences;
 import ro.lrg.xcore.metametamodel.Group;
 
 @RunWith(Suite.class)
-@SuiteClasses({TestCase.class})
-public class TestRunner {
+@SuiteClasses({CorrectNumberOfEnviousFragments.class})
+public class TestRunner implements DefaultPreferences{
 	private static final String PROJECT_NAME = "MethodDefragmenterTestProject";
 	private static Group<MClass> projectClasses;
 	

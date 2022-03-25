@@ -1,4 +1,4 @@
-package ro.lrg.method.defragmenter.classes;
+package ro.lrg.method.defragmenter.metamodel.classes;
 
 import java.util.List;
 

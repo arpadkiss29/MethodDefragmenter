@@ -1,4 +1,4 @@
-package ro.lrg.method.defragmenter.projects;
+package ro.lrg.method.defragmenter.metamodel.projects;
 
 import java.util.List;
 

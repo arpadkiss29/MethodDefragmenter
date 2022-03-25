@@ -1,4 +1,4 @@
-package ro.lrg.method.defragmenter.methods;
+package ro.lrg.method.defragmenter.metamodel.methods;
 
 import methoddefragmenter.metamodel.entity.MMethod;
 import ro.lrg.xcore.metametamodel.IPropertyComputer;

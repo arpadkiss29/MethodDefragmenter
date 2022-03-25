@@ -1,4 +1,4 @@
-package ro.lrg.method.defragmenter.classes;
+package ro.lrg.method.defragmenter.metamodel.classes;
 
 import org.eclipse.jdt.core.IMethod;
 import org.eclipse.jdt.core.JavaModelException;

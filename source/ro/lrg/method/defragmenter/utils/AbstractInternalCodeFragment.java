@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
@@ -32,8 +33,8 @@ public abstract class AbstractInternalCodeFragment {
 	private final List<ASTNode> internalStatements = new ArrayList<ASTNode>();
 	protected static int colorCounter = 0;
 	protected boolean possiblyRelatedFlag = false;
-	protected int startNode = 0;
-	protected int endNode = 0;
+	protected int startPosition = 0;
+	protected int endPosition = 0;
 	protected List<AbstractInternalCodeFragment> cohesivlyRelatedNodes = new ArrayList<AbstractInternalCodeFragment>();
 	
 	protected AbstractInternalCodeFragment(IFile iFile, IJavaProject iJavaProject) {
@@ -43,27 +44,26 @@ public abstract class AbstractInternalCodeFragment {
 
 	// Feature envy
 	
-	protected boolean isEnvy;
-	protected Map<String, ITypeAccesses> accessClassesMapping = new HashMap<String, ITypeAccesses>();
+	protected boolean isEnvy = false;
 	protected int ATFD = 0;
 	protected int FDP = 0;
 	protected int LAA = 0;
-	protected String targetClass;
-	private Map<String, Integer> storedFDP;
+	protected Map<String, FDPClass> detailedFDPMap = new HashMap<>();
+	private Map<String, Integer> FDPMap;
 
-	public int getFDP(String analyzedClass, boolean considerStaticFieldAccess, boolean libraryCheck, Integer minBlockSize) {
+	public Map<String, Integer> getFDPMap(String analyzedClass, boolean considerStaticFieldAccess, boolean libraryCheck, Integer minBlockSize) {
 		computeDataAccesses(analyzedClass, considerStaticFieldAccess, libraryCheck, minBlockSize);
-		FDP = accessClassesMapping.size();
-		return FDP;
-	}
-
-	public Map<String, Integer> getFDPClasses(String analyzedClass, boolean considerStaticFieldAccess, boolean libraryCheck, Integer minBlockSize) {
-		computeDataAccesses(analyzedClass, considerStaticFieldAccess, libraryCheck, minBlockSize);
-		storedFDP = new HashMap<>();
-		for (Entry<String, ITypeAccesses> entry : accessClassesMapping.entrySet()) {
-			storedFDP.put(entry.getKey(), entry.getValue().getNumberOfAccesses());
+		FDPMap = new HashMap<>();
+		for (Entry<String, FDPClass> entry : detailedFDPMap.entrySet()) {
+			FDPMap.put(entry.getKey(), entry.getValue().getNumberOfAccesses());
 		}
-		return storedFDP;
+		return FDPMap;
+	}
+	
+	public List<IType> getFDPITypesList() {
+		return detailedFDPMap.entrySet().stream().map(entry -> {
+			return entry.getValue().getIType();
+		}).toList();
 	}
 
 	@Override
@@ -73,31 +73,37 @@ public abstract class AbstractInternalCodeFragment {
 	
 	//protected methods
 	
+	protected void clearDataAux() {
+		detailedFDPMap.clear();
+		ATFD = 0;
+		FDP = 0;
+		LAA = 0;
+		isEnvy = false;
+	}
+	
 	protected void initAux() {
 		colorCounter = 0;
-		possiblyRelatedFlag = false;
-		cohesivlyRelatedNodes.clear();
 	}
 	
 	protected void computeDataAccessesAux(String analyzedClass, boolean considerStaticFieldAccess, boolean libraryCheck, Integer minBlockSize) {
-		HashSet<IVariableBinding> variableBindingsCache = new HashSet<IVariableBinding>();
-		HashSet<IMethodBinding> methodBindingCache = new HashSet<IMethodBinding>();
+		Set<IVariableBinding> variableBindingsCache = new HashSet<IVariableBinding>();
+		Set<IMethodBinding> methodBindingCache = new HashSet<IMethodBinding>();
 
 		for (ASTNode node : getAllInternalStatements()) {
 			MethodInvocationVisitor invocationVisitor = new MethodInvocationVisitor();
 			node.accept(invocationVisitor);
 			List<MethodInvocation> methodInvocations = invocationVisitor.getMethodInvocations();
 			for (MethodInvocation invocation : methodInvocations) {
-				boolean isGetter = invocation.getName().getFullyQualifiedName().startsWith("get");
-				boolean isSetter = invocation.getName().getFullyQualifiedName().startsWith("set");
+				boolean isGetter = invocation.getName().getFullyQualifiedName().startsWith("get")
+						&& invocation.resolveMethodBinding().getParameterTypes().length == 0;
+				boolean isSetter = invocation.getName().getFullyQualifiedName().startsWith("set")
+						&& invocation.resolveMethodBinding().getParameterTypes().length == 1;
 				if (isGetter || isSetter) {
 					IMethodBinding methodBinding = invocation.resolveMethodBinding();
 					IJavaElement element = methodBinding.getJavaElement();
-					IPackageFragmentRoot root = (IPackageFragmentRoot) element
-							.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT);
-					IClasspathEntry classpathEntry;
+					IPackageFragmentRoot root = (IPackageFragmentRoot) element.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT);
 					try {
-						classpathEntry = root.getRawClasspathEntry();
+						IClasspathEntry classpathEntry = root.getRawClasspathEntry();
 						if (classpathEntry.getEntryKind() == IClasspathEntry.CPE_SOURCE || !libraryCheck) {
 							if (!methodBindingCache.contains(methodBinding)) {
 								boolean already = false;
@@ -109,12 +115,7 @@ public abstract class AbstractInternalCodeFragment {
 									}
 								}
 								if (!already) {
-									if (isGetter && methodBinding.getParameterTypes().length == 0) {
-										incrementAccesses(analyzedClass, methodBinding.getDeclaringClass());
-									}
-									if (isSetter && methodBinding.getParameterTypes().length == 1) {
-										incrementAccesses(analyzedClass, methodBinding.getDeclaringClass());
-									}
+									incrementAccesses(analyzedClass, methodBinding.getDeclaringClass());
 								}
 								methodBindingCache.add(methodBinding);
 							}
@@ -132,10 +133,8 @@ public abstract class AbstractInternalCodeFragment {
 				IJavaElement element = variableBinding.getJavaElement();
 				if (element != null) {
 					IPackageFragmentRoot root = (IPackageFragmentRoot) element.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT);
-					IClasspathEntry classpathEntry;
 					try {
-						classpathEntry = root.getRawClasspathEntry();
-
+						IClasspathEntry classpathEntry = root.getRawClasspathEntry();
 						if (classpathEntry.getEntryKind() == IClasspathEntry.CPE_SOURCE || !libraryCheck) {
 							if (!variableBindingsCache.contains(variableBinding)) {
 								ITypeBinding typeBinding = variableBinding.getDeclaringClass();
@@ -166,18 +165,19 @@ public abstract class AbstractInternalCodeFragment {
 		if (checkLocalAccess(analyzedClass, accessClassBinding)) {
 			LAA++;
 		} else {
-			if (accessClassesMapping.get(accessClassBinding.getName()) != null) {
-				ITypeAccesses iTypeAccesses = accessClassesMapping.get(accessClassBinding.getName());
-				iTypeAccesses.incrementNumberOfAccesses();
+			if (detailedFDPMap.get(accessClassBinding.getName()) != null) {
+				FDPClass providerClass = detailedFDPMap.get(accessClassBinding.getName());
+				providerClass.incrementNumberOfAccesses();
 			} else {
-				ITypeAccesses iTypeAccesses = new ITypeAccesses((IType) accessClassBinding.getJavaElement());
-				accessClassesMapping.put(accessClassBinding.getName(), iTypeAccesses);
+				FDPClass providerClass = new FDPClass((IType) accessClassBinding.getJavaElement());
+				providerClass.incrementNumberOfAccesses();
+				detailedFDPMap.put(providerClass.getClassName(), providerClass);
 			}
 		}
 	}
 
 	private boolean checkLocalAccess(String analyzedClass, ITypeBinding accessClassBinding) {
-		System.err.println("deep in code: " + accessClassBinding.getName());
+		//System.err.println("deep in code: " + accessClassBinding.getName());
 		if (accessClassBinding.getName().equals(analyzedClass)) return true;
 		if (accessClassBinding.getSuperclass() != null) {
 			checkLocalAccess(analyzedClass, accessClassBinding.getSuperclass());
@@ -217,15 +217,15 @@ public abstract class AbstractInternalCodeFragment {
 	//accessory methods
 	
 	public void addInternalStatement(ASTNode statement) {
+		if(statement == null) {
+			System.err.println("Found null statement!");
+			return;
+		}
 		internalStatements.add(statement);
 	}
 	
 	public void addInternalStatements(List<ASTNode> statements) {
 		this.internalStatements.addAll(statements);
-	}
-	
-	public Map<String, ITypeAccesses> getAccessClassesMapping() {
-		return accessClassesMapping;
 	}
 	
 	public int getATFD() {
@@ -236,11 +236,11 @@ public abstract class AbstractInternalCodeFragment {
 		AbstractInternalCodeFragment.colorCounter = colorCounter;
 	}
 
-	public int getEndNode() {
-		return endNode;
+	public int getEndPosition() {
+		return endPosition;
 	}
 	
-	public int getFDP() {
+	public Integer getFDP() {
 		return FDP;
 	}
 
@@ -272,16 +272,12 @@ public abstract class AbstractInternalCodeFragment {
 		return cohesivlyRelatedNodes;
 	}
 	
-	public int getStartNode() {
-		return startNode;
+	public int getStartPosition() {
+		return startPosition;
 	}
 
-	public Map<String, Integer> getStoredFDP() {
-		return storedFDP;
-	}
-	
-	public String getTargetClass() {
-		return targetClass;
+	public Map<String, Integer> getFDPMap() {
+		return FDPMap;
 	}
 	
 	public boolean isEnvy() {
@@ -300,8 +296,8 @@ public abstract class AbstractInternalCodeFragment {
 		this.ATFD = ATFD;
 	}
 	
-	public void setEndNode(int endNode) {
-		this.endNode = endNode;
+	public void setEndPosition(int endPosition) {
+		this.endPosition = endPosition;
 	}
 	
 	public void setEnvy(boolean isEnvy) {
@@ -320,11 +316,11 @@ public abstract class AbstractInternalCodeFragment {
 		this.possiblyRelatedFlag = possiblyRelatedFlag;
 	}
 	
-	public void setStartNode(int startNode) {
-		this.startNode = startNode;
+	public void setStartPosition(int startPosition) {
+		this.startPosition = startPosition;
 	}
 	
-	public void setStoredFDP(Map<String, Integer> storedFDP) {
-		this.storedFDP = storedFDP;
+	public void setFDPMap(Map<String, Integer> storedFDP) {
+		this.FDPMap = storedFDP;
 	}
 }

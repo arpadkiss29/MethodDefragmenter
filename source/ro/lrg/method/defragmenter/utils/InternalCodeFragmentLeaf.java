@@ -25,8 +25,8 @@ public class InternalCodeFragmentLeaf extends AbstractInternalCodeFragment {
 
 	public void joinWithLeaf(InternalCodeFragmentLeaf internalCodeFragmentLeaf) {
 		addInternalStatements(internalCodeFragmentLeaf.getInternalStatements());
-		Map<String, Integer> storedFDP = this.getStoredFDP();
-		Map<String, Integer> leafFDP = internalCodeFragmentLeaf.getStoredFDP();
+		Map<String, Integer> storedFDP = this.getFDPMap();
+		Map<String, Integer> leafFDP = internalCodeFragmentLeaf.getFDPMap();
 		for (Entry<String, Integer> entry : leafFDP.entrySet()) {
 			if(storedFDP.get(entry.getKey())!=null) {
 				storedFDP.replace(entry.getKey(), storedFDP.get(entry.getKey()) + entry.getValue());
@@ -50,10 +50,7 @@ public class InternalCodeFragmentLeaf extends AbstractInternalCodeFragment {
 	
 	@Override
 	public void clearData() {
-		accessClassesMapping.clear();
-		ATFD = 0;
-		FDP = 0;
-		LAA = 0;
+		clearDataAux();
 	}
 	
 	@Override
@@ -108,10 +105,8 @@ public class InternalCodeFragmentLeaf extends AbstractInternalCodeFragment {
 	
 	@Override
 	public void computeDataAccesses(String analyzedClass, boolean considerStaticFieldAccess, boolean libraryCheck, Integer minBlockSize) {
-		if (minBlockSize != null) {
-			if (getInternalStatementsSize() < minBlockSize) return;
-		}
-		computeDataAccessesAux(analyzedClass, considerStaticFieldAccess, libraryCheck, minBlockSize);
+		if (minBlockSize != null && getInternalStatementsSize() < minBlockSize) return;
+		super.computeDataAccessesAux(analyzedClass, considerStaticFieldAccess, libraryCheck, minBlockSize);
 	}
 	
 	@Override
@@ -121,7 +116,7 @@ public class InternalCodeFragmentLeaf extends AbstractInternalCodeFragment {
 	
 	@Override
 	public List<AbstractInternalCodeFragment> getAllEnviousNodes() {
-		List<AbstractInternalCodeFragment> nodes = new ArrayList<AbstractInternalCodeFragment>();
+		List<AbstractInternalCodeFragment> nodes = new ArrayList<>();
 		if(isEnvy()) nodes.add(this);
 		return nodes;
 	}
@@ -165,49 +160,22 @@ public class InternalCodeFragmentLeaf extends AbstractInternalCodeFragment {
 	@Override
 	public boolean verifyFeatureEnvy(int ATFDTreshold, int FDPTreshold, double LAATreshold, String analyzedClass,
 			boolean considerStaticFieldAccess, boolean libraryCheck, Integer minBlockSize, boolean local) {
-		isEnvy = false;
-		Map<String, ITypeAccesses> accessClassesMapping = getAccessClassesMapping();
-		accessClassesMapping.clear();
-		ATFD = 0;
-		FDP = 0;
-		LAA = 0;
-		targetClass = "";
-
+		clearData();
 		computeDataAccesses(analyzedClass, considerStaticFieldAccess, libraryCheck, minBlockSize);
-		for (ITypeAccesses iTypeAccesses : accessClassesMapping.values()) {
-			ATFD += iTypeAccesses.getNumberOfAccesses();
+		
+		for (FDPClass FDPClass : detailedFDPMap.values()) {
+			ATFD += FDPClass.getNumberOfAccesses();
 		}
 		int totalAccesses = ATFD + LAA;
-		FDP = accessClassesMapping.size();
+		FDP = detailedFDPMap.size();
 
 		if (ATFD > ATFDTreshold
-				&& (LAA > 0 ? (LAA * 1.0) / totalAccesses : 0) < (LAATreshold)
-				&& FDP <= FDPTreshold) {
-
-			String enviousClass = "";
-			int maxAccess = Integer.MIN_VALUE;
-			if (accessClassesMapping.entrySet().size() == 1) {
-				for (Entry<String, ITypeAccesses> accessedClassEntry : accessClassesMapping.entrySet()) {
-					if (accessedClassEntry.getValue().getNumberOfAccesses() > maxAccess) {
-						maxAccess = accessedClassEntry.getValue().getNumberOfAccesses();
-						enviousClass = accessedClassEntry.getKey();
-					}
-				}
-			} else {
-				int count = 0;
-				for (Entry<String, ITypeAccesses> accessedClassEntry : accessClassesMapping.entrySet()) {
-					if (count > 0)
-						enviousClass += ";";
-					enviousClass += accessedClassEntry.getKey() + " - " + accessedClassEntry.getValue().getNumberOfAccesses();
-					count++;
-				}
-			}
-
-			targetClass = enviousClass;
-			isEnvy = true;
+				&& (LAA == 0 ? 0 : (LAA * 1.0) / totalAccesses) < LAATreshold
+				&& FDP > FDPTreshold) {
+			setEnvy(true);
 		}
 
-		return isEnvy;
+		return isEnvy();
 
 	}
 

@@ -32,22 +32,22 @@ public class InternalCodeFragment extends AbstractInternalCodeFragment {
 	}
 	
 	public void calculteFirstLastLine() {
-		if (children.size() > 0 && startNode == 0 && endNode == 0) {
-			startNode = getFragmentFirstLineStartIndex();
-			endNode = getFragmentLastLineEndIndex();
+		if (children.size() > 0 && startPosition == 0 && endPosition == 0) {
+			startPosition = getFragmentFirstLineStartIndex();
+			endPosition = getFragmentLastLineEndIndex();
 		} else {
 			System.out.println("Already calculated!");
 			System.out.println(this);
 		}
 
-		if (((startNode == 0) || (endNode == 0)) && leafsReceived.size() > 1) {
-			if (startNode == 0 && endNode == 0) {
-				startNode = children.get(0).startNode;
-				endNode = children.get(children.size() - 1).getEndNode();
-			} else if (startNode == 0) {
-				startNode = leafsReceived.get(0).getFragmentFirstLineStartIndex();
-			} else if (endNode == 0) {
-				endNode = leafsReceived.get(leafsReceived.size() - 1).getFragmentLastLineEndIndex();
+		if (((startPosition == 0) || (endPosition == 0)) && leafsReceived.size() > 1) {
+			if (startPosition == 0 && endPosition == 0) {
+				startPosition = children.get(0).startPosition;
+				endPosition = children.get(children.size() - 1).getEndPosition();
+			} else if (startPosition == 0) {
+				startPosition = leafsReceived.get(0).getFragmentFirstLineStartIndex();
+			} else if (endPosition == 0) {
+				endPosition = leafsReceived.get(leafsReceived.size() - 1).getFragmentLastLineEndIndex();
 			}
 
 		}
@@ -121,7 +121,7 @@ public class InternalCodeFragment extends AbstractInternalCodeFragment {
 			nodeNCOCP2 = calculateMetric(temp);
 			calculteFirstLastLine();
 			System.out.println("Currently in node: " + toString() + " COCP: " + nodeCOCP + " NCOCP2: " + nodeNCOCP2);
-			System.out.println("From line : " + (unit.getLineNumber(startNode)) + " to line: " + (unit.getLineNumber(endNode)));
+			System.out.println("From line : " + (unit.getLineNumber(startPosition)) + " to line: " + (unit.getLineNumber(endPosition)));
 			System.out.println();
 		}
 		return temp;
@@ -159,10 +159,7 @@ public class InternalCodeFragment extends AbstractInternalCodeFragment {
 	
 	@Override
 	public void clearData() {
-		accessClassesMapping.clear();
-		ATFD = 0;
-		FDP = 0;
-		LAA = 0;
+		clearDataAux();
 		for (AbstractInternalCodeFragment child : children) {
 			child.clearData();
 		}
@@ -241,7 +238,7 @@ public class InternalCodeFragment extends AbstractInternalCodeFragment {
 	
 	@Override
 	public List<AbstractInternalCodeFragment> getAllEnviousNodes() {
-		List<AbstractInternalCodeFragment> nodes = new ArrayList<AbstractInternalCodeFragment>();
+		List<AbstractInternalCodeFragment> nodes = new ArrayList<>();
 		for (AbstractInternalCodeFragment child : children) {
 			if (child.isEnvy()) {
 				nodes.add(child);
@@ -269,8 +266,8 @@ public class InternalCodeFragment extends AbstractInternalCodeFragment {
 			return firstChild.getFragmentFirstLineStartIndex();
 		} else {
 			int tmp = firstChild.getFragmentFirstLineStartIndex();
-			if (startNode != 0 && startNode < tmp)
-				tmp = startNode;
+			if (startPosition != 0 && startPosition < tmp)
+				tmp = startPosition;
 			if (getInternalStatementsSize() > 0) {
 				int tmp1 = getInternalStatement(0).getStartPosition();
 				// if(internalASTNodes.get(0) instanceof Expression){
@@ -289,8 +286,8 @@ public class InternalCodeFragment extends AbstractInternalCodeFragment {
 			return lastChild.getFragmentLastLineEndIndex();
 		} else {
 			int tmp = lastChild.getFragmentLastLineEndIndex();
-			if (endNode != 0 && endNode > tmp)
-				tmp = endNode;
+			if (endPosition != 0 && endPosition > tmp)
+				tmp = endPosition;
 			if (getInternalStatementsSize() > 0) {
 				int tmp1 = getInternalStatement(getInternalStatementsSize() - 1).getStartPosition()
 						+ getInternalStatement(getInternalStatementsSize() - 1).getLength();
@@ -322,9 +319,6 @@ public class InternalCodeFragment extends AbstractInternalCodeFragment {
 	public void init() {
 		initAux();
 		allNodesLeafs.clear();
-		nodeNCOCP2 = 0;
-		nodeCOCP = 0;
-		leafsReceived.clear();
 	}
 	
 	@Override
@@ -353,6 +347,10 @@ public class InternalCodeFragment extends AbstractInternalCodeFragment {
 	//accessory methods
 	
 	public void addChild(AbstractInternalCodeFragment child) {
+		if(child == null) {
+			System.err.println("Found null child!");
+			return;
+		}
 		children.add(child);
 	}
 	

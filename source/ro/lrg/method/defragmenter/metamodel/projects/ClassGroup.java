@@ -1,4 +1,4 @@
-package ro.lrg.method.defragmenter.projects;
+package ro.lrg.method.defragmenter.metamodel.projects;
 
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;

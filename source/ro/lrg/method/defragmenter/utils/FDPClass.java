@@ -2,17 +2,21 @@ package ro.lrg.method.defragmenter.utils;
 
 import org.eclipse.jdt.core.IType;
 
-public class ITypeAccesses {
-	IType iType;
-	int numberOfAccesses;
+public class FDPClass {
+	private final IType iType;
+	private int numberOfAccesses;
 	
-	public ITypeAccesses(IType iType) {
+	public FDPClass(IType iType) {
 		this.iType = iType;
-		this.numberOfAccesses = 1;
+		this.numberOfAccesses = 0;
 	}
 	
 	public void incrementNumberOfAccesses() {
 		this.numberOfAccesses++;
+	}
+	
+	public String getClassName() {
+		return iType.getElementName();
 	}
 	
 	public IType getIType() {

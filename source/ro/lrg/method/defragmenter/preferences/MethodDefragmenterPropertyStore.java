@@ -79,31 +79,41 @@ public class MethodDefragmenterPropertyStore extends PreferenceStore implements 
 		return preferenceStoreProject;
 	}
 	
-	public int getATFD() {
+	public int getATFDTreshold() {
+		if(toMap().get(ATFD_PREFERENCE_NAME) == null) return Integer.parseInt(DEFAULT_VALUES.get(ATFD_PREFERENCE_NAME));
 		return Integer.parseInt(toMap().get(ATFD_PREFERENCE_NAME));
 	}
 	
-	public int getFDP() {
+	public int getFDPTreshold() {
+		if(toMap().get(FDP_PREFERENCE_NAME) == null) return Integer.parseInt(DEFAULT_VALUES.get(FDP_PREFERENCE_NAME));
 		return Integer.parseInt(toMap().get(FDP_PREFERENCE_NAME));
 	}
 	
-	public Double getLAA() {
+	public double getLAATreshold() {
+		if(toMap().get(LAA_PREFERENCE_NAME) == null) return Double.parseDouble(DEFAULT_VALUES.get(LAA_PREFERENCE_NAME));
 		return Double.parseDouble(toMap().get(LAA_PREFERENCE_NAME));
 	}
 
 	public boolean isConsiderStaticFieldAccesses() {
+		if(toMap().get(CONSIDER_STATIC_FIELD_ACCESS_PREFERENCE_NAME) == null) return Boolean.parseBoolean(DEFAULT_VALUES.get(CONSIDER_STATIC_FIELD_ACCESS_PREFERENCE_NAME));
 		return Boolean.parseBoolean(toMap().get(CONSIDER_STATIC_FIELD_ACCESS_PREFERENCE_NAME));
 	}
 
 	public int getMinBlockSize() {
+		String minBlockSize = toMap().get(MIN_BLOCK_SIZE_PREFERENCE_NAME);
+		if (minBlockSize == null) 
+			return DEFAULT_VALUES.get(MIN_BLOCK_SIZE_PREFERENCE_NAME)
+				.equals(NULL)?0:Integer.parseInt(toMap().get(APPLY_LONG_METHOD_IDENTIFICATION_PREFERENCE_NAME));
 		return toMap().get(MIN_BLOCK_SIZE_PREFERENCE_NAME).equals(NULL)?0:Integer.parseInt(toMap().get(APPLY_LONG_METHOD_IDENTIFICATION_PREFERENCE_NAME));
 	}
 
 	public boolean isLibraryCheck() {
+		if(toMap().get(LIBRARY_CHECK_PREFERENCE_NAME) == null) return Boolean.parseBoolean(DEFAULT_VALUES.get(LIBRARY_CHECK_PREFERENCE_NAME));
 		return Boolean.parseBoolean(toMap().get(LIBRARY_CHECK_PREFERENCE_NAME));
 	}
 
 	public boolean isApplyLongMethodIdentification() {
+		if(toMap().get(APPLY_LONG_METHOD_IDENTIFICATION_PREFERENCE_NAME) == null) return Boolean.parseBoolean(DEFAULT_VALUES.get(APPLY_LONG_METHOD_IDENTIFICATION_PREFERENCE_NAME));
 		return Boolean.parseBoolean(toMap().get(APPLY_LONG_METHOD_IDENTIFICATION_PREFERENCE_NAME));
 	}
 }

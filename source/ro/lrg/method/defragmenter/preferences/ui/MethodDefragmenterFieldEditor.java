@@ -19,7 +19,7 @@ import ro.lrg.method.defragmenter.preferences.DefaultPreferences;
 import ro.lrg.method.defragmenter.preferences.MethodDefragmenterPropertyStore;
 
 public class MethodDefragmenterFieldEditor extends FieldEditor implements DefaultPreferences {
-	private static final int numberOfDecimalsOfLAA = 5;
+	private static final int numberOfDecimalsOfLAA = 2;
 	private Spinner ATFDTresholdSpinner;
 	private Spinner FDPTresholdSpinner;
 	private Spinner LAATresholdSpinner;
