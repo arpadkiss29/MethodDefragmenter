@@ -569,6 +569,7 @@ public class FdpFragmenter extends AbstractFragmenter {
 		return false;
 	}
 
+	
 	@Override
 	public boolean visit(ArrayType node) {
 		lastNode.push(null);

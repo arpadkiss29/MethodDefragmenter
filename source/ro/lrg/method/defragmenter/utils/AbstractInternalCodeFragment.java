@@ -24,6 +24,8 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.ui.texteditor.ITextEditor;
 
+import ro.lrg.method.defragmenter.visitors.EnviousFragmentVisitor;
+import ro.lrg.method.defragmenter.visitors.AllLeavesVisitor;
 import ro.lrg.method.defragmenter.visitors.MethodInvocationVisitor;
 import ro.lrg.method.defragmenter.visitors.VariableBindingVisitor;
 
@@ -31,6 +33,17 @@ public abstract class AbstractInternalCodeFragment {
 	private final IFile iFile;
 	private final IJavaProject iJavaProject;
 	private final List<ASTNode> internalStatements = new ArrayList<ASTNode>();
+	
+	public abstract void accept(AllLeavesVisitor visitor);
+	public abstract void accept(EnviousFragmentVisitor visitor);
+
+	protected boolean isEnvy = false;
+	protected int ATFD = 0;
+	protected int FDP = 0;
+	protected int LAA = 0;
+	protected Map<String, FDPClass> detailedFDPMap = new HashMap<>();
+	private Map<String, Integer> FDPMap;
+	
 	protected static int colorCounter = 0;
 	protected boolean possiblyRelatedFlag = false;
 	protected int startPosition = 0;
@@ -42,16 +55,7 @@ public abstract class AbstractInternalCodeFragment {
 		this.iJavaProject = iJavaProject;
 	}
 
-	// Feature envy
-	
-	protected boolean isEnvy = false;
-	protected int ATFD = 0;
-	protected int FDP = 0;
-	protected int LAA = 0;
-	protected Map<String, FDPClass> detailedFDPMap = new HashMap<>();
-	private Map<String, Integer> FDPMap;
-
-	public Map<String, Integer> getFDPMap(String analyzedClass, boolean considerStaticFieldAccess, boolean libraryCheck, Integer minBlockSize) {
+	public Map<String, Integer> computeAndGetFDPMap(String analyzedClass, boolean considerStaticFieldAccess, boolean libraryCheck, Integer minBlockSize) {
 		computeDataAccesses(analyzedClass, considerStaticFieldAccess, libraryCheck, minBlockSize);
 		FDPMap = new HashMap<>();
 		for (Entry<String, FDPClass> entry : detailedFDPMap.entrySet()) {
@@ -83,6 +87,8 @@ public abstract class AbstractInternalCodeFragment {
 	
 	protected void initAux() {
 		colorCounter = 0;
+		possiblyRelatedFlag = false;
+		cohesivlyRelatedNodes.clear();
 	}
 	
 	protected void computeDataAccessesAux(String analyzedClass, boolean considerStaticFieldAccess, boolean libraryCheck, Integer minBlockSize) {
@@ -186,36 +192,19 @@ public abstract class AbstractInternalCodeFragment {
 	}
 	
 	//abstract methods
-	
 	public abstract void clearData();
-	
-	public abstract void colorEnvyLeafNodes(ITextEditor textEditor, IFile file) throws CoreException;
-	
-	public abstract void colorLongMethodFragments(ITextEditor textEditor, IFile file, List<AbstractInternalCodeFragment> functionalSegmentNodes);
-	
+	public abstract void colorFragment(ITextEditor textEditor, IFile file) throws CoreException;
 	public abstract void computeDataAccesses(String analyzedClass, boolean considerStaticFieldAccess, boolean libraryCheck, Integer minBlockSize);
-	
-	public abstract AbstractInternalCodeFragment constructTree();
-	
 	public abstract List<AbstractInternalCodeFragment> getAllEnviousNodes();
-	
 	public abstract List<ASTNode> getAllInternalStatements();
-	
 	public abstract int getFragmentFirstLineStartIndex();
-	
 	public abstract int getFragmentLastLineEndIndex();
-	
-	public abstract List<AbstractInternalCodeFragment> identifyFunctionalSegments();
-	
 	public abstract void init();
-	
 	public abstract void print(int tabs);
-	
 	public abstract boolean verifyFeatureEnvy(int ATFDTreshold, int FDPTreshold, double LAATreshold, String analyzedClass,
 			boolean considerStaticFieldAccess, boolean libraryCheck, Integer minBlockSize, boolean local);
 	
-	//accessory methods
-	
+	//internal statements related methods
 	public void addInternalStatement(ASTNode statement) {
 		if(statement == null) {
 			System.err.println("Found null statement!");
@@ -223,104 +212,89 @@ public abstract class AbstractInternalCodeFragment {
 		}
 		internalStatements.add(statement);
 	}
-	
 	public void addInternalStatements(List<ASTNode> statements) {
+		if (statements == null) throw new NullPointerException();
 		this.internalStatements.addAll(statements);
 	}
-	
-	public int getATFD() {
-		return ATFD;
-	}
-
-	public static void setColorCounter(int colorCounter) {
-		AbstractInternalCodeFragment.colorCounter = colorCounter;
-	}
-
-	public int getEndPosition() {
-		return endPosition;
-	}
-	
-	public Integer getFDP() {
-		return FDP;
-	}
-
-	public IFile getIFile() {
-		return iFile;
-	}
-	
-	public IJavaProject getIJavaProject() {
-		return iJavaProject;
-	}
-	
 	public ASTNode getInternalStatement(int index) {
 		return internalStatements.get(index);
 	}
-	
-	protected List<ASTNode> getInternalStatements() {
+	public List<ASTNode> getInternalStatements() {
 		return internalStatements;
 	}
-	
 	public int getInternalStatementsSize() {
 		return internalStatements.size();
 	}
-	
-	public int getLAA() {
-		return LAA;
-	}
-	
-	public List<AbstractInternalCodeFragment> getPossiblyRelatedNodes() {
-		return cohesivlyRelatedNodes;
-	}
-	
-	public int getStartPosition() {
-		return startPosition;
-	}
-
-	public Map<String, Integer> getFDPMap() {
-		return FDPMap;
-	}
-	
-	public boolean isEnvy() {
-		return isEnvy;
-	}
-
-	public boolean isPossiblyRelatedFlag() {
-		return possiblyRelatedFlag;
-	}
-	
 	public void removeInternalStatement(ASTNode statement) {
 		internalStatements.remove(statement);
 	}
 	
+	//accessory methods
+	public int getATFD() {
+		return ATFD;
+	}
+	public static void setColorCounter(int colorCounter) {
+		AbstractInternalCodeFragment.colorCounter = colorCounter;
+	}
+	public int getEndPosition() {
+		return endPosition;
+	}
+	public Integer getFDP() {
+		return FDP;
+	}
+	public IFile getIFile() {
+		return iFile;
+	}
+	public IJavaProject getIJavaProject() {
+		return iJavaProject;
+	}
+	public int getLAA() {
+		return LAA;
+	}
+	public int getStartPosition() {
+		return startPosition;
+	}
+	public Map<String, Integer> getFDPMap() {
+		return FDPMap;
+	}
+	public boolean isEnvy() {
+		return isEnvy;
+	}
 	public void setATFD(int ATFD) {
 		this.ATFD = ATFD;
-	}
-	
+	}	
 	public void setEndPosition(int endPosition) {
 		this.endPosition = endPosition;
 	}
-	
 	public void setEnvy(boolean isEnvy) {
 		this.isEnvy = isEnvy;
 	}
-	
 	public void setFDP(int FDP) {
 		this.FDP = FDP;
 	}
-
 	public void setLAA(int LAA) {
 		this.LAA = LAA;
-	}
-	
-	public void setPossiblyRelatedFlag(boolean possiblyRelatedFlag) {
-		this.possiblyRelatedFlag = possiblyRelatedFlag;
-	}
-	
+	}	
 	public void setStartPosition(int startPosition) {
 		this.startPosition = startPosition;
-	}
-	
+	}	
 	public void setFDPMap(Map<String, Integer> storedFDP) {
 		this.FDPMap = storedFDP;
+	}
+	
+	//NCOCP2
+	//NCOCP2: abstract methods
+	public abstract void colorLongMethodFragments(ITextEditor textEditor, IFile file, List<AbstractInternalCodeFragment> functionalSegmentNodes);
+	public abstract AbstractInternalCodeFragment constructTree();
+	public abstract List<AbstractInternalCodeFragment> identifyFunctionalSegments();
+	//NCOCP2: getters and setters
+	public List<AbstractInternalCodeFragment> getPossiblyRelatedNodes() {
+		return cohesivlyRelatedNodes;
+	}
+	public boolean isPossiblyRelatedFlag() {
+		return possiblyRelatedFlag;
+	}
+	public void setPossiblyRelatedFlag(boolean possiblyRelatedFlag) {
+		this.possiblyRelatedFlag = possiblyRelatedFlag;
 	}
 }

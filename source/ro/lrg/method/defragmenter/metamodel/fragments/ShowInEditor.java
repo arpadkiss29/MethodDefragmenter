@@ -38,7 +38,7 @@ public class ShowInEditor implements IActionPerformer<Void, MFragment, HListEmpt
 		
 		if(!propertyStore.isApplyLongMethodIdentification()){
 			try {
-				fragment.colorEnvyLeafNodes(textEditor, iFile);
+				fragment.colorFragment(textEditor, iFile);
 			} catch (CoreException e) {
 				e.printStackTrace();
 			}

@@ -16,9 +16,14 @@ import methoddefragmenter.metamodel.entity.MFragment;
 import methoddefragmenter.metamodel.entity.MMethod;
 import methoddefragmenter.metamodel.factory.Factory;
 import ro.lrg.method.defragmenter.fragmenters.FDPFragmenter;
+import ro.lrg.method.defragmenter.fragmenters.Fragmenter;
 import ro.lrg.method.defragmenter.preferences.MethodDefragmenterPropertyStore;
 import ro.lrg.method.defragmenter.utils.AbstractInternalCodeFragment;
 import ro.lrg.method.defragmenter.utils.InternalCodeFragment;
+import ro.lrg.method.defragmenter.utils.InternalCodeFragmentLeaf;
+import ro.lrg.method.defragmenter.visitors.AllLeavesVisitor;
+import ro.lrg.method.defragmenter.visitors.EnviousFragmentVisitor;
+import ro.lrg.method.defragmenter.visitors.FragmentVisitor;
 import ro.lrg.xcore.metametamodel.Group;
 import ro.lrg.xcore.metametamodel.IRelationBuilder;
 import ro.lrg.xcore.metametamodel.RelationBuilder;
@@ -43,30 +48,36 @@ public class EnviousFragmentGroup implements IRelationBuilder<MFragment, MMethod
         
         IFile iFile = (IFile) method.getResource();
         IJavaProject iJavaProject = method.getJavaProject();
-        MethodDefragmenterPropertyStore propertyStore = new MethodDefragmenterPropertyStore(iJavaProject);
         
-        FDPFragmenter fdpFragmenter = new FDPFragmenter(className, iFile, iJavaProject, propertyStore.isConsiderStaticFieldAccesses(),
-        		propertyStore.isLibraryCheck(), propertyStore.getMinBlockSize(), propertyStore.getFDPTreshold());
-        block.accept(fdpFragmenter);
+        Fragmenter fragmenter = new Fragmenter(methodName, iFile, iJavaProject);
+        block.accept(fragmenter);
+        InternalCodeFragment root = (InternalCodeFragment) fragmenter.getLastNode().pop();
+        FragmentVisitor visitor = new AllLeavesVisitor();
+        visitor.visit(root);
+        List<InternalCodeFragmentLeaf> ACFs = ((AllLeavesVisitor) visitor).getLeaves();
         
-        InternalCodeFragment root = (InternalCodeFragment) fdpFragmenter.getLastNode().pop();
-        root.verifyFeatureEnvy(propertyStore.getATFDTreshold(), propertyStore.getFDPTreshold(), propertyStore.getLAATreshold(), className, 
-        		propertyStore.isConsiderStaticFieldAccesses(), propertyStore.isLibraryCheck(), propertyStore.getMinBlockSize(), false);
-
-		List<AbstractInternalCodeFragment> ACFs = null;
-		
-		root.init();
-		if(!propertyStore.isApplyLongMethodIdentification()) {
-			ACFs = root.getAllEnviousNodes();
-		} else {
-			System.out.println("Calculating Long Method Fragmentation! Threshold: " + InternalCodeFragment.getNcocp2treshold());
-			root.getCohesionMetric(compilationUnit);
-			List<AbstractInternalCodeFragment> identifiedNodes = root.identifyFunctionalSegments();
-			root.combineNodes(identifiedNodes);
-			root.constructTree();
-			ACFs = InternalCodeFragment.getAllNodesLeafs();
-			ACFs.add(root);
-		}
+//        MethodDefragmenterPropertyStore propertyStore = new MethodDefragmenterPropertyStore(iJavaProject);
+//        FDPFragmenter fdpFragmenter = new FDPFragmenter(className, iFile, iJavaProject, propertyStore.isConsiderStaticFieldAccesses(),
+//        		propertyStore.isLibraryCheck(), propertyStore.getMinBlockSize(), propertyStore.getFDPTreshold());
+//        block.accept(fdpFragmenter);
+//        
+//        InternalCodeFragment root = (InternalCodeFragment) fdpFragmenter.getLastNode().pop();
+//        root.verifyFeatureEnvy(propertyStore.getATFDTreshold(), propertyStore.getFDPTreshold(), propertyStore.getLAATreshold(), className, 
+//        		propertyStore.isConsiderStaticFieldAccesses(), propertyStore.isLibraryCheck(), propertyStore.getMinBlockSize(), false);
+//
+//		List<AbstractInternalCodeFragment> ACFs = null;
+//		
+//		if(!propertyStore.isApplyLongMethodIdentification()) {
+//			ACFs = root.getAllEnviousNodes();
+//		} else {
+//			System.out.println("Calculating Long Method Fragmentation! Threshold: " + InternalCodeFragment.getNcocp2treshold());
+//			root.getCohesionMetric(compilationUnit);
+//			List<AbstractInternalCodeFragment> identifiedNodes = root.identifyFunctionalSegments();
+//			root.combineNodes(identifiedNodes);
+//			root.constructTree();
+//			ACFs = InternalCodeFragment.getAllNodesLeafs();
+//			ACFs.add(root);
+//		}
 		
         Group<MFragment> group = new Group<>();
         ACFs.forEach(ACF->{

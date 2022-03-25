@@ -40,6 +40,7 @@ import org.eclipse.jdt.core.dom.ThrowStatement;
 import org.eclipse.jdt.core.dom.TryStatement;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.WhileStatement;
+
 import ro.lrg.method.defragmenter.utils.AbstractInternalCodeFragment;
 import ro.lrg.method.defragmenter.utils.InternalCodeFragmentLeaf;
 import ro.lrg.method.defragmenter.utils.DontGetHereException;
@@ -80,8 +81,8 @@ public class FDPFragmenter extends ASTVisitor {
 		return new InternalCodeFragmentLeaf(iFile, iJavaProject);
 	}
 	
-	private Map<String, Integer> getFDPMapOfFragment(AbstractInternalCodeFragment AICF) {
-		return AICF.getFDPMap(analyzedClass, considerStaticFieldAccess, libraryCheck, minBlockSize);
+	private Map<String, Integer> computeAndGetFDPMapOfFragment(AbstractInternalCodeFragment AICF) {
+		return AICF.computeAndGetFDPMap(analyzedClass, considerStaticFieldAccess, libraryCheck, minBlockSize);
 	}
 
 	private void addStatementToFragment(InternalCodeFragment parent, Statement statement) {
@@ -110,12 +111,12 @@ public class FDPFragmenter extends ASTVisitor {
 	private boolean canAddStatementsToFragment(AbstractInternalCodeFragment fragment, List<ASTNode> statements, boolean reduceLimits) {
 		Map<String, Integer> FDPMap = fragment.getFDPMap();
 		if (FDPMap == null) {
-			FDPMap = fragment.getFDPMap(analyzedClass, considerStaticFieldAccess, libraryCheck, minBlockSize);
+			FDPMap = computeAndGetFDPMapOfFragment(fragment);
 		}
 
 		InternalCodeFragmentLeaf tempFragment = newInternalCodeFragmentLeaf();
 		tempFragment.addInternalStatements(statements);
-		Map<String, Integer> tempFDPMap = tempFragment.getFDPMap(analyzedClass, considerStaticFieldAccess, libraryCheck, minBlockSize);
+		Map<String, Integer> tempFDPMap = computeAndGetFDPMapOfFragment(tempFragment);
 
 		if (reduceLimits
 				&& fragment.getInternalStatementsSize() != 0
@@ -132,6 +133,7 @@ public class FDPFragmenter extends ASTVisitor {
 		//??????????????????????????????????????????????????????????????????
 		//FDPMap.putAll(tempFDPMap);
 		FDPMap.putAll(auxFDPMap);
+		
 		return true;
 	}
 
@@ -173,7 +175,7 @@ public class FDPFragmenter extends ASTVisitor {
 		List<AbstractInternalCodeFragment> fragments = getRawAbstractInternalCodeFragments(node);
 		
 		InternalCodeFragmentLeaf acumulatingLeaf = newInternalCodeFragmentLeaf();
-		Map<String, Integer> FDPMapOfAcumulatingLeaf = getFDPMapOfFragment(acumulatingLeaf);
+		Map<String, Integer> FDPMapOfAcumulatingLeaf = computeAndGetFDPMapOfFragment(acumulatingLeaf);
 		
 		for (AbstractInternalCodeFragment fragment : fragments) {
 			
@@ -184,12 +186,12 @@ public class FDPFragmenter extends ASTVisitor {
 			
 			FDPMapOfAcumulatingLeaf = acumulatingLeaf.getFDPMap();
 			if(FDPMapOfAcumulatingLeaf == null){
-				FDPMapOfAcumulatingLeaf = getFDPMapOfFragment(acumulatingLeaf);
+				FDPMapOfAcumulatingLeaf = computeAndGetFDPMapOfFragment(acumulatingLeaf);
 			}
 			
 			if (fragment instanceof InternalCodeFragment) {
-				//for node
-				//executes every time
+//				//for node
+//				//executes every time
 				if (acumulatingLeaf != null) {
 					parent.addChild(acumulatingLeaf);
 					acumulatingLeaf = newInternalCodeFragmentLeaf();
@@ -198,7 +200,7 @@ public class FDPFragmenter extends ASTVisitor {
 				parent.addChild(fragment);
 			} else {
 				InternalCodeFragmentLeaf leaf = (InternalCodeFragmentLeaf) fragment;
-				Map<String, Integer> FDPMapOfLeaf = getFDPMapOfFragment(leaf);
+				Map<String, Integer> FDPMapOfLeaf = computeAndGetFDPMapOfFragment(leaf);
 
 				if (FDPMapOfAcumulatingLeaf.size() == 0 || FDPMapOfLeaf.size() > 0)  {
 					List<ASTNode> leafsStatements = leaf.getAllInternalStatements();
@@ -208,8 +210,8 @@ public class FDPFragmenter extends ASTVisitor {
 					}
 					// Adding it to the current leaf
 					acumulatingLeaf.addInternalStatements(leafsStatements);
-					FDPMapOfAcumulatingLeaf = getFDPMapOfFragment(acumulatingLeaf);
-				//-------------------------------------------------------------------------------------
+					FDPMapOfAcumulatingLeaf = computeAndGetFDPMapOfFragment(acumulatingLeaf);
+//				//-------------------------------------------------------------------------------------
 				} else if (FDPMapOfAcumulatingLeaf.size() > 0 && FDPMapOfLeaf.size() == 0) {
 					int i = fragments.indexOf(fragment);
 					int statementsSize = node.statements().size();
@@ -231,7 +233,7 @@ public class FDPFragmenter extends ASTVisitor {
 							break;
 						} else {
 							InternalCodeFragmentLeaf nextLeaf = (InternalCodeFragmentLeaf) nextFragment;
-							Map<String, Integer> FDPMapOfNextLeaf = getFDPMapOfFragment(nextLeaf);
+							Map<String, Integer> FDPMapOfNextLeaf = computeAndGetFDPMapOfFragment(nextLeaf);
 							
 							if (FDPMapOfNextLeaf.size() != 0) {
 								HashMap<String, Integer> tempStoredFDP = new HashMap<String, Integer>();
@@ -276,7 +278,7 @@ public class FDPFragmenter extends ASTVisitor {
 						}
 					}
 				}
-				//-------------------------------------------------------------------------------------
+//				//-------------------------------------------------------------------------------------
 			}
 		}
 		
@@ -287,109 +289,112 @@ public class FDPFragmenter extends ASTVisitor {
 		lastNode.push(parent);
 		return false;
 
-//		AbstractInternalCodeFragment AICF_2 = new InternalCodeFragmentLeaf(iFile, iJavaProject);
+//		InternalCodeFragmentLeaf leaf = newInternalCodeFragmentLeaf();
 //		Map<String, Integer> fdpOfCurrentLeaf;
-//		Map<String, Integer> FDPClasses = new HashMap<String, Integer>();
-//		for (AbstractInternalCodeFragment AICF : AICFs) {
+//		Map<String, Integer> storedFDP = new HashMap<String, Integer>();
+//		for (int i = 0; i < fragments.size(); i++) {
+//			AbstractInternalCodeFragment currentAbstractFragment = fragments.get(i);
 //			
-//			if (AICF_2 == null) {
-//				AICF_2 = new InternalCodeFragmentLeaf(iFile, iJavaProject);
-//				FDPClasses = new HashMap<String, Integer>();
+//			if (leaf == null) {
+//				leaf = newInternalCodeFragmentLeaf();
+//				storedFDP = new HashMap<String, Integer>();
 //			}
-//			FDPClasses = AICF_2.getStoredFDP();
-//			if(FDPClasses==null){
-//				FDPClasses = getFDPClassesOfFragment(AICF_2);
+//			storedFDP = leaf.getFDPMap();
+//			if(storedFDP==null){
+//				storedFDP = computeAndGetFDPMapOfFragment(leaf);
 //			}
 //
-//			if (AICF instanceof InternalCodeFragmentLeaf) {
-//				InternalCodeFragmentLeaf ICFL = (InternalCodeFragmentLeaf) AICF;
-//				fdpOfCurrentLeaf = getFDPClassesOfFragment(ICFL);
+//			if (currentAbstractFragment instanceof InternalCodeFragmentLeaf) {
+//				InternalCodeFragmentLeaf currentLeaf = (InternalCodeFragmentLeaf) currentAbstractFragment;
+//				fdpOfCurrentLeaf = computeAndGetFDPMapOfFragment(currentLeaf);
 //
-//				if (FDPClasses.size() > 0 && fdpOfCurrentLeaf.size() == 0) {
-//					int i = AICFs.indexOf(AICF);
-//					if (i == currentStatements.size() - 1) {
-////			        	parent.addChild(AICF_2);
-////			        	AICF_2=null;
-//						parent.addChild(ICFL);
+//				if (storedFDP.size() > 0 && fdpOfCurrentLeaf.size() == 0) {
+//					InternalCodeFragmentLeaf accumulatorLeaf = currentLeaf;
+//					int statementsSize = node.statements().size();
+//					if (i == statementsSize - 1) {
+//			        	parent.addChild(leaf);
+//			        	leaf=null;
+//						parent.addChild(currentLeaf);
 //					}
-//					
-//					for (int j = i + 1; j < AICFs.size(); j++) {
-//						AbstractInternalCodeFragment nextFragment = AICFs.get(j);
+//					for (int j = i + 1; j < fragments.size(); j++) {
+//						AbstractInternalCodeFragment nextFragment = fragments.get(j);
 //
-//						if (nextFragment instanceof InternalCodeFragment) {
-////							parent.addChild(AICF_2);
-////							AICF_2 = null;
-//							parent.addChild(ICFL);
+//						if (!(nextFragment instanceof InternalCodeFragmentLeaf)) {
+//							parent.addChild(leaf);
+//							leaf = null;
+//							parent.addChild(accumulatorLeaf);
+//							accumulatorLeaf = null;
 //							parent.addChild(nextFragment);
 //							i = j;
 //							break;
 //						} else {
 //							InternalCodeFragmentLeaf nextLeaf = (InternalCodeFragmentLeaf) nextFragment;
-//							Map<String, Integer> nextStatementFdp = getFDPClassesOfFragment(nextLeaf);
+//							Map<String, Integer> nextStatementFdp = computeAndGetFDPMapOfFragment(nextLeaf);
 //							if (nextStatementFdp.size() != 0) {
-//								HashMap<String, Integer> tempStoredFDP = new HashMap<String, Integer>();
+//								Map<String, Integer> tempStoredFDP = new HashMap<String, Integer>();
 //								tempStoredFDP.putAll(nextStatementFdp);
-//								tempStoredFDP.putAll(FDPClasses);
+//								tempStoredFDP.putAll(storedFDP);
 //								if (tempStoredFDP.size() > 2) {
-//									parent.addChild(AICF_2);
-//									AICF_2 = new InternalCodeFragmentLeaf(iFile, iJavaProject);
-//									parent.addChild(ICFL);
+//									parent.addChild(leaf);
+//									leaf = newInternalCodeFragmentLeaf();
+//									parent.addChild(accumulatorLeaf);
+//									accumulatorLeaf = null;
 //									i = j;
-//									AICF_2.addInternalStatements(nextLeaf.getAllInternalStatements());
-//									AICF_2.setStoredFDP(nextStatementFdp);
+//									leaf.addInternalStatements(nextLeaf.getInternalStatements());
+//									leaf.setFDPMap(nextStatementFdp);
 //									break;
 //								} else {
-//									AICF_2.addInternalStatements(ICFL.getAllInternalStatements());
-//									AICF_2.addInternalStatements(nextLeaf.getAllInternalStatements());
-//									AICF_2.setStoredFDP(tempStoredFDP);
+//									leaf.addInternalStatements(accumulatorLeaf.getInternalStatements());
+//									leaf.addInternalStatements(nextLeaf.getInternalStatements());
+//									leaf.setFDPMap(tempStoredFDP);
 //									i = j;
 //									break;
 //								}
 //
 //							} else {
-//								if (j == currentStatements.size() - 1) {
-//									parent.addChild(AICF_2);
-//									AICF_2 = null;
-//									ICFL.addInternalStatements(nextLeaf.getAllInternalStatements());
-//									parent.addChild(ICFL);
+//								if (j == statementsSize - 1) {
+//									parent.addChild(leaf);
+//									leaf = null;
+//									accumulatorLeaf.addInternalStatements(nextLeaf.getInternalStatements());
+//									parent.addChild(accumulatorLeaf);
 //									i = j;
 //									break;
 //								} else {
-//									ICFL.addInternalStatements(nextLeaf.getAllInternalStatements());
+//									accumulatorLeaf.addInternalStatements(nextLeaf.getInternalStatements());
 //								}
 //							}
 //						}
 //					}
 //				} else {
-//					List<ASTNode> statements2 = ICFL.getAllInternalStatements();
-//					boolean canBeAdded = canBeAddedToBlockWith2FDP(AICF_2, statements2, true);
+//					List<ASTNode> statements = currentLeaf.getInternalStatements();
+//					boolean canBeAdded = canAddStatementsToFragment(leaf, statements, true);
 //					if (!canBeAdded) {
-//						parent.addChild(AICF_2);
-//						AICF_2 = new InternalCodeFragmentLeaf(iFile, iJavaProject);
+//						parent.addChild(leaf);
+//						leaf = newInternalCodeFragmentLeaf();
 //					}
 //
 //					// Adding it to the current leaf
-//					AICF_2.addInternalStatements(statements2);
-//					FDPClasses = getFDPClassesOfFragment(AICF_2);
+//					leaf.addInternalStatements(statements);
+//					storedFDP = computeAndGetFDPMapOfFragment(leaf);
 //				}
 //			} else {
-//				if (AICF_2 != null) {
-//					parent.addChild(AICF_2);
-//					AICF_2 = new InternalCodeFragmentLeaf(iFile, iJavaProject);
-//					FDPClasses = new HashMap<String, Integer>();
+//				if (leaf != null) {
+//					parent.addChild(leaf);
+//					leaf = newInternalCodeFragmentLeaf();
+//					storedFDP = new HashMap<String, Integer>();
 //				}
-//				parent.addChild(AICF);
+//				parent.addChild(currentAbstractFragment);
 //			}
 //		}
-//        if(AICF_2!=null){
-//        	parent.addChild(AICF_2);
+//        if(leaf!=null){
+//        	parent.addChild(leaf);
 //        }
 //		lastNode.push(parent);
 //		return false;
 	}
 	
 	//this method helps some visit methods
-	private boolean canMergeStatement(InternalCodeFragment parent, Statement statement, boolean resultAfterVisitCanBeNull) {
+	private boolean canBeMerged(InternalCodeFragment parent, Statement statement, boolean resultAfterVisitCanBeNull) {
 		statement.accept(this);
 		InternalCodeFragment fragment = (InternalCodeFragment) lastNode.pop();
 		boolean canMerge = true;
@@ -401,8 +406,9 @@ public class FDPFragmenter extends ASTVisitor {
 		} else if (resultAfterVisitCanBeNull) {
 			if (!canAddStatementToFragment(parent, statement)) {
 				canMerge = false;
+				addStatementToFragment(parent, statement);
 			}
-			addStatementToFragment(parent, statement);
+			
 		}
 		return canMerge;
 	}
@@ -412,10 +418,10 @@ public class FDPFragmenter extends ASTVisitor {
 	public boolean visit(ArrayAccess node) {
 		InternalCodeFragment parent = newInternalCodeFragment();
 		
-		InternalCodeFragmentLeaf currentExpressionFragment = newInternalCodeFragmentLeaf();
-		currentExpressionFragment.addInternalStatement(node.getArray());
-		currentExpressionFragment.addInternalStatement(node.getIndex());
-		parent.addChild(currentExpressionFragment);
+		InternalCodeFragmentLeaf fragment = newInternalCodeFragmentLeaf();
+		fragment.addInternalStatement(node.getArray());
+		fragment.addInternalStatement(node.getIndex());
+		parent.addChild(fragment);
 		
 		lastNode.push(parent);
 		
@@ -426,9 +432,9 @@ public class FDPFragmenter extends ASTVisitor {
 	public boolean visit(ArrayInitializer node) {
 		InternalCodeFragment parent = newInternalCodeFragment();
 		
-		InternalCodeFragmentLeaf currentExpressionFragment = newInternalCodeFragmentLeaf();
-		currentExpressionFragment.addInternalStatements(node.expressions());
-		parent.addChild(currentExpressionFragment);
+		InternalCodeFragmentLeaf fragment = newInternalCodeFragmentLeaf();
+		fragment.addInternalStatements(node.expressions());
+		parent.addChild(fragment);
 		
 		lastNode.push(parent);
 		
@@ -462,8 +468,11 @@ public class FDPFragmenter extends ASTVisitor {
 
 		parent.addInternalStatement(doStatement.getExpression());
 		
-		if (canMergeStatement(parent, doStatement.getBody(), true)) lastNode.push(null);
-		else lastNode.push(parent);
+		if (canBeMerged(parent, doStatement.getBody(), true)) {
+			lastNode.push(null);
+		} else {
+			lastNode.push(parent);
+		}
 
 		return false;
 	}
@@ -475,8 +484,11 @@ public class FDPFragmenter extends ASTVisitor {
 		parent.addInternalStatement(enhancedForStatement.getExpression());
 		parent.addInternalStatement(enhancedForStatement.getParameter());
 
-		if (canMergeStatement(parent, enhancedForStatement.getBody(), true)) lastNode.push(null);
-		else lastNode.push(parent);
+		if (canBeMerged(parent, enhancedForStatement.getBody(), true)) {
+			lastNode.push(null);
+		} else {
+			lastNode.push(parent);
+		}
 		
 		return false;
 	}
@@ -489,8 +501,11 @@ public class FDPFragmenter extends ASTVisitor {
 		parent.addInternalStatements(forStatement.initializers());
 		parent.addInternalStatements(forStatement.updaters());
 
-		if (canMergeStatement(parent, forStatement.getBody(), true)) lastNode.push(null);
-		else lastNode.push(parent);
+		if (canBeMerged(parent, forStatement.getBody(), true)) {
+			lastNode.push(null);
+		} else {
+			lastNode.push(parent);
+		}
 		
 		return false;
 	}
@@ -505,8 +520,8 @@ public class FDPFragmenter extends ASTVisitor {
 		
 		Statement thenStatement = ifStatement.getThenStatement();
 		Statement elseStatement = ifStatement.getElseStatement();
-		if ((thenStatement == null || thenStatement != null && canMergeStatement(parent, thenStatement, true))
-				&& (elseStatement == null || elseStatement != null && canMergeStatement(parent, elseStatement, true))) {
+		if ((thenStatement == null || thenStatement != null && canBeMerged(parent, thenStatement, true))
+				&& (elseStatement == null || elseStatement != null && canBeMerged(parent, elseStatement, true))) {
 			lastNode.push(null);
 		} else {
 			lastNode.push(parent);
@@ -519,9 +534,9 @@ public class FDPFragmenter extends ASTVisitor {
 	public boolean visit(MethodInvocation node) {
 		InternalCodeFragment parent = newInternalCodeFragment();
 		
-		InternalCodeFragmentLeaf currentFragment = newInternalCodeFragmentLeaf();
-		currentFragment.addInternalStatements(node.arguments());
-		parent.addChild(currentFragment);
+		InternalCodeFragmentLeaf fragment = newInternalCodeFragmentLeaf();
+		fragment.addInternalStatements(node.arguments());
+		parent.addChild(fragment);
 		
 		lastNode.push(parent);
 		
@@ -574,8 +589,11 @@ public class FDPFragmenter extends ASTVisitor {
 			parent.addChild(nodeStatements);
 		}
 
-		if (canBeMerged) lastNode.push(null);
-		else lastNode.push(parent);
+		if (canBeMerged) {
+			lastNode.push(null);
+		} else {
+			lastNode.push(parent);
+		}
 		
 		return false;
 	}
@@ -586,8 +604,11 @@ public class FDPFragmenter extends ASTVisitor {
 
 		parent.addInternalStatement(synchronizedStatement.getExpression());
 
-		if (canMergeStatement(parent, synchronizedStatement.getBody(), false)) lastNode.push(null);
-		else lastNode.push(parent);
+		if (canBeMerged(parent, synchronizedStatement.getBody(), false)) {
+			lastNode.push(null);
+		} else {
+			lastNode.push(parent);
+		}
 		
 		return false;
 	}
@@ -612,8 +633,8 @@ public class FDPFragmenter extends ASTVisitor {
 		Statement tryBody = tryStatement.getBody();
 		Statement finallyBody = tryStatement.getFinally();
 		if (canBeMerged
-				&& (tryBody == null || tryBody != null && canMergeStatement(parent, tryBody, true))
-				&& (finallyBody == null || finallyBody != null && canMergeStatement(parent, finallyBody, true))) {
+				&& (tryBody == null || tryBody != null && canBeMerged(parent, tryBody, true))
+				&& (finallyBody == null || finallyBody != null && canBeMerged(parent, finallyBody, true))) {
 			lastNode.push(null);
 		} else {
 			lastNode.push(parent);
@@ -628,8 +649,11 @@ public class FDPFragmenter extends ASTVisitor {
 
 		parent.addInternalStatement(whileStatement.getExpression());
 
-		if (canMergeStatement(parent, whileStatement.getBody(), true)) lastNode.push(null);
-		else lastNode.push(parent);
+		if (canBeMerged(parent, whileStatement.getBody(), true)) {
+			lastNode.push(null);
+		} else {
+			lastNode.push(parent);
+		}
 		
 		return false;
 	}
