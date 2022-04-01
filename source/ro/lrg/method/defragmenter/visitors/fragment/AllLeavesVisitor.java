@@ -1,14 +1,15 @@
-package ro.lrg.method.defragmenter.visitors;
+package ro.lrg.method.defragmenter.visitors.fragment;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import ro.lrg.method.defragmenter.utils.AbstractInternalCodeFragment;
 import ro.lrg.method.defragmenter.utils.InternalCodeFragment;
 import ro.lrg.method.defragmenter.utils.InternalCodeFragmentLeaf;
 
 public class AllLeavesVisitor implements FragmentVisitor{
 	
-	List<InternalCodeFragmentLeaf> leaves = new ArrayList<>();
+	private List<AbstractInternalCodeFragment> allLeaves = new ArrayList<>();
 
 	@Override
 	public void visit(InternalCodeFragment fragment) {
@@ -17,10 +18,10 @@ public class AllLeavesVisitor implements FragmentVisitor{
 
 	@Override
 	public void visit(InternalCodeFragmentLeaf fragment) {
-		leaves.add(fragment);
+		allLeaves.add(fragment);
 	}
 	
-	public List<InternalCodeFragmentLeaf> getLeaves() {
-		return leaves;
+	public List<AbstractInternalCodeFragment> getAllLeaves() {
+		return allLeaves;
 	}
 }

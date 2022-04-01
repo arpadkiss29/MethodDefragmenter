@@ -1,4 +1,4 @@
-package ro.lrg.method.defragmenter.visitors;
+package ro.lrg.method.defragmenter.visitors.ast;
 
 import java.util.ArrayList;
 import java.util.List;

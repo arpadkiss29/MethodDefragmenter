@@ -2,6 +2,8 @@ package ro.lrg.method.defragmenter.utils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.runtime.CoreException;
@@ -12,43 +14,19 @@ import org.eclipse.jface.text.Position;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 import ro.lrg.method.defragmenter.views.SelectionView;
-import ro.lrg.method.defragmenter.visitors.EnviousFragmentVisitor;
-import ro.lrg.method.defragmenter.visitors.AllLeavesVisitor;
-import ro.lrg.method.defragmenter.visitors.VariableBindingVisitor;
+import ro.lrg.method.defragmenter.visitors.ast.VariableBindingVisitor;
+import ro.lrg.method.defragmenter.visitors.fragment.FragmentVisitor;
 
 public class InternalCodeFragmentLeaf extends AbstractInternalCodeFragment {
 	
-	public InternalCodeFragmentLeaf(IFile iFile, IJavaProject iJavaProject) {
-		super(iFile, iJavaProject);
+	public InternalCodeFragmentLeaf(String analizedClass, IFile iFile, IJavaProject iJavaProject) {
+		super(analizedClass, iFile, iJavaProject);
 	}
-
-//	public void joinWithLeaf(InternalCodeFragmentLeaf internalCodeFragmentLeaf) {
-//		addInternalStatements(internalCodeFragmentLeaf.getInternalStatements());
-//		Map<String, Integer> storedFDP = this.getFDPMap();
-//		Map<String, Integer> leafFDP = internalCodeFragmentLeaf.getFDPMap();
-//		for (Entry<String, Integer> entry : leafFDP.entrySet()) {
-//			if(storedFDP.get(entry.getKey())!=null) {
-//				storedFDP.replace(entry.getKey(), storedFDP.get(entry.getKey()) + entry.getValue());
-//			} else {
-//				storedFDP.put(entry.getKey(), entry.getValue());
-//			}
-//		}
-//	}
 	
+	//--------------------------------------------------------------------------overrode methods
 	@Override
-	public void accept(AllLeavesVisitor visitor) {
+	public void accept(FragmentVisitor visitor) {
 		visitor.visit(this);
-	}
-	
-	@Override
-	public void accept(EnviousFragmentVisitor visitor) {
-		visitor.visit(this);
-	}
-	
-	//overrode methods
-	@Override
-	public void clearData() {
-		clearDataAux();
 	}
 	
 	@Override
@@ -64,24 +42,6 @@ public class InternalCodeFragmentLeaf extends AbstractInternalCodeFragment {
 		Position fragmentPosition = new Position(start, (end - start));
 		IMarker mymarker = SelectionView.createMarker(file, fragmentPosition);
 		SelectionView.addAnnotation(mymarker, textEditor, colorType, fragmentPosition);
-	}
-	
-	@Override
-	public void computeDataAccesses(String analyzedClass, boolean considerStaticFieldAccess, boolean libraryCheck, Integer minBlockSize) {
-		if (minBlockSize != null && getInternalStatementsSize() < minBlockSize) return;
-		super.computeDataAccessesAux(analyzedClass, considerStaticFieldAccess, libraryCheck, minBlockSize);
-	}
-	
-	@Override
-	public List<AbstractInternalCodeFragment> getAllEnviousNodes() {
-		List<AbstractInternalCodeFragment> nodes = new ArrayList<>();
-		if(isEnvy()) nodes.add(this);
-		return nodes;
-	}
-	
-	@Override
-	public List<ASTNode> getAllInternalStatements() {
-		return getInternalStatements();
 	}
 	
 	@Override
@@ -108,29 +68,7 @@ public class InternalCodeFragmentLeaf extends AbstractInternalCodeFragment {
 		System.out.println(toString().replaceAll("\n", ""));
 	}
 	
-	@Override
-	public boolean verifyFeatureEnvy(int ATFDTreshold, int FDPTreshold, double LAATreshold, String analyzedClass,
-			boolean considerStaticFieldAccess, boolean libraryCheck, Integer minBlockSize, boolean local) {
-		clearData();
-		computeDataAccesses(analyzedClass, considerStaticFieldAccess, libraryCheck, minBlockSize);
-		
-		for (FDPClass FDPClass : detailedFDPMap.values()) {
-			ATFD += FDPClass.getNumberOfAccesses();
-		}
-		int totalAccesses = ATFD + LAA;
-		FDP = detailedFDPMap.size();
-
-		if (ATFD > ATFDTreshold
-				&& (LAA == 0 ? 0 : (LAA * 1.0) / totalAccesses) < LAATreshold
-				&& FDP < FDPTreshold) {
-			setEnvy(true);
-		}
-
-		return isEnvy();
-
-	}
-	
-	//NCOCP2
+	//--------------------------------------------------------------------------NCOCP2
 	public List<IVariableBinding> getVariablesBindings() {
 		VariableBindingVisitor variableBindingVisitor = new VariableBindingVisitor();
 		for (ASTNode statement : getInternalStatements()) {
@@ -140,7 +78,7 @@ public class InternalCodeFragmentLeaf extends AbstractInternalCodeFragment {
 		variablesBindings.addAll(variableBindingVisitor.getVariableBindings());
 		return variablesBindings;
 	}
-	//NCOCP2: overrode methods
+	//--------------------------------------------------------------------------NCOCP2: overrode methods
 	@Override
 	public void colorLongMethodFragments(ITextEditor textEditor, IFile file, List<AbstractInternalCodeFragment> functionalSegments) {
 		if (functionalSegments.contains(this) && possiblyRelatedFlag != true) {

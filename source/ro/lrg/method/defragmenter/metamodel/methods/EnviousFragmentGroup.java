@@ -15,15 +15,11 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 import methoddefragmenter.metamodel.entity.MFragment;
 import methoddefragmenter.metamodel.entity.MMethod;
 import methoddefragmenter.metamodel.factory.Factory;
-import ro.lrg.method.defragmenter.fragmenters.FDPFragmenter;
-import ro.lrg.method.defragmenter.fragmenters.Fragmenter;
 import ro.lrg.method.defragmenter.preferences.MethodDefragmenterPropertyStore;
 import ro.lrg.method.defragmenter.utils.AbstractInternalCodeFragment;
 import ro.lrg.method.defragmenter.utils.InternalCodeFragment;
-import ro.lrg.method.defragmenter.utils.InternalCodeFragmentLeaf;
-import ro.lrg.method.defragmenter.visitors.AllLeavesVisitor;
-import ro.lrg.method.defragmenter.visitors.EnviousFragmentVisitor;
-import ro.lrg.method.defragmenter.visitors.FragmentVisitor;
+import ro.lrg.method.defragmenter.visitors.ast.InitialFragmentationVisitor;
+import ro.lrg.method.defragmenter.visitors.fragment.grouping.FeatureEnvyGroupingVisitor;
 import ro.lrg.xcore.metametamodel.Group;
 import ro.lrg.xcore.metametamodel.IRelationBuilder;
 import ro.lrg.xcore.metametamodel.RelationBuilder;
@@ -49,12 +45,23 @@ public class EnviousFragmentGroup implements IRelationBuilder<MFragment, MMethod
         IFile iFile = (IFile) method.getResource();
         IJavaProject iJavaProject = method.getJavaProject();
         
-        Fragmenter fragmenter = new Fragmenter(methodName, iFile, iJavaProject);
+        //start
+        
+        InitialFragmentationVisitor fragmenter = new InitialFragmentationVisitor(methodName, iFile, iJavaProject);
         block.accept(fragmenter);
-        InternalCodeFragment root = (InternalCodeFragment) fragmenter.getLastNode().pop();
-        FragmentVisitor visitor = new AllLeavesVisitor();
-        visitor.visit(root);
-        List<InternalCodeFragmentLeaf> ACFs = ((AllLeavesVisitor) visitor).getLeaves();
+        InternalCodeFragment root = (InternalCodeFragment) fragmenter.popLastNode();
+        
+        MethodDefragmenterPropertyStore propertyStore = new MethodDefragmenterPropertyStore(iJavaProject);
+        
+        FeatureEnvyGroupingVisitor groupingVisitor = new FeatureEnvyGroupingVisitor(className, iFile, iJavaProject, 
+        		propertyStore.isConsiderStaticFieldAccesses(), propertyStore.isLibraryCheck(), 
+        		propertyStore.getMinBlockSize(), propertyStore.getFDPTreshold());
+        root.accept(groupingVisitor);
+        AbstractInternalCodeFragment groupedRoot = groupingVisitor.popLastNode();   
+        
+        List<AbstractInternalCodeFragment> ACFs = groupedRoot.getAllLeavesOfTree();
+//        List<AbstractInternalCodeFragment> ACFs = groupedRoot.getAllEnviousFragmentsOfTree();
+        
         
 //        MethodDefragmenterPropertyStore propertyStore = new MethodDefragmenterPropertyStore(iJavaProject);
 //        FDPFragmenter fdpFragmenter = new FDPFragmenter(className, iFile, iJavaProject, propertyStore.isConsiderStaticFieldAccesses(),

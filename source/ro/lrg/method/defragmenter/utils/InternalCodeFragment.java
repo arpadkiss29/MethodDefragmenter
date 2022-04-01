@@ -8,15 +8,13 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jface.text.Position;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 import ro.lrg.method.defragmenter.views.SelectionView;
-import ro.lrg.method.defragmenter.visitors.EnviousFragmentVisitor;
-import ro.lrg.method.defragmenter.visitors.AllLeavesVisitor;
+import ro.lrg.method.defragmenter.visitors.fragment.FragmentVisitor;
 
 public class InternalCodeFragment extends AbstractInternalCodeFragment {
 	private final List<AbstractInternalCodeFragment> children = new ArrayList<>();
@@ -27,27 +25,14 @@ public class InternalCodeFragment extends AbstractInternalCodeFragment {
 	private double nodeCOCP = 0.0;
 	private List<InternalCodeFragmentLeaf> leafsReceived = new ArrayList<>();
 	
-	public InternalCodeFragment(IFile iFile, IJavaProject iJavaProject) {
-		super(iFile, iJavaProject);
+	public InternalCodeFragment(String analizedClass, IFile iFile, IJavaProject iJavaProject) {
+		super(analizedClass, iFile, iJavaProject);
 	}
 	
+	//--------------------------------------------------------------------------overrode methods
 	@Override
-	public void accept(AllLeavesVisitor visitor) {
+	public void accept(FragmentVisitor visitor) {
 		visitor.visit(this);
-	}
-	
-	@Override
-	public void accept(EnviousFragmentVisitor visitor) {
-		visitor.visit(this);
-	}
-	
-	//overrode methods
-	@Override
-	public void clearData() {
-		clearDataAux();
-		for (AbstractInternalCodeFragment child : children) {
-			child.clearData();
-		}
 	}
 	
 	@Override
@@ -55,34 +40,6 @@ public class InternalCodeFragment extends AbstractInternalCodeFragment {
 		for (AbstractInternalCodeFragment child : children) {
 			child.colorFragment(textEditor, file);
 		}
-	}
-	
-	@Override
-	public void computeDataAccesses(String analyzedClass, boolean considerStaticFieldAccess, boolean libraryCheck, Integer minBlockSize) {
-		super.computeDataAccessesAux(analyzedClass, considerStaticFieldAccess, libraryCheck, minBlockSize);
-	}
-	
-	@Override
-	public List<AbstractInternalCodeFragment> getAllEnviousNodes() {
-		List<AbstractInternalCodeFragment> nodes = new ArrayList<>();
-		for (AbstractInternalCodeFragment child : children) {
-			if (child.isEnvy()) {
-				nodes.add(child);
-			} else {
-				nodes.addAll(child.getAllEnviousNodes());
-			}
-		}
-		return nodes;
-	}
-	
-	@Override
-	public List<ASTNode> getAllInternalStatements() {
-		List<ASTNode> allInternalStatements = new ArrayList<ASTNode>();
-		for (AbstractInternalCodeFragment child : children) {
-			allInternalStatements.addAll(child.getAllInternalStatements());
-		}
-		allInternalStatements.addAll(getInternalStatements());
-		return allInternalStatements;
 	}
 	
 	@Override
@@ -146,20 +103,7 @@ public class InternalCodeFragment extends AbstractInternalCodeFragment {
 		}
 	}
 	
-	@Override
-	public boolean verifyFeatureEnvy(int ATFDTreshold, int FDPTreshold, double LAATreshold, String analyzedClass,
-			boolean considerStaticFieldAccess, boolean libraryCheck, Integer minBlockSize, boolean local) {
-		boolean containsEnvy = false;
-		for (AbstractInternalCodeFragment child : children) {
-			if (child.verifyFeatureEnvy(ATFDTreshold, FDPTreshold, LAATreshold, analyzedClass,
-					considerStaticFieldAccess, libraryCheck, minBlockSize, local)) {
-				containsEnvy = true;
-			}
-		}
-		return containsEnvy;
-	}
-	
-	//children related methods
+	//--------------------------------------------------------------------------children related methods
 	public void addChild(AbstractInternalCodeFragment child) {
 		if(child == null) {
 			System.err.println("Found null child!");
@@ -180,7 +124,7 @@ public class InternalCodeFragment extends AbstractInternalCodeFragment {
 		return children.size();
 	}
 
-	//NCOCP2
+	//--------------------------------------------------------------------------NCOCP2
 	public void combineNodes(List<AbstractInternalCodeFragment> nodes) {
 		for (int i = 0; i < nodes.size() - 1; i++) {
 			for (int j = i + 1; j < nodes.size(); j++) {
@@ -250,7 +194,7 @@ public class InternalCodeFragment extends AbstractInternalCodeFragment {
 		}
 		return temp;
 	}
-	//NCOCP2: overrode methods
+	//--------------------------------------------------------------------------NCOCP2: overrode methods
 	@Override
 	public void colorLongMethodFragments(ITextEditor textEditor, IFile file, List<AbstractInternalCodeFragment> functionalSegmentNodes) {
 		for (AbstractInternalCodeFragment child : children) {
@@ -321,7 +265,7 @@ public class InternalCodeFragment extends AbstractInternalCodeFragment {
 		}
 		return receivedNodes;
 	}
-	//NCOCP2: private methods
+	//--------------------------------------------------------------------------NCOCP2: private methods
 	private void calculteFirstLastLine() {
 		if (children.size() > 0 && startPosition == 0 && endPosition == 0) {
 			startPosition = getFragmentFirstLineStartIndex();
@@ -369,7 +313,7 @@ public class InternalCodeFragment extends AbstractInternalCodeFragment {
 
 		return ncopc2;
 	}
-	//NCOCP2: getters and setters
+	//--------------------------------------------------------------------------NCOCP2: getters and setters
 	public static List<AbstractInternalCodeFragment> getAllNodesLeafs() {
 		return allNodesLeafs;
 	}

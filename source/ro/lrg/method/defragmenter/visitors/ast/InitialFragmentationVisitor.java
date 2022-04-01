@@ -1,4 +1,4 @@
-package ro.lrg.method.defragmenter.fragmenters;
+package ro.lrg.method.defragmenter.visitors.ast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,27 +44,29 @@ import ro.lrg.method.defragmenter.utils.DontGetHereException;
 import ro.lrg.method.defragmenter.utils.InternalCodeFragment;
 
 @SuppressWarnings("unchecked")
-public class Fragmenter extends ASTVisitor {
-		public Stack<AbstractInternalCodeFragment> lastNode;
-		public Stack<AbstractInternalCodeFragment> getLastNode() {
-			return lastNode;
-		}
+public class InitialFragmentationVisitor extends ASTVisitor {
+		private final Stack<AbstractInternalCodeFragment> lastNode;
+		private final String analyzedClass;
+		private final IFile iFile;
+		private final IJavaProject iJavaProject;
 		
-		private IFile iFile;
-		private IJavaProject iJavaProject;
-		
-		public Fragmenter(String analyzedClass, IFile iFile, IJavaProject iJavaProject) {
-			lastNode = new Stack<AbstractInternalCodeFragment>();
+		public InitialFragmentationVisitor(String analyzedClass, IFile iFile, IJavaProject iJavaProject) {
+			lastNode = new Stack<>();
+			this.analyzedClass = analyzedClass;
 			this.iFile = iFile;
 			this.iJavaProject = iJavaProject;
 		}
 		
+		public AbstractInternalCodeFragment popLastNode() {
+			return lastNode.pop();
+		}
+		
 		private InternalCodeFragment newInternalCodeFragment() {
-			return new InternalCodeFragment(iFile, iJavaProject);
+			return new InternalCodeFragment(analyzedClass, iFile, iJavaProject);
 		}
 		
 		private InternalCodeFragmentLeaf newInternalCodeFragmentLeaf() {
-			return new InternalCodeFragmentLeaf(iFile, iJavaProject);
+			return new InternalCodeFragmentLeaf(analyzedClass, iFile, iJavaProject);
 		}
 		
 		private void addStatementAsGrandchildToParent(InternalCodeFragment parent, Statement statement) {
