@@ -31,7 +31,7 @@ public class AllEnviousFragmentsVisitor implements FragmentVisitor {
 	private boolean fragmentIsEnvy(AbstractInternalCodeFragment fragment) {
 		MetricsComputer metricsComputer = new MetricsComputer();
 		metricsComputer.computeDataAccesses(fragment, fragment.getAnalizedClass(), considerStaticFieldAccess, libraryCheck, minBlockSize);
-		return EnvyComputer.computeEnvy(metricsComputer.getFDPMap(), metricsComputer.getATFD(), metricsComputer.getLAA(), 
+		return EnvyComputer.computeEnvy(metricsComputer.getATFD(), metricsComputer.getFDPMap(), metricsComputer.getLAA(), 
 				ATFDTreshold, FDPTreshold, LAATreshold);
 	}
 	

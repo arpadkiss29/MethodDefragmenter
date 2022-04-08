@@ -18,14 +18,14 @@ public abstract class AbstractInternalCodeFragment {
 	private final String analizedClass;
 	private final IFile iFile;
 	private final IJavaProject iJavaProject;
-	private final List<ASTNode> internalStatements = new ArrayList<ASTNode>();
+	private final List<ASTNode> internalStatements = new ArrayList<>();
 	protected int startPosition = 0;
 	protected int endPosition = 0;
 	
 	protected static int colorCounter = 0;
 	
 	protected boolean possiblyRelatedFlag = false;
-	protected List<AbstractInternalCodeFragment> cohesivlyRelatedNodes = new ArrayList<AbstractInternalCodeFragment>();
+	protected List<AbstractInternalCodeFragment> cohesivlyRelatedNodes = new ArrayList<>();
 	
 	protected AbstractInternalCodeFragment(String analizedClass, IFile iFile, IJavaProject iJavaProject) {
 		this.analizedClass = analizedClass;

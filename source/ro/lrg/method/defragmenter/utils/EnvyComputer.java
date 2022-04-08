@@ -3,7 +3,7 @@ package ro.lrg.method.defragmenter.utils;
 import java.util.Map;
 
 public class EnvyComputer {
-	public static boolean computeEnvy(Map<String, Integer> FDPMap, int ATFD, int LAA, int ATFDTreshold, int FDPTreshold, double LAATreshold) {
+	public static boolean computeEnvy(int ATFD, Map<String, Integer> FDPMap, int LAA, int ATFDTreshold, int FDPTreshold, double LAATreshold) {
 		for (Integer numberOfAccesses : FDPMap.values()) {
 			ATFD += numberOfAccesses;
 		}
@@ -12,7 +12,7 @@ public class EnvyComputer {
 
 		if (ATFD > ATFDTreshold
 				&& (LAA == 0 ? 0 : (LAA * 1.0) / totalAccesses) < LAATreshold
-				&& FDP < FDPTreshold) {
+				&& FDP <= FDPTreshold) {
 			return true;
 		}
 		

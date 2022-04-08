@@ -29,7 +29,7 @@ public class MetricsComputer {
 	private int LAA;
 	
 	public boolean includesFDPMapOf(MetricsComputer metricsComputer) {
-		if(FDPMap == null) return false;
+		if(metricsComputer == null) return false;
 		Map<String, Integer> map = metricsComputer.getFDPMap();
 		for(String key : map.keySet()) {
 			if(!FDPMap.containsKey(key)) 

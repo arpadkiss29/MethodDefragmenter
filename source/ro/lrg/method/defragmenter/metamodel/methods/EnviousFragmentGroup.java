@@ -11,15 +11,20 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.SwitchCase;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import methoddefragmenter.metamodel.entity.MFragment;
 import methoddefragmenter.metamodel.entity.MMethod;
 import methoddefragmenter.metamodel.factory.Factory;
+import ro.lrg.method.defragmenter.preferences.GroupingAlgorithmsConstants;
 import ro.lrg.method.defragmenter.preferences.MethodDefragmenterPropertyStore;
 import ro.lrg.method.defragmenter.utils.AbstractInternalCodeFragment;
 import ro.lrg.method.defragmenter.utils.InternalCodeFragment;
 import ro.lrg.method.defragmenter.visitors.ast.InitialFragmentationVisitor;
-import ro.lrg.method.defragmenter.visitors.fragment.grouping.FeatureEnvyGroupingVisitor;
+import ro.lrg.method.defragmenter.visitors.fragment.groupers.ArpiGroupingVisitor;
+import ro.lrg.method.defragmenter.visitors.fragment.groupers.GroupingVisitor;
+import ro.lrg.method.defragmenter.visitors.fragment.groupers.Saleh1Visitor;
+import ro.lrg.method.defragmenter.visitors.fragment.groupers.Saleh2GroupingVisitor;
 import ro.lrg.xcore.metametamodel.Group;
 import ro.lrg.xcore.metametamodel.IRelationBuilder;
 import ro.lrg.xcore.metametamodel.RelationBuilder;
@@ -53,13 +58,29 @@ public class EnviousFragmentGroup implements IRelationBuilder<MFragment, MMethod
         
         MethodDefragmenterPropertyStore propertyStore = new MethodDefragmenterPropertyStore(iJavaProject);
         
-        FeatureEnvyGroupingVisitor groupingVisitor = new FeatureEnvyGroupingVisitor(className, iFile, iJavaProject, 
-        		propertyStore.isConsiderStaticFieldAccesses(), propertyStore.isLibraryCheck(), 
-        		propertyStore.getMinBlockSize(), propertyStore.getFDPTreshold());
-        root.accept(groupingVisitor);
-        AbstractInternalCodeFragment groupedRoot = groupingVisitor.popLastNode();   
+        GroupingVisitor groupingVisitor = null;
         
-        List<AbstractInternalCodeFragment> ACFs = groupedRoot.getAllLeavesOfTree();
+        switch(propertyStore.getGroupingAlgorithm()) {
+        	case GroupingAlgorithmsConstants.ARPI:
+        		groupingVisitor = new ArpiGroupingVisitor(className, iFile, iJavaProject, propertyStore.isConsiderStaticFieldAccesses(),
+        				propertyStore.isLibraryCheck(), propertyStore.getMinBlockSize());
+        		break;
+        	case GroupingAlgorithmsConstants.SALEH1:
+        		groupingVisitor = new Saleh1Visitor(className, iFile, iJavaProject, propertyStore.isConsiderStaticFieldAccesses(),
+        				propertyStore.isLibraryCheck(), propertyStore.getMinBlockSize());
+        		break;
+        	case GroupingAlgorithmsConstants.SALEH2:
+        		groupingVisitor = new Saleh2GroupingVisitor(className, iFile, iJavaProject, propertyStore.isConsiderStaticFieldAccesses(),
+        				propertyStore.isLibraryCheck(), propertyStore.getMinBlockSize(), propertyStore.getFDPTreshold());
+        		break;
+        	default: System.err.println("Unknown algorithm!");
+        }
+        
+        root.accept(groupingVisitor);
+        AbstractInternalCodeFragment groupedRoot = groupingVisitor.popLastNode(); 
+        
+        
+        List<AbstractInternalCodeFragment> AICFs = groupedRoot.getAllLeavesOfTree();
 //        List<AbstractInternalCodeFragment> ACFs = groupedRoot.getAllEnviousFragmentsOfTree();
         
         
@@ -67,7 +88,6 @@ public class EnviousFragmentGroup implements IRelationBuilder<MFragment, MMethod
 //        FDPFragmenter fdpFragmenter = new FDPFragmenter(className, iFile, iJavaProject, propertyStore.isConsiderStaticFieldAccesses(),
 //        		propertyStore.isLibraryCheck(), propertyStore.getMinBlockSize(), propertyStore.getFDPTreshold());
 //        block.accept(fdpFragmenter);
-//        
 //        InternalCodeFragment root = (InternalCodeFragment) fdpFragmenter.getLastNode().pop();
 //        root.verifyFeatureEnvy(propertyStore.getATFDTreshold(), propertyStore.getFDPTreshold(), propertyStore.getLAATreshold(), className, 
 //        		propertyStore.isConsiderStaticFieldAccesses(), propertyStore.isLibraryCheck(), propertyStore.getMinBlockSize(), false);
@@ -87,8 +107,8 @@ public class EnviousFragmentGroup implements IRelationBuilder<MFragment, MMethod
 //		}
 		
         Group<MFragment> group = new Group<>();
-        ACFs.forEach(ACF->{
-        	MFragment m = Factory.getInstance().createMFragment(ACF);
+        AICFs.forEach(AICF->{
+        	MFragment m = Factory.getInstance().createMFragment(AICF);
             group.add(m);
         });
         return group;
