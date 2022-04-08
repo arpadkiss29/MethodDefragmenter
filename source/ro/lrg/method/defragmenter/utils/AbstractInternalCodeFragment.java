@@ -8,11 +8,10 @@ import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.ui.texteditor.ITextEditor;
 
-import ro.lrg.method.defragmenter.preferences.MethodDefragmenterPropertyStore;
-import ro.lrg.method.defragmenter.visitors.fragment.AllEnviousFragmentsVisitor;
-import ro.lrg.method.defragmenter.visitors.fragment.AllInternalStatementsVisitor;
-import ro.lrg.method.defragmenter.visitors.fragment.AllLeavesVisitor;
 import ro.lrg.method.defragmenter.visitors.fragment.FragmentVisitor;
+import ro.lrg.method.defragmenter.visitors.fragment.collectors.AllEnviousLeavesVisitor;
+import ro.lrg.method.defragmenter.visitors.fragment.collectors.AllInternalStatementsVisitor;
+import ro.lrg.method.defragmenter.visitors.fragment.collectors.AllLeavesVisitor;
 
 public abstract class AbstractInternalCodeFragment {
 	private final String analizedClass;
@@ -33,11 +32,10 @@ public abstract class AbstractInternalCodeFragment {
 		this.iJavaProject = iJavaProject;
 	}
 	
-	public List<AbstractInternalCodeFragment> getAllEnviousFragmentsOfTree() {
-		MethodDefragmenterPropertyStore propertyStore = new MethodDefragmenterPropertyStore(iJavaProject);
-		AllEnviousFragmentsVisitor allEnviousFragmentsVisitor = new AllEnviousFragmentsVisitor(propertyStore.getATFDTreshold(), 
-				propertyStore.getFDPTreshold(), propertyStore.getLAATreshold(), propertyStore.isConsiderStaticFieldAccesses(),
-				propertyStore.isLibraryCheck(), propertyStore.getMinBlockSize());
+	public List<AbstractInternalCodeFragment> getAllEnviousFragmentsOfTree(int ATFDTreshold, int FDPTreshold, double LAATreshold,
+			boolean considerStaticFieldsAccess, boolean libraryCheck, int minBlockSize) {
+		AllEnviousLeavesVisitor allEnviousFragmentsVisitor = new AllEnviousLeavesVisitor(ATFDTreshold, FDPTreshold, LAATreshold, 
+				considerStaticFieldsAccess, libraryCheck, minBlockSize);
 		this.accept(allEnviousFragmentsVisitor);
 		return allEnviousFragmentsVisitor.getAllEnviousFragments();
 	}

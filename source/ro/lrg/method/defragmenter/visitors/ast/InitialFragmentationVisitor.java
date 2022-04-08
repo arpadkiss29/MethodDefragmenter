@@ -96,39 +96,57 @@ public class InitialFragmentationVisitor extends ASTVisitor {
 	
 	@Override
 	public boolean visit(Block node) {
-		InternalCodeFragment parent = newInternalCodeFragment();
-		//parent.addInternalStatement(node);
+		AbstractInternalCodeFragment parent = newInternalCodeFragment();
+		parent.addInternalStatement(node);
 		
 //		parent.setStartPosition(node.getStartPosition());
 //		parent.setEndPosition(node.getStartPosition() + node.getLength());
 		
-		List<AbstractInternalCodeFragment> fragments = getRawAbstractInternalCodeFragments(node);
-		fragments.forEach(f->parent.addChild(f));
+//		List<AbstractInternalCodeFragment> fragments = new ArrayList<>();
+		
+		List<Statement> statements = node.statements();
+		for (Statement statement : statements) {
+			visitAux((InternalCodeFragment) parent, statement);
+		}
+		
+		parent = checkIfParentShouldBeLeaf(parent);
+		
+//		List<AbstractInternalCodeFragment> fragments = getRawAbstractInternalCodeFragments(node);
+//		fragments.forEach(f->parent.addChild(f));
         
 		lastNode.push(parent);
 		return false;
 	}
 	
 	//this method helps some visit methods
-	private void visitAux(InternalCodeFragment parent, Statement statement, boolean resultAfterVisitCanBeNull) {
-		statement.accept(this);
-		InternalCodeFragment fragment = (InternalCodeFragment) lastNode.pop();
-		if (fragment != null) {
+	private void visitAux(InternalCodeFragment parent, ASTNode statement) {
+		if (statement != null) {
+			statement.accept(this);
+			AbstractInternalCodeFragment fragment = lastNode.pop();
 			parent.addChild(fragment);
-		} else if (resultAfterVisitCanBeNull) {
-			addStatementAsGrandchildToParent(parent, statement);
+		}
+	}
+	
+	private AbstractInternalCodeFragment checkIfParentShouldBeLeaf(AbstractInternalCodeFragment parent) {
+		if (((InternalCodeFragment) parent).getChildrenSize() == 0) {
+			InternalCodeFragmentLeaf leaf = newInternalCodeFragmentLeaf();
+			leaf.addInternalStatement(parent.getInternalStatement(0));
+			return leaf;
+		} else {
+			return parent;
 		}
 	}
 	
 	//--------------------------------------------------------------------------visit methods
 	@Override
 	public boolean visit(ArrayAccess node) {
-		InternalCodeFragment parent = newInternalCodeFragment();
+		AbstractInternalCodeFragment parent = newInternalCodeFragment();
+		parent.addInternalStatement(node);
 		
-		InternalCodeFragmentLeaf fragment = newInternalCodeFragmentLeaf();
-		fragment.addInternalStatement(node.getArray());
-		fragment.addInternalStatement(node.getIndex());
-		parent.addChild(fragment);
+		visitAux((InternalCodeFragment) parent, node.getArray());
+		visitAux((InternalCodeFragment) parent, node.getIndex());
+		
+		parent = checkIfParentShouldBeLeaf(parent);
 		
 		lastNode.push(parent);
 		return false;
@@ -136,11 +154,15 @@ public class InitialFragmentationVisitor extends ASTVisitor {
 	
 	@Override
 	public boolean visit(ArrayInitializer node) {
-		InternalCodeFragment parent = newInternalCodeFragment();
+		AbstractInternalCodeFragment parent = newInternalCodeFragment();
+		parent.addInternalStatement(node);
 		
-		InternalCodeFragmentLeaf fragment = newInternalCodeFragmentLeaf();
-		fragment.addInternalStatements(node.expressions());
-		parent.addChild(fragment);
+		List<Statement> statements = node.expressions();
+		for (Statement statement : statements) {
+			visitAux((InternalCodeFragment) parent, statement);
+		}
+		
+		parent = checkIfParentShouldBeLeaf(parent);
 		
 		lastNode.push(parent);
 		return false;
@@ -148,68 +170,67 @@ public class InitialFragmentationVisitor extends ASTVisitor {
 	
 	//this method does not override a method from ASTVisitor
 	public boolean visit(CatchClause node) {
-		InternalCodeFragment parent;
+		AbstractInternalCodeFragment parent = newInternalCodeFragment();
+		parent.addInternalStatement(node);
 
-		Statement body = node.getBody();
-		body.accept(this);
-		parent = (InternalCodeFragment) lastNode.pop();
-		if(parent == null) {
-			parent = newInternalCodeFragment();
-			InternalCodeFragmentLeaf simpleCatchStatement = newInternalCodeFragmentLeaf();
-			simpleCatchStatement.addInternalStatement(body);
-			parent.addChild(simpleCatchStatement);
-		}
-		parent.addInternalStatement(node.getException());
+		visitAux((InternalCodeFragment) parent, node.getBody());
+		
+		parent = checkIfParentShouldBeLeaf(parent);
 		
 		lastNode.push(parent);
 		return false;
 	}
 	
 	@Override
-	public boolean visit(DoStatement doStatement) {
-		InternalCodeFragment parent = newInternalCodeFragment();
-
-		parent.addInternalStatement(doStatement.getExpression());
-		visitAux(parent, doStatement.getBody(), true);
+	public boolean visit(DoStatement node) {
+		AbstractInternalCodeFragment parent = newInternalCodeFragment();
+		parent.addInternalStatement(node);
+		
+		visitAux((InternalCodeFragment) parent, node.getBody());
+		
+		parent = checkIfParentShouldBeLeaf(parent);
 		
 		lastNode.push(parent);
 		return false;
 	}
 	
 	@Override
-	public boolean visit(EnhancedForStatement enhancedForStatement) {
-		InternalCodeFragment parent = newInternalCodeFragment();
-
-		parent.addInternalStatement(enhancedForStatement.getExpression());
-		parent.addInternalStatement(enhancedForStatement.getParameter());
-		visitAux(parent, enhancedForStatement.getBody(), true);
+	public boolean visit(EnhancedForStatement node) {
+		AbstractInternalCodeFragment parent = newInternalCodeFragment();
+		parent.addInternalStatement(node);
+		
+		visitAux((InternalCodeFragment) parent, node.getBody());
+		
+		parent = checkIfParentShouldBeLeaf(parent);
 		
 		lastNode.push(parent);
 		return false;
 	}
 	
 	@Override
-	public boolean visit(ForStatement forStatement) {
-		InternalCodeFragment parent = newInternalCodeFragment();
-
-		parent.addInternalStatement(forStatement.getExpression());
-		parent.addInternalStatements(forStatement.initializers());
-		parent.addInternalStatements(forStatement.updaters());
-		visitAux(parent, forStatement.getBody(), true);
+	public boolean visit(ForStatement node) {
+		AbstractInternalCodeFragment parent = newInternalCodeFragment();
+		parent.addInternalStatement(node);
+		
+		visitAux((InternalCodeFragment) parent, node.getBody());
+		
+		parent = checkIfParentShouldBeLeaf(parent);
 		
 		lastNode.push(parent);
 		return false;
 	}
 	
 	@Override
-	public boolean visit(IfStatement ifStatement) {
-		InternalCodeFragment parent = newInternalCodeFragment();
-		parent.setStartPosition(ifStatement.getStartPosition());
-		parent.setEndPosition(ifStatement.getStartPosition() + ifStatement.getLength());
+	public boolean visit(IfStatement node) {
+		AbstractInternalCodeFragment parent = newInternalCodeFragment();
+//		parent.setStartPosition(ifStatement.getStartPosition());
+//		parent.setEndPosition(ifStatement.getStartPosition() + ifStatement.getLength());
+		parent.addInternalStatement(node);
 		
-		parent.addInternalStatement(ifStatement.getExpression());
-		if(ifStatement.getThenStatement() != null) visitAux(parent, ifStatement.getThenStatement(), true);
-		if(ifStatement.getElseStatement() != null) visitAux(parent, ifStatement.getElseStatement(), true);
+		visitAux((InternalCodeFragment) parent, node.getThenStatement());
+		visitAux((InternalCodeFragment) parent, node.getElseStatement());
+		
+		parent = checkIfParentShouldBeLeaf(parent);
 		
 		lastNode.push(parent);
 		return false;
@@ -217,113 +238,105 @@ public class InitialFragmentationVisitor extends ASTVisitor {
 	
 	@Override
 	public boolean visit(MethodInvocation node) {
-		InternalCodeFragment parent = newInternalCodeFragment();
+		AbstractInternalCodeFragment parent = newInternalCodeFragment();
+		parent.addInternalStatement(node);
 		
-		InternalCodeFragmentLeaf fragment = newInternalCodeFragmentLeaf();
-		fragment.addInternalStatements(node.arguments());
-		parent.addChild(fragment);
-		
-		lastNode.push(parent);
-		return false;
-	}
-	
-	@Override
-	public boolean visit(SwitchStatement switchStatement) {
-		InternalCodeFragment parent = newInternalCodeFragment();
-
-		parent.addInternalStatement(switchStatement.getExpression());
-
-		List<Statement> switchStatements = switchStatement.statements();
-		InternalCodeFragment node = newInternalCodeFragment();
-		
-		for (Statement statement : switchStatements) {
-			statement.accept(this);
-			InternalCodeFragment fragment = (InternalCodeFragment) lastNode.pop();
-			if (fragment != null) {
-				node.addChild(fragment);
-			} else {
-				InternalCodeFragmentLeaf leaf = newInternalCodeFragmentLeaf();
-				leaf.addInternalStatement(statement);
-				node.addChild(leaf);
-			}
+		List<Statement> statements = node.arguments();
+		for (Statement statement : statements) {
+			visitAux((InternalCodeFragment) parent, statement);
 		}
-
-		if (node != null && node.getChildrenSize() != 0) {
-			parent.addChild(node);
-		}
-
-		lastNode.push(parent);
-		return false;
-	}
-	
-	@Override
-	public boolean visit(SynchronizedStatement synchronizedStatement) {
-		InternalCodeFragment parent = newInternalCodeFragment();
-
-		parent.addInternalStatement(synchronizedStatement.getExpression());
-		visitAux(parent, synchronizedStatement.getBody(), false);
-	
-		lastNode.push(parent);
-		return false;
-	}
-	
-	@Override
-	public boolean visit(TryStatement tryStatement) {
-		InternalCodeFragment parent = newInternalCodeFragment();
 		
-		List<CatchClause> catchClauses = tryStatement.catchClauses();
-		for (CatchClause catchClause : catchClauses) {
-			catchClause.accept(this);
-			InternalCodeFragment fragment = (InternalCodeFragment) lastNode.pop();
-			if (fragment != null) {
-				parent.addChild(fragment);
-			}
-		}
-		visitAux(parent, tryStatement.getBody(), true);
-		visitAux(parent, tryStatement.getFinally(), true);
+		parent = checkIfParentShouldBeLeaf(parent);
 		
 		lastNode.push(parent);
 		return false;
 	}
 	
 	@Override
-	public boolean visit(WhileStatement whileStatement) {
-		InternalCodeFragment parent = newInternalCodeFragment();
+	public boolean visit(SwitchStatement node) {
+		AbstractInternalCodeFragment parent = newInternalCodeFragment();
+		parent.addInternalStatement(node);
 
-		parent.addInternalStatement(whileStatement.getExpression());
-		visitAux(parent, whileStatement.getBody(), true);
+		List<Statement> statements = node.statements();
+		for (Statement statement : statements) {
+			visitAux((InternalCodeFragment) parent, statement);
+		}
+		
+		parent = checkIfParentShouldBeLeaf(parent);
+
+		lastNode.push(parent);
+		return false;
+	}
+	
+	@Override
+	public boolean visit(SynchronizedStatement node) {
+		AbstractInternalCodeFragment parent = newInternalCodeFragment();
+		parent.addInternalStatement(node);
+		
+		visitAux((InternalCodeFragment) parent, node.getBody());
+	
+		parent = checkIfParentShouldBeLeaf(parent);
+		
+		lastNode.push(parent);
+		return false;
+	}
+	
+	@Override
+	public boolean visit(TryStatement node) {
+		AbstractInternalCodeFragment parent = newInternalCodeFragment();
+		parent.addInternalStatement(node);
+		
+		visitAux((InternalCodeFragment) parent, node.getBody());
+		List<ASTNode> statements = node.catchClauses();
+		for (ASTNode statement : statements) {
+			visitAux((InternalCodeFragment) parent, statement);
+		}
+		visitAux((InternalCodeFragment) parent, node.getFinally());
+		
+		parent = checkIfParentShouldBeLeaf(parent);
+		
+		lastNode.push(parent);
+		return false;
+	}
+	
+	@Override
+	public boolean visit(WhileStatement node) {
+		AbstractInternalCodeFragment parent = newInternalCodeFragment();
+		parent.addInternalStatement(node);
+		
+		visitAux((InternalCodeFragment) parent, node.getBody());
+		
+		parent = checkIfParentShouldBeLeaf(parent);
 		
 		lastNode.push(parent);
 		return false;
 	}
 
 	//--------------------------------------------------------------------------simple visit methods
-	private void pushAsLeaf(Statement statement) {
-		
-	}
-	
-	private void pushAsLeaf(Expression expression) {
-		
+	private void pushAsLeaf(ASTNode node) {
+		InternalCodeFragmentLeaf leaf = newInternalCodeFragmentLeaf();
+		leaf.addInternalStatement(node);
+		lastNode.push(leaf);
 	}
 	
 	@Override
 	public boolean visit(ArrayCreation node) {
-		lastNode.push(null);
+		pushAsLeaf(node);
 		return false;
 	}
 	@Override
 	public boolean visit(ArrayType node) {
-		lastNode.push(null);
+		pushAsLeaf(node);
 		return false;
 	}
 	@Override
 	public boolean visit(Assignment node) {
-		lastNode.push(null);
+		pushAsLeaf(node);
 		return false;
 	}
 	@Override
 	public boolean visit(BreakStatement node) {
-		lastNode.push(null);
+		pushAsLeaf(node);
 		return false;
 	}
 	@Override
@@ -332,51 +345,51 @@ public class InitialFragmentationVisitor extends ASTVisitor {
 	}
 	@Override
 	public boolean visit(ContinueStatement node) {
-		lastNode.push(null);
+		pushAsLeaf(node);
 		return false;
 	}
 	@Override
 	public boolean visit(EmptyStatement node) {
-		lastNode.push(null);
+		pushAsLeaf(node);
 		return false;
 	}
 	public boolean visit(Expression node) {
-		lastNode.push(null);
+		pushAsLeaf(node);
 		return false;
 	}
 	@Override
 	public boolean visit(ExpressionStatement node) {
-		lastNode.push(null);
+		pushAsLeaf(node);
 		return false;
 	}
 	@Override
 	public boolean visit(ReturnStatement node) {
-		lastNode.push(null);
+		pushAsLeaf(node);
 		return false;
 	}
 	@Override
 	public boolean visit(SuperConstructorInvocation node) {
-		lastNode.push(null);
+		pushAsLeaf(node);
 		return false;
 	}
 	@Override
-	public boolean visit(SwitchCase switchCase) {
-		lastNode.push(null);
+	public boolean visit(SwitchCase node) {
+		pushAsLeaf(node);
 		return false;
 	}
 	@Override
 	public boolean visit(ThisExpression node) {
-		lastNode.push(null);
+		pushAsLeaf(node);
 		return false;
 	}
 	@Override
 	public boolean visit(ThrowStatement node) {
-		lastNode.push(null);
+		pushAsLeaf(node);
 		return false;
 	}
 	@Override
 	public boolean visit(VariableDeclarationStatement node) {
-		lastNode.push(null);
+		pushAsLeaf(node);;
 		return false;
 	}
 }

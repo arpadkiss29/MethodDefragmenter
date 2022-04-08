@@ -7,7 +7,7 @@ import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 
 public class MethodInvocationVisitor extends ASTVisitor {
-	private List<MethodInvocation> methodInvocations = new ArrayList<MethodInvocation>();
+	private List<MethodInvocation> methodInvocations = new ArrayList<>();
 
 	@Override
 	public boolean visit(MethodInvocation node) {

@@ -19,27 +19,35 @@ public class Saleh2GroupingVisitor extends GroupingVisitor implements FragmentVi
 		this.FDPTreshold = FDPTreshold;
 	}
 	
-	private boolean canMergeFragmentWithLeaf(AbstractInternalCodeFragment fragment, InternalCodeFragmentLeaf leaf, boolean reduceLimits) {
-		int FDPOfFragment = computeMetricsOfFragment(fragment).getFDP();
-		int FDPOfLeaf = computeMetricsOfFragment(leaf).getFDP();
+	private boolean canMergeLeaves(InternalCodeFragmentLeaf fragment, InternalCodeFragmentLeaf leaf, boolean reduceLimits) {
+		int fragmentFDP = computeMetricsOfFragment(fragment).getFDP();
+		int leafFDP = computeMetricsOfFragment(leaf).getFDP();
 		
 		if (reduceLimits
 				&& fragment.getInternalStatementsSize() > 0
-				&& FDPOfFragment == 0
-				&& FDPOfLeaf > 0) {
+				&& fragmentFDP == 0
+				&& leafFDP > 0) {
 			return false;
 		}
 		
-		if (FDPOfFragment == 0) return true;
+		if (fragmentFDP == 0) return true;
+		if (fragmentFDP > FDPTreshold || leafFDP > FDPTreshold) return false;
 		
-		if (FDPOfFragment > FDPTreshold || FDPOfLeaf > FDPTreshold) return false;
+		InternalCodeFragmentLeaf temp = newInternalCodeFragmentLeaf();
+		temp.addInternalStatements(fragment.getInternalStatements());
+		temp.addInternalStatements(leaf.getInternalStatements());
+		int tempFDP = computeMetricsOfFragment(temp).getFDP();
+		if (tempFDP > FDPTreshold) return false;
 		
-		InternalCodeFragmentLeaf tempLeaf = newInternalCodeFragmentLeaf();
-		tempLeaf.addInternalStatements(fragment.getInternalStatements());
-		tempLeaf.addInternalStatements(leaf.getInternalStatements());
-		MetricsComputer metricsComputerOfTempLeaf = computeMetricsOfFragment(tempLeaf);
-		if (metricsComputerOfTempLeaf.getFDP() > FDPTreshold) return false;
+		return true;
+	}
+	
+	private boolean canMergeParentWithLeaf(InternalCodeFragment parent, InternalCodeFragmentLeaf leaf) {
+		int parentFDP = computeMetricsOfFragment(parent).getFDP();
+		int leafFDP = computeMetricsOfFragment(leaf).getFDP();
 		
+		if (parentFDP == 0) return true;
+		if (parentFDP > FDPTreshold || leafFDP > FDPTreshold) return false;
 		return true;
 	}
 	
@@ -84,7 +92,7 @@ public class Saleh2GroupingVisitor extends GroupingVisitor implements FragmentVi
 							zeroFDPAccumulator = newInternalCodeFragmentLeaf();
 						}
 					} else {
-						if (!canMergeFragmentWithLeaf(accumulator, leaf, true)) {
+						if (!canMergeLeaves(accumulator, leaf, true)) {
 							groupedNodes.add(accumulator);
 							accumulator = newInternalCodeFragmentLeaf();
 						}
@@ -100,6 +108,7 @@ public class Saleh2GroupingVisitor extends GroupingVisitor implements FragmentVi
         if (zeroFDPAccumulator.getInternalStatementsSize() != 0) {
         	groupedNodes.add(zeroFDPAccumulator);
         }
+        
         return groupedNodes;
 	}
 	
@@ -110,10 +119,9 @@ public class Saleh2GroupingVisitor extends GroupingVisitor implements FragmentVi
 		List<AbstractInternalCodeFragment> groupedNodes = breadthGrouping(fragment.getChildren());
 		
 		if (groupedNodes.size() == 1 && groupedNodes.get(0) instanceof InternalCodeFragmentLeaf
-				&& canMergeFragmentWithLeaf(fragment, (InternalCodeFragmentLeaf) groupedNodes.get(0), false)) {
+				&& canMergeParentWithLeaf(fragment, (InternalCodeFragmentLeaf) groupedNodes.get(0))) {
 			parent = newInternalCodeFragmentLeaf();
 			parent.addInternalStatements(fragment.getInternalStatements());
-			parent.addInternalStatements(groupedNodes.get(0).getInternalStatements());
 		} else {
 			for (AbstractInternalCodeFragment node : groupedNodes) {
 				((InternalCodeFragment) parent).addChild(node);

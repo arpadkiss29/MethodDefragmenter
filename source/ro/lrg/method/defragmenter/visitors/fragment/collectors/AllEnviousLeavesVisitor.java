@@ -1,4 +1,4 @@
-package ro.lrg.method.defragmenter.visitors.fragment;
+package ro.lrg.method.defragmenter.visitors.fragment.collectors;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,9 +8,12 @@ import ro.lrg.method.defragmenter.utils.EnvyComputer;
 import ro.lrg.method.defragmenter.utils.InternalCodeFragment;
 import ro.lrg.method.defragmenter.utils.InternalCodeFragmentLeaf;
 import ro.lrg.method.defragmenter.utils.MetricsComputer;
+import ro.lrg.method.defragmenter.visitors.fragment.FragmentVisitor;
 
-public class AllEnviousFragmentsVisitor implements FragmentVisitor {
+public class AllEnviousLeavesVisitor implements FragmentVisitor {
+	
 	private List<AbstractInternalCodeFragment> allEnviousFragments = new ArrayList<>();
+	
 	private final boolean considerStaticFieldAccess;
 	private final boolean libraryCheck;
 	private final int minBlockSize;
@@ -18,7 +21,7 @@ public class AllEnviousFragmentsVisitor implements FragmentVisitor {
 	private final int FDPTreshold;
 	private final double LAATreshold;
 	
-	public AllEnviousFragmentsVisitor(int ATFDTreshold, int FDPTreshold, double LAATreshold, 
+	public AllEnviousLeavesVisitor(int ATFDTreshold, int FDPTreshold, double LAATreshold, 
 			boolean considerStaticFieldsAccess, boolean libraryCheck, int minBlockSize) {
 		this.ATFDTreshold = ATFDTreshold;
 		this.FDPTreshold = FDPTreshold;
