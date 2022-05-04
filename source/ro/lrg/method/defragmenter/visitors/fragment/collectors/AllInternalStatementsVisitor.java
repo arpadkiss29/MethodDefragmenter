@@ -12,7 +12,7 @@ import ro.lrg.method.defragmenter.visitors.fragment.FragmentVisitor;
 
 public class AllInternalStatementsVisitor implements FragmentVisitor {
 	
-	private List<ASTNode> allInternalStatements = new ArrayList<ASTNode>();
+	private final List<ASTNode> allInternalStatements = new ArrayList<ASTNode>();
 
 	@Override
 	public void visit(InternalCodeFragment fragment) {

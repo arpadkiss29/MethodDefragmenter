@@ -21,9 +21,8 @@ public class ArpiGroupingVisitor extends GroupingVisitor implements FragmentVisi
 	private final int FDPTreshold = 2;
 	private final double LAATreshold = 0.5;
 	
-	public ArpiGroupingVisitor(String analyzedClass, IFile iFile, IJavaProject iJavaProject,
-			boolean considerStaticFieldsAccess, boolean libraryCheck, int minBlockSize) {
-		super(analyzedClass, iFile, iJavaProject, considerStaticFieldsAccess, libraryCheck, minBlockSize);
+	public ArpiGroupingVisitor(String analyzedClass, IFile iFile, IJavaProject iJavaProject) {
+		super(analyzedClass, iFile, iJavaProject);
 	}
 	
 	private boolean fragmentIsEnvy(MetricsComputer metricsComputer) {
@@ -34,9 +33,9 @@ public class ArpiGroupingVisitor extends GroupingVisitor implements FragmentVisi
 	private boolean canMergeParentWithLeaf(AbstractInternalCodeFragment baseFragment, AbstractInternalCodeFragment toBeMerged) {
 		AbstractInternalCodeFragment temp = newInternalCodeFragmentLeaf();
 		temp.addInternalStatements(baseFragment.getInternalStatements());
-		MetricsComputer metricsComputerBefore = computeMetricsOfFragment(temp);
+		MetricsComputer metricsComputerBefore = MetricsComputer.getComputedMetrics(temp);
 		temp.addInternalStatements(toBeMerged.getInternalStatements());
-		MetricsComputer metricsComputerAfter = computeMetricsOfFragment(temp);
+		MetricsComputer metricsComputerAfter = MetricsComputer.getComputedMetrics(temp);
 		
 		return fragmentIsEnvy(metricsComputerAfter) && metricsComputerBefore.includesFDPMapOf(metricsComputerAfter);
 	}
@@ -64,7 +63,7 @@ public class ArpiGroupingVisitor extends GroupingVisitor implements FragmentVisi
 				}
 			}
 			
-			MetricsComputer metricsComputer = computeMetricsOfFragment(node);
+			MetricsComputer metricsComputer = MetricsComputer.getComputedMetrics(node);
 			boolean envy = fragmentIsEnvy(metricsComputer);
 			
 			if (!envy || node instanceof InternalCodeFragment) {

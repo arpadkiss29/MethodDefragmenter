@@ -3,15 +3,17 @@ package ro.lrg.method.defragmenter.utils;
 import java.util.ArrayList;
 import java.util.List;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jface.text.Position;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 import ro.lrg.method.defragmenter.visitors.fragment.FragmentVisitor;
 import ro.lrg.method.defragmenter.visitors.fragment.collectors.AllEnviousLeavesVisitor;
 import ro.lrg.method.defragmenter.visitors.fragment.collectors.AllInternalStatementsVisitor;
 import ro.lrg.method.defragmenter.visitors.fragment.collectors.AllLeavesVisitor;
+import ro.lrg.method.defragmenter.visitors.fragment.collectors.AllNodesVisitor;
+import ro.lrg.method.defragmenter.visitors.fragment.collectors.IdentifyFunctionalSegmentsVisitor;
 
 public abstract class AbstractInternalCodeFragment {
 	private final String analizedClass;
@@ -20,8 +22,6 @@ public abstract class AbstractInternalCodeFragment {
 	private final List<ASTNode> internalStatements = new ArrayList<>();
 	protected int startPosition = 0;
 	protected int endPosition = 0;
-	
-	protected static int colorCounter = 0;
 	
 	protected boolean possiblyRelatedFlag = false;
 	protected List<AbstractInternalCodeFragment> cohesivlyRelatedNodes = new ArrayList<>();
@@ -32,10 +32,8 @@ public abstract class AbstractInternalCodeFragment {
 		this.iJavaProject = iJavaProject;
 	}
 	
-	public List<AbstractInternalCodeFragment> getAllEnviousFragmentsOfTree(int ATFDTreshold, int FDPTreshold, double LAATreshold,
-			boolean considerStaticFieldsAccess, boolean libraryCheck, int minBlockSize) {
-		AllEnviousLeavesVisitor allEnviousFragmentsVisitor = new AllEnviousLeavesVisitor(ATFDTreshold, FDPTreshold, LAATreshold, 
-				considerStaticFieldsAccess, libraryCheck, minBlockSize);
+	public List<AbstractInternalCodeFragment> getAllEnviousFragmentsOfTree(int ATFDTreshold, int FDPTreshold, double LAATreshold) {
+		AllEnviousLeavesVisitor allEnviousFragmentsVisitor = new AllEnviousLeavesVisitor(ATFDTreshold, FDPTreshold, LAATreshold);
 		this.accept(allEnviousFragmentsVisitor);
 		return allEnviousFragmentsVisitor.getAllEnviousFragments();
 	}
@@ -46,10 +44,23 @@ public abstract class AbstractInternalCodeFragment {
 		return allLeavesVisitor.getAllLeaves();
 	}
 	
+	public List<AbstractInternalCodeFragment> getAllNodesOfTree() {
+		AllNodesVisitor allNodesVisitor = new AllNodesVisitor();
+		this.accept(allNodesVisitor);
+		return allNodesVisitor.getAllNodes();
+	}
+	
 	public List<ASTNode> getAllInternalStatementsOfTree() {
-		AllInternalStatementsVisitor visitor = new AllInternalStatementsVisitor();
-		this.accept(visitor);
-		return visitor.getAllInternalStatements();
+		AllInternalStatementsVisitor allInternalStatementsVisitor = new AllInternalStatementsVisitor();
+		this.accept(allInternalStatementsVisitor);
+		return allInternalStatementsVisitor.getAllInternalStatements();
+	}
+	
+	public Position getPosition() {
+		int start = this.getFragmentFirstLineStartIndex();
+		int end = this.getFragmentLastLineEndIndex();
+		Position position = new Position(start, (end - start));
+		return position;
 	}
 
 	@Override
@@ -60,16 +71,22 @@ public abstract class AbstractInternalCodeFragment {
 	//--------------------------------------------------------------------------protected methods
 	
 	protected void initAux() {
-		colorCounter = 0;
 		possiblyRelatedFlag = false;
 		cohesivlyRelatedNodes.clear();
 	}
 	
+	protected int getFragmentFirstLineStartIndex() {
+		if (getInternalStatements().isEmpty()) return 1;
+		return getInternalStatement(0).getStartPosition();
+	}
+
+	protected int getFragmentLastLineEndIndex() {
+		if (getInternalStatements().isEmpty()) return 1;
+		return getInternalStatement(getInternalStatementsSize() - 1).getStartPosition() + getInternalStatement(getInternalStatementsSize() - 1).getLength();
+	}
+	
 	//--------------------------------------------------------------------------abstract methods
 	public abstract void accept(FragmentVisitor visitor);
-	public abstract void colorFragment(ITextEditor textEditor, IFile file) throws CoreException;
-	public abstract int getFragmentFirstLineStartIndex();
-	public abstract int getFragmentLastLineEndIndex();
 	public abstract void init();
 	public abstract void print(int tabs);
 	
@@ -102,34 +119,21 @@ public abstract class AbstractInternalCodeFragment {
 	public String getAnalizedClass() {
 		return analizedClass;
 	}
-	public static void setColorCounter(int colorCounter) {
-		AbstractInternalCodeFragment.colorCounter = colorCounter;
-	}
-	public int getEndPosition() {
-		return endPosition;
-	}
 	public IFile getIFile() {
 		return iFile;
 	}
 	public IJavaProject getIJavaProject() {
 		return iJavaProject;
 	}
-	public int getStartPosition() {
-		return startPosition;
-	}
-	public void setEndPosition(int endPosition) {
-		this.endPosition = endPosition;
-	}	
-	public void setStartPosition(int startPosition) {
-		this.startPosition = startPosition;
-	}	
-	
 	//--------------------------------------------------------------------------NCOCP2
-	//--------------------------------------------------------------------------NCOCP2: abstract methods
 	public abstract void colorLongMethodFragments(ITextEditor textEditor, IFile file, List<AbstractInternalCodeFragment> functionalSegmentNodes);
-	public abstract AbstractInternalCodeFragment constructTree();
-	public abstract List<AbstractInternalCodeFragment> identifyFunctionalSegments();
-	//--------------------------------------------------------------------------NCOCP2: getters and setters
+	
+	public List<AbstractInternalCodeFragment> identifyFunctionalSegments(double NCOCP2Treshold) {
+		IdentifyFunctionalSegmentsVisitor identifyFunctionalSegmentsVisitor = new IdentifyFunctionalSegmentsVisitor(NCOCP2Treshold);
+		this.accept(identifyFunctionalSegmentsVisitor);
+		return identifyFunctionalSegmentsVisitor.getFunctionalSegments();
+	}
+
 	public List<AbstractInternalCodeFragment> getPossiblyRelatedNodes() {
 		return cohesivlyRelatedNodes;
 	}

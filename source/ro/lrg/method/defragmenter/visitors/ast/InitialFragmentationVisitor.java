@@ -1,6 +1,5 @@
 package ro.lrg.method.defragmenter.visitors.ast;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
@@ -69,55 +68,6 @@ public class InitialFragmentationVisitor extends ASTVisitor {
 		return new InternalCodeFragmentLeaf(analyzedClass, iFile, iJavaProject);
 	}
 	
-	private void addStatementAsGrandchildToParent(InternalCodeFragment parent, Statement statement) {
-		InternalCodeFragment node = newInternalCodeFragment();
-		InternalCodeFragmentLeaf leaf = newInternalCodeFragmentLeaf();
-		leaf.addInternalStatement(statement);
-		node.addChild(leaf);
-		parent.addChild(node);
-	}
-	
-	//--------------------------------------------------------------------------main algorithm
-	private List<AbstractInternalCodeFragment> getRawAbstractInternalCodeFragments(Block node) {
-		List<AbstractInternalCodeFragment> fragments = new ArrayList<>();
-		List<Statement> statements = node.statements();
-		for (Statement statement : statements) {
-			((ASTNode) statement).accept(this);
-			AbstractInternalCodeFragment fragment = null;
-			if(!lastNode.isEmpty()) fragment = lastNode.pop();
-			if (fragment == null) {
-				fragment = newInternalCodeFragmentLeaf();
-				fragment.addInternalStatement(statement);
-			}
-			fragments.add(fragment);
-		}
-		return fragments;
-	}
-	
-	@Override
-	public boolean visit(Block node) {
-		AbstractInternalCodeFragment parent = newInternalCodeFragment();
-		parent.addInternalStatement(node);
-		
-//		parent.setStartPosition(node.getStartPosition());
-//		parent.setEndPosition(node.getStartPosition() + node.getLength());
-		
-//		List<AbstractInternalCodeFragment> fragments = new ArrayList<>();
-		
-		List<Statement> statements = node.statements();
-		for (Statement statement : statements) {
-			visitAux((InternalCodeFragment) parent, statement);
-		}
-		
-		parent = checkIfParentShouldBeLeaf(parent);
-		
-//		List<AbstractInternalCodeFragment> fragments = getRawAbstractInternalCodeFragments(node);
-//		fragments.forEach(f->parent.addChild(f));
-        
-		lastNode.push(parent);
-		return false;
-	}
-	
 	//this method helps some visit methods
 	private void visitAux(InternalCodeFragment parent, ASTNode statement) {
 		if (statement != null) {
@@ -135,6 +85,22 @@ public class InitialFragmentationVisitor extends ASTVisitor {
 		} else {
 			return parent;
 		}
+	}
+	
+	@Override
+	public boolean visit(Block node) {
+		AbstractInternalCodeFragment parent = newInternalCodeFragment();
+		parent.addInternalStatement(node);
+		
+		List<Statement> statements = node.statements();
+		for (Statement statement : statements) {
+			visitAux((InternalCodeFragment) parent, statement);
+		}
+		
+		parent = checkIfParentShouldBeLeaf(parent);
+        
+		lastNode.push(parent);
+		return false;
 	}
 	
 	//--------------------------------------------------------------------------visit methods
@@ -223,8 +189,6 @@ public class InitialFragmentationVisitor extends ASTVisitor {
 	@Override
 	public boolean visit(IfStatement node) {
 		AbstractInternalCodeFragment parent = newInternalCodeFragment();
-//		parent.setStartPosition(ifStatement.getStartPosition());
-//		parent.setEndPosition(ifStatement.getStartPosition() + ifStatement.getLength());
 		parent.addInternalStatement(node);
 		
 		visitAux((InternalCodeFragment) parent, node.getThenStatement());

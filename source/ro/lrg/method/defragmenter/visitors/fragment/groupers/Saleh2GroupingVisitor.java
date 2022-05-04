@@ -13,15 +13,14 @@ import ro.lrg.method.defragmenter.visitors.fragment.FragmentVisitor;
 public class Saleh2GroupingVisitor extends GroupingVisitor implements FragmentVisitor {
 	private final int FDPTreshold;
 	
-	public Saleh2GroupingVisitor(String analyzedClass, IFile iFile, IJavaProject iJavaProject,
-			boolean considerStaticFieldsAccess, boolean libraryCheck, int minBlockSize, int FDPTreshold) {
-		super(analyzedClass, iFile, iJavaProject, considerStaticFieldsAccess, libraryCheck, minBlockSize);
+	public Saleh2GroupingVisitor(String analyzedClass, IFile iFile, IJavaProject iJavaProject, int FDPTreshold) {
+		super(analyzedClass, iFile, iJavaProject);
 		this.FDPTreshold = FDPTreshold;
 	}
 	
 	private boolean canMergeLeaves(InternalCodeFragmentLeaf fragment, InternalCodeFragmentLeaf leaf, boolean reduceLimits) {
-		int fragmentFDP = computeMetricsOfFragment(fragment).getFDP();
-		int leafFDP = computeMetricsOfFragment(leaf).getFDP();
+		int fragmentFDP = MetricsComputer.getComputedMetrics(fragment).getFDP();
+		int leafFDP = MetricsComputer.getComputedMetrics(leaf).getFDP();
 		
 		if (reduceLimits
 				&& fragment.getInternalStatementsSize() > 0
@@ -36,18 +35,16 @@ public class Saleh2GroupingVisitor extends GroupingVisitor implements FragmentVi
 		InternalCodeFragmentLeaf temp = newInternalCodeFragmentLeaf();
 		temp.addInternalStatements(fragment.getInternalStatements());
 		temp.addInternalStatements(leaf.getInternalStatements());
-		int tempFDP = computeMetricsOfFragment(temp).getFDP();
+		int tempFDP = MetricsComputer.getComputedMetrics(temp).getFDP();
 		if (tempFDP > FDPTreshold) return false;
 		
 		return true;
 	}
 	
-	private boolean canMergeParentWithLeaf(InternalCodeFragment parent, InternalCodeFragmentLeaf leaf) {
-		int parentFDP = computeMetricsOfFragment(parent).getFDP();
-		int leafFDP = computeMetricsOfFragment(leaf).getFDP();
-		
-		if (parentFDP == 0) return true;
-		if (parentFDP > FDPTreshold || leafFDP > FDPTreshold) return false;
+	private boolean parentCanBeLeaf(InternalCodeFragment parent, List<AbstractInternalCodeFragment> groupedNodes) {
+		if (groupedNodes.size() != 1 || !(groupedNodes.get(0) instanceof InternalCodeFragmentLeaf)) return false;
+		int parentFDP = MetricsComputer.getComputedMetrics(parent).getFDP();
+		if (parentFDP > FDPTreshold) return false;
 		return true;
 	}
 	
@@ -71,8 +68,8 @@ public class Saleh2GroupingVisitor extends GroupingVisitor implements FragmentVi
 				groupedNodes.add(node);
 			} else {
 				InternalCodeFragmentLeaf leaf = (InternalCodeFragmentLeaf) node;
-				int accumulatorFDP = computeMetricsOfFragment(accumulator).getFDP();
-				int leafFDP = computeMetricsOfFragment(leaf).getFDP();
+				int accumulatorFDP = MetricsComputer.getComputedMetrics(accumulator).getFDP();
+				int leafFDP = MetricsComputer.getComputedMetrics(leaf).getFDP();
 				if (accumulatorFDP > 0 && leafFDP == 0) {
 					zeroFDPAccumulator.addInternalStatements(leaf.getInternalStatements());
 				} else {
@@ -80,7 +77,7 @@ public class Saleh2GroupingVisitor extends GroupingVisitor implements FragmentVi
 						InternalCodeFragmentLeaf temp = newInternalCodeFragmentLeaf();
 						temp.addInternalStatements(accumulator.getInternalStatements());
 						temp.addInternalStatements(leaf.getInternalStatements());
-						int tempFDP = computeMetricsOfFragment(temp).getFDP();
+						int tempFDP = MetricsComputer.getComputedMetrics(temp).getFDP();
 						
 						if (tempFDP <= FDPTreshold) {
 							accumulator.addInternalStatements(zeroFDPAccumulator.getInternalStatements());
@@ -115,11 +112,11 @@ public class Saleh2GroupingVisitor extends GroupingVisitor implements FragmentVi
 	@Override
 	public void visit(InternalCodeFragment fragment) {
 		AbstractInternalCodeFragment parent = newInternalCodeFragment();
+		parent.addInternalStatements(fragment.getInternalStatements());
 		
 		List<AbstractInternalCodeFragment> groupedNodes = breadthGrouping(fragment.getChildren());
 		
-		if (groupedNodes.size() == 1 && groupedNodes.get(0) instanceof InternalCodeFragmentLeaf
-				&& canMergeParentWithLeaf(fragment, (InternalCodeFragmentLeaf) groupedNodes.get(0))) {
+		if (parentCanBeLeaf((InternalCodeFragment) parent, groupedNodes)) {
 			parent = newInternalCodeFragmentLeaf();
 			parent.addInternalStatements(fragment.getInternalStatements());
 		} else {

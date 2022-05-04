@@ -87,6 +87,7 @@ public class MethodDefragmenterFieldEditor extends FieldEditor implements Defaul
 		
 		new Label(parent, SWT.NONE).setText("Apply long method identification:");
 		applyLongMethodIdentificationCheckbox = new Button(parent, SWT.CHECK);
+		applyLongMethodIdentificationCheckbox.setEnabled(false);
 		
 		new Label(parent, SWT.NONE).setText("Consider static field access:");
 		considerStaticFiledAccessCheckbox = new Button(parent, SWT.CHECK);

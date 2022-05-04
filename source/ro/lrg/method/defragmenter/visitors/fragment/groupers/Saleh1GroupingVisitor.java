@@ -6,14 +6,14 @@ import org.eclipse.jdt.core.IJavaProject;
 import ro.lrg.method.defragmenter.utils.AbstractInternalCodeFragment;
 import ro.lrg.method.defragmenter.utils.InternalCodeFragment;
 import ro.lrg.method.defragmenter.utils.InternalCodeFragmentLeaf;
+import ro.lrg.method.defragmenter.utils.MetricsComputer;
 import ro.lrg.method.defragmenter.visitors.fragment.FragmentVisitor;
 
 public class Saleh1GroupingVisitor extends GroupingVisitor implements FragmentVisitor {
 	private final int FDPTreshold;
 
-	public Saleh1GroupingVisitor(String analyzedClass, IFile iFile, IJavaProject iJavaProject,
-			boolean considerStaticFieldsAccess, boolean libraryCheck, int minBlockSize, int FDPTreshold) {
-		super(analyzedClass, iFile, iJavaProject, considerStaticFieldsAccess, libraryCheck, minBlockSize);
+	public Saleh1GroupingVisitor(String analyzedClass, IFile iFile, IJavaProject iJavaProject, int FDPTreshold) {
+		super(analyzedClass, iFile, iJavaProject);
 		this.FDPTreshold = FDPTreshold;
 	}
 	
@@ -33,7 +33,7 @@ public class Saleh1GroupingVisitor extends GroupingVisitor implements FragmentVi
 				InternalCodeFragmentLeaf temp = newInternalCodeFragmentLeaf();
 				temp.addInternalStatements(accumulator.getInternalStatements());
 				temp.addInternalStatements(node.getInternalStatements());
-				int tempFDP = computeMetricsOfFragment(temp).getFDP();
+				int tempFDP = MetricsComputer.getComputedMetrics(temp).getFDP();
 				
 				if(tempFDP > FDPTreshold) {
 					parent.addChild(accumulator);
@@ -124,7 +124,7 @@ public class Saleh1GroupingVisitor extends GroupingVisitor implements FragmentVi
 	public void visit(InternalCodeFragmentLeaf fragment) {
 		InternalCodeFragmentLeaf leaf = newInternalCodeFragmentLeaf();
 		leaf.addInternalStatements(fragment.getInternalStatements());
-		computeMetricsOfFragment(leaf);
+		MetricsComputer.getComputedMetrics(leaf);
 		pushIntoLastNode(leaf);
 	}
 }

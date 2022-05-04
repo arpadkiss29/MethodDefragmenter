@@ -1,5 +1,6 @@
 package ro.lrg.method.defragmenter.metamodel.methods;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.core.resources.IFile;
@@ -11,7 +12,6 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
-import org.eclipse.jdt.core.dom.SwitchCase;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import methoddefragmenter.metamodel.entity.MFragment;
 import methoddefragmenter.metamodel.entity.MMethod;
@@ -20,6 +20,7 @@ import ro.lrg.method.defragmenter.preferences.GroupingAlgorithmsConstants;
 import ro.lrg.method.defragmenter.preferences.MethodDefragmenterPropertyStore;
 import ro.lrg.method.defragmenter.utils.AbstractInternalCodeFragment;
 import ro.lrg.method.defragmenter.utils.InternalCodeFragment;
+import ro.lrg.method.defragmenter.utils.InternalCodeFragmentLeaf;
 import ro.lrg.method.defragmenter.visitors.ast.InitialFragmentationVisitor;
 import ro.lrg.method.defragmenter.visitors.fragment.groupers.ArpiGroupingVisitor;
 import ro.lrg.method.defragmenter.visitors.fragment.groupers.GroupingVisitor;
@@ -50,9 +51,9 @@ public class EnviousFragmentGroup implements IRelationBuilder<MFragment, MMethod
         IFile iFile = (IFile) method.getResource();
         IJavaProject iJavaProject = method.getJavaProject();
         
-        InitialFragmentationVisitor fragmenter = new InitialFragmentationVisitor(methodName, iFile, iJavaProject);
+        InitialFragmentationVisitor fragmenter = new InitialFragmentationVisitor(className, iFile, iJavaProject);
         block.accept(fragmenter);
-        InternalCodeFragment root = (InternalCodeFragment) fragmenter.popLastNode();
+        AbstractInternalCodeFragment root = fragmenter.popLastNode();
         
         MethodDefragmenterPropertyStore propertyStore = new MethodDefragmenterPropertyStore(iJavaProject);
         
@@ -60,16 +61,13 @@ public class EnviousFragmentGroup implements IRelationBuilder<MFragment, MMethod
         
         switch(propertyStore.getGroupingAlgorithm()) {
         	case GroupingAlgorithmsConstants.ARPI:
-        		groupingVisitor = new ArpiGroupingVisitor(className, iFile, iJavaProject, propertyStore.isConsiderStaticFieldAccesses(),
-        				propertyStore.isLibraryCheck(), propertyStore.getMinBlockSize());
+        		groupingVisitor = new ArpiGroupingVisitor(className, iFile, iJavaProject);
         		break;
         	case GroupingAlgorithmsConstants.SALEH1:
-        		groupingVisitor = new Saleh1GroupingVisitor(className, iFile, iJavaProject, propertyStore.isConsiderStaticFieldAccesses(),
-        				propertyStore.isLibraryCheck(), propertyStore.getMinBlockSize(), propertyStore.getFDPTreshold());
+        		groupingVisitor = new Saleh1GroupingVisitor(className, iFile, iJavaProject, propertyStore.getFDPTreshold());
         		break;
         	case GroupingAlgorithmsConstants.SALEH2:
-        		groupingVisitor = new Saleh2GroupingVisitor(className, iFile, iJavaProject, propertyStore.isConsiderStaticFieldAccesses(),
-        				propertyStore.isLibraryCheck(), propertyStore.getMinBlockSize(), propertyStore.getFDPTreshold());
+        		groupingVisitor = new Saleh2GroupingVisitor(className, iFile, iJavaProject, propertyStore.getFDPTreshold());
         		break;
         	default: System.err.println("Unknown algorithm!");
         }
@@ -77,34 +75,13 @@ public class EnviousFragmentGroup implements IRelationBuilder<MFragment, MMethod
         root.accept(groupingVisitor);
         AbstractInternalCodeFragment groupedRoot = groupingVisitor.popLastNode(); 
         
-        
-        List<AbstractInternalCodeFragment> AICFs = groupedRoot.getAllLeavesOfTree();
-//        List<AbstractInternalCodeFragment> AICFs = groupedRoot.getAllEnviousFragmentsOfTree(propertyStore.getATFDTreshold(), 
-//        		propertyStore.getFDPTreshold(), propertyStore.getLAATreshold(), propertyStore.isConsiderStaticFieldAccesses(),
-//        		propertyStore.isLibraryCheck(), propertyStore.getMinBlockSize());
-//        
-        
-//        MethodDefragmenterPropertyStore propertyStore = new MethodDefragmenterPropertyStore(iJavaProject);
-//        FDPFragmenter fdpFragmenter = new FDPFragmenter(className, iFile, iJavaProject, propertyStore.isConsiderStaticFieldAccesses(),
-//        		propertyStore.isLibraryCheck(), propertyStore.getMinBlockSize(), propertyStore.getFDPTreshold());
-//        block.accept(fdpFragmenter);
-//        InternalCodeFragment root = (InternalCodeFragment) fdpFragmenter.getLastNode().pop();
-//        root.verifyFeatureEnvy(propertyStore.getATFDTreshold(), propertyStore.getFDPTreshold(), propertyStore.getLAATreshold(), className, 
-//        		propertyStore.isConsiderStaticFieldAccesses(), propertyStore.isLibraryCheck(), propertyStore.getMinBlockSize(), false);
-//
-//		List<AbstractInternalCodeFragment> ACFs = null;
-//		
-//		if(!propertyStore.isApplyLongMethodIdentification()) {
-//			ACFs = root.getAllEnviousNodes();
-//		} else {
-//			System.out.println("Calculating Long Method Fragmentation! Threshold: " + InternalCodeFragment.getNcocp2treshold());
-//			root.getCohesionMetric(compilationUnit);
-//			List<AbstractInternalCodeFragment> identifiedNodes = root.identifyFunctionalSegments();
-//			root.combineNodes(identifiedNodes);
-//			root.constructTree();
-//			ACFs = InternalCodeFragment.getAllNodesLeafs();
-//			ACFs.add(root);
-//		}
+        List<AbstractInternalCodeFragment> AICFs;
+		if(!propertyStore.isApplyLongMethodIdentification()) {
+			AICFs = groupedRoot.getAllEnviousFragmentsOfTree(propertyStore.getATFDTreshold(), 
+					propertyStore.getFDPTreshold(), propertyStore.getLAATreshold());
+		} else {
+			AICFs = longMethodIdentification(root, compilationUnit, propertyStore.getNCOCP2Treshold());
+		}
 		
         Group<MFragment> group = new Group<>();
         AICFs.forEach(AICF->{
@@ -113,6 +90,16 @@ public class EnviousFragmentGroup implements IRelationBuilder<MFragment, MMethod
         });
         return group;
     }
+	
+	private List<AbstractInternalCodeFragment> longMethodIdentification(AbstractInternalCodeFragment root, CompilationUnit compilationUnit, double NCOCP2Treshold) {
+		if (root instanceof InternalCodeFragmentLeaf) return new ArrayList<>();
+		System.out.println("Calculating Long Method Fragmentation! Threshold: " + NCOCP2Treshold);
+		InternalCodeFragment node = (InternalCodeFragment) root;
+		node.getCohesionMetric(compilationUnit);
+		List<AbstractInternalCodeFragment> identifiedNodes = root.identifyFunctionalSegments(NCOCP2Treshold);
+		node.combineNodes(identifiedNodes, NCOCP2Treshold);
+		return node.getAllNodesOfTree();
+	}
 	
 	private Block findBlock(CompilationUnit compilationUnit, String className, String methodName) {
         @SuppressWarnings("unchecked")
