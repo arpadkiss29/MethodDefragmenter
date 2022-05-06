@@ -1,0 +1,2 @@
+bindings=MMethod,org.eclipse.jdt.core.IMethod,ro.lrg.xcore.metametamodel.XEntity;MClass,org.eclipse.jdt.core.IType,ro.lrg.xcore.metametamodel.XEntity;MProject,org.eclipse.jdt.core.IJavaProject,ro.lrg.xcore.metametamodel.XEntity;MFragment,ro.lrg.method.defragmenter.utils.AbstractInternalCodeFragment,ro.lrg.xcore.metametamodel.XEntity;
+eclipse.preferences.version=1

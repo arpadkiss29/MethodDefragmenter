@@ -2,39 +2,7 @@
 <?eclipse version="3.4"?>
 <plugin>
 
-   <extension
-         point="org.eclipse.ui.views">
-      <category
-            name="Selection Category"
-            id="selectionPlugin">
-      </category>
-      <view
-            category="selectionPlugin"
-            class="kar.method.defragmenter.views.SelectionView"
-            icon="icons/gd.png"
-            id="selectionplugin.views.SelectionView"
-            name="Method Defragmenter">
-      </view>
-   </extension>
-   <extension
-         point="org.eclipse.ui.perspectiveExtensions">
-      <perspectiveExtension
-            targetID="org.eclipse.jdt.ui.JavaPerspective">
-         <view
-               ratio="0.5"
-               relative="org.eclipse.ui.views.ProblemView"
-               relationship="right"
-               id="selectionplugin.views.SelectionView">
-         </view>
-      </perspectiveExtension>
-   </extension>
-   <extension
-         point="org.eclipse.help.contexts">
-      <contexts
-            file="contexts.xml">
-      </contexts>
-   </extension>
-	<extension point="org.eclipse.core.resources.markers" id="kar.method.defragmenter.marker">
+	<extension point="org.eclipse.core.resources.markers" id="ro.lrg.method.defragmenter.marker">
 		<super type="org.eclipse.core.resources.textmarker"/>
 		/>
 	</extension>
@@ -351,7 +319,21 @@
 	
 	<extension point="org.eclipse.ui.editors.annotationTypes">
    		 <type markerSeverity="0"
-          name="kar.method.defragmenter.annotation" 
-          markerType="kar.method.defragmenter.marker"/>
+          name="ro.lrg.method.defragmenter.annotation" 
+          markerType="ro.lrg.method.defragmenter.marker"/>
 	</extension>
+ <extension
+       point="org.eclipse.ui.startup">
+    <startup
+          class="ro.lrg.method.defragmenter.startup.Startup">
+    </startup>
+ </extension>
+ <extension
+       point="org.eclipse.ui.propertyPages">
+    <page
+          class="ro.lrg.method.defragmenter.preferences.ui.PreferencesPage"
+          id="ro.lrg.method.defragmenter"
+          name="MethodDefragmenter" >
+    </page>
+ </extension>
 </plugin>

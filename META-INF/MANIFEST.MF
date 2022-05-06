@@ -1,17 +1,20 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: SelectionPlugin
-Bundle-SymbolicName: MethodDefragmenter;singleton:=true
+Bundle-Name: MethodDefragmenter
+Bundle-SymbolicName: ro.lrg.method.defragmenter;singleton:=true
 Bundle-Version: 1.0.0.qualifier
-Bundle-Activator: kar.method.defragmenter.Activator
+Bundle-Activator: ro.lrg.method.defragmenter.Activator
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
  org.eclipse.jface.text;bundle-version="3.8.101",
- org.eclipse.text,
- org.eclipse.jdt.core,
- org.eclipse.ui.ide
+ org.eclipse.jdt.core;bundle-version="3.27.0",
+ ro.lrg.insider;bundle-version="2.3.1",
+ org.eclipse.core.resources,
+ org.junit;bundle-version="4.13.2",
+ org.eclipse.ui.ide;bundle-version="3.18.400"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ActivationPolicy: lazy
 Import-Package: org.eclipse.core.resources,
  org.eclipse.jdt.ui,
- org.eclipse.ui.texteditor
+ org.eclipse.ui.texteditor,
+ ro.lrg.xcore.metametamodel
