@@ -26,14 +26,10 @@ public class MethodDefragmenterPropertyStore extends PreferenceStore implements 
 		IScopeContext projectScope = new ProjectScope(preferenceStoreProject.getProject());
 		IEclipsePreferences projectNode = projectScope.getNode(Activator.PLUGIN_ID);
 		for(Entry<String, String> entry : DEFAULT_VALUES_MAP.entrySet()) {
-			String value = projectNode.get(entry.getKey(), null);
-			if(value == null || value.equals("")) {
-				super.setValue(entry.getKey(), entry.getValue());
-				super.setDefault(entry.getKey(), entry.getValue());
-			} else {
-				super.setValue(entry.getKey(), value);
-				super.setDefault(entry.getKey(), entry.getValue());
-			}
+			String value = projectNode == null ? null : projectNode.get(entry.getKey(), null);
+			if(value == null || value.equals("")) super.setValue(entry.getKey(), entry.getValue());
+			else super.setValue(entry.getKey(), value);
+			super.setDefault(entry.getKey(), entry.getValue());
 		}
 	}
 

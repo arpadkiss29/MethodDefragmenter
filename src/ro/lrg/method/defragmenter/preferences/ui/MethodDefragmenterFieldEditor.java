@@ -71,12 +71,6 @@ public class MethodDefragmenterFieldEditor extends FieldEditor implements Defaul
 		
 		new Label(parent, SWT.NONE).setText("Library check:");
 		libraryCheckCheckbox = new Button(parent, SWT.CHECK);
-		
-		Label minBlockSizeLabel = new Label(parent, SWT.NONE);
-		minBlockSizeLabel.setText("Minimum block size:");
-		GridData tmp = new GridData();
-		tmp.horizontalSpan = 2;
-		minBlockSizeLabel.setLayoutData(tmp);
 
 		parent.addControlListener(new ControlListener() {		
 			@Override

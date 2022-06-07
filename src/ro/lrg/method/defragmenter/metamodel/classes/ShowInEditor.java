@@ -1,5 +1,6 @@
 package ro.lrg.method.defragmenter.metamodel.classes;
 
+import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.ui.JavaUI;
 import org.eclipse.ui.PartInitException;
@@ -13,11 +14,14 @@ import ro.lrg.xcore.metametamodel.IActionPerformer;
 public class ShowInEditor implements IActionPerformer<Void, MClass, HListEmpty> {
 	@Override
 	public Void performAction(MClass arg0, HListEmpty arg1) {
+		IType iType = arg0.getUnderlyingObject();
 		try {
-			JavaUI.openInEditor(arg0.getUnderlyingObject(), true, true);
+			JavaUI.openInEditor(iType, true, true);
 		} catch (PartInitException | JavaModelException e) {
 			e.printStackTrace();
 		}
 		return null;
 	}
 }
+
+

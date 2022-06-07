@@ -24,3 +24,4 @@ public class ForeignDataProviderClassGroup implements IRelationBuilder<MClass, M
 		return FDPClassGroup;
 	}
 }
+

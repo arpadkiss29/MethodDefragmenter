@@ -1,6 +1,7 @@
 package ro.lrg.method.defragmenter.metamodel.classes;
 
 import org.eclipse.jdt.core.IMethod;
+import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaModelException;
 import methoddefragmenter.metamodel.entity.MClass;
 import methoddefragmenter.metamodel.entity.MMethod;
@@ -13,16 +14,19 @@ import ro.lrg.xcore.metametamodel.RelationBuilder;
 public class MethodGroup implements IRelationBuilder<MMethod, MClass> {
 	@Override
 	public Group<MMethod> buildGroup(MClass arg0) {
-		Group<MMethod> res = new Group<>();
+		Group<MMethod> group = new Group<>();
 		try {
-			IMethod[] all = arg0.getUnderlyingObject().getMethods();
-			for (IMethod aJDTMethod : all) {
-				MMethod m = Factory.getInstance().createMMethod(aJDTMethod);
-				res.add(m);
+			IType iType = arg0.getUnderlyingObject();
+			IMethod[] iMethods = iType.getMethods();
+			for (IMethod iMethod : iMethods) {
+				MMethod mMethod = Factory.getInstance().createMMethod(iMethod);
+				group.add(mMethod);
 			}
 		} catch (JavaModelException e) {
 			e.printStackTrace();
 		}
-		return res;
+		return group;
 	}
 }
+
+

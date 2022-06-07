@@ -38,4 +38,11 @@ public abstract class GroupingVisitor implements FragmentVisitor {
 	protected InternalCodeFragmentLeaf newInternalCodeFragmentLeaf() {
 		return new InternalCodeFragmentLeaf(analyzedClass, iFile, iJavaProject);
 	}
+	
+	protected InternalCodeFragmentLeaf mergeLeaves(InternalCodeFragmentLeaf leaf1, InternalCodeFragmentLeaf leaf2) {
+		InternalCodeFragmentLeaf resultedLeaf = newInternalCodeFragmentLeaf();
+		resultedLeaf.addInternalStatementsOfFragment(leaf1);
+		resultedLeaf.addInternalStatementsOfFragment(leaf2);
+		return resultedLeaf;
+	}
 }

@@ -14,9 +14,6 @@ import ro.lrg.method.defragmenter.utils.MetricsComputer;
 import ro.lrg.method.defragmenter.visitors.fragment.FragmentVisitor;
 
 public class ArpiGroupingVisitor extends GroupingVisitor implements FragmentVisitor{
-//	fdp <= 2;
-//	laa <= 0.5;
-//	atfd>=1
 	private final int ATFDTreshold = 1;
 	private final int FDPTreshold = 2;
 	private final double LAATreshold = 0.5;
@@ -25,87 +22,74 @@ public class ArpiGroupingVisitor extends GroupingVisitor implements FragmentVisi
 		super(analyzedClass, iFile, iJavaProject);
 	}
 	
-	private boolean fragmentIsEnvy(MetricsComputer metricsComputer) {
-		return EnvyComputer.computeEnvy(metricsComputer.getATFD(), metricsComputer.getFDPMap(), metricsComputer.getLAA(), 
+	private boolean fragmentIsEnvious(MetricsComputer metricsComputer) {
+		return EnvyComputer.computeEnvy(metricsComputer.getATFD(), metricsComputer.getFDP(), metricsComputer.getLAA(), 
 				ATFDTreshold, FDPTreshold, LAATreshold);
-	}
-	
-	private boolean canMergeParentWithLeaf(AbstractInternalCodeFragment baseFragment, AbstractInternalCodeFragment toBeMerged) {
-		AbstractInternalCodeFragment temp = newInternalCodeFragmentLeaf();
-		temp.addInternalStatements(baseFragment.getInternalStatements());
-		MetricsComputer metricsComputerBefore = MetricsComputer.getComputedMetrics(temp);
-		temp.addInternalStatements(toBeMerged.getInternalStatements());
-		MetricsComputer metricsComputerAfter = MetricsComputer.getComputedMetrics(temp);
-		
-		return fragmentIsEnvy(metricsComputerAfter) && metricsComputerBefore.includesFDPMapOf(metricsComputerAfter);
 	}
 
 	@Override
 	public void visit(InternalCodeFragment fragment) {
-		InternalCodeFragment parent = newInternalCodeFragment();
-		parent.addInternalStatements(fragment.getInternalStatements());
-		
 		List<AbstractInternalCodeFragment> previousNodes = new ArrayList<>();
 		
 		List<AbstractInternalCodeFragment> children = fragment.getChildren();
-		
 		for(AbstractInternalCodeFragment child : children) {
 			child.accept(this);
 			AbstractInternalCodeFragment node = popLastNode();
 			
-			if (children.size() == 1) {
-				if (canMergeParentWithLeaf(node, fragment)) {
-					AbstractInternalCodeFragment leaf = newInternalCodeFragmentLeaf();
-					leaf.addInternalStatements(parent.getInternalStatements());
-					leaf.addInternalStatements(node.getInternalStatements());
-					pushIntoLastNode(leaf);
-					return;
-				}
-			}
-			
-			MetricsComputer metricsComputer = MetricsComputer.getComputedMetrics(node);
-			boolean envy = fragmentIsEnvy(metricsComputer);
-			
-			if (!envy || node instanceof InternalCodeFragment) {
+			if (node instanceof InternalCodeFragment) {
 				previousNodes.add(node);
 			} else {
-				List<AbstractInternalCodeFragment> nodesToRemove = new ArrayList<>();
-				
-				AbstractInternalCodeFragment accumulator = newInternalCodeFragmentLeaf();
-				accumulator.addInternalStatements(node.getInternalStatements());
-				
-				Collections.reverse(previousNodes);
-				for (AbstractInternalCodeFragment previousNode : previousNodes) {
-					if (previousNode instanceof InternalCodeFragment) break;
-					if (canMergeParentWithLeaf(accumulator, previousNode)) {
-						accumulator.addInternalStatements(previousNode.getAllInternalStatementsOfTree());
-						nodesToRemove.add(previousNode);
-					} else {
-						break;
+				MetricsComputer metricsComputer = MetricsComputer.getComputedMetrics(node);
+				boolean isEnvy = fragmentIsEnvious(metricsComputer);
+				if (!isEnvy) {
+					previousNodes.add(node);
+				} else {
+					List<AbstractInternalCodeFragment> nodesToRemove = new ArrayList<>();
+					
+					InternalCodeFragmentLeaf accumulator = newInternalCodeFragmentLeaf();
+					accumulator.addInternalStatementsOfFragment(node);
+					
+					Collections.reverse(previousNodes);
+					for (AbstractInternalCodeFragment previousNode : previousNodes) {
+						if (previousNode instanceof InternalCodeFragment) break;
+						
+						MetricsComputer metricsComputerBefore = MetricsComputer.getComputedMetrics(accumulator);
+						InternalCodeFragmentLeaf temp = mergeLeaves(accumulator, (InternalCodeFragmentLeaf) previousNode);
+						MetricsComputer metricsComputerAfter = MetricsComputer.getComputedMetrics(temp);
+						if (metricsComputerBefore.includesFDPMapOf(metricsComputerAfter)) {
+							accumulator.addInternalStatementsOfFragment(previousNode);
+							nodesToRemove.add(previousNode);
+						} else {
+							break;
+						}
+					}
+					Collections.reverse(previousNodes);
+					
+					Collections.reverse(accumulator.getInternalStatements());
+					previousNodes.add(accumulator);
+					
+					for(AbstractInternalCodeFragment nodeToRemove : nodesToRemove) {
+						previousNodes.remove(nodeToRemove);
 					}
 				}
-				Collections.reverse(previousNodes);
-				previousNodes.add(accumulator);
-				
-				for(AbstractInternalCodeFragment nodeToRemove : nodesToRemove) {
-					previousNodes.remove(nodeToRemove);
-				}
 			}
 		}
 		
-		if (previousNodes.size() == 1) {
-			if (canMergeParentWithLeaf(previousNodes.get(0), fragment)) {
-				AbstractInternalCodeFragment leaf = newInternalCodeFragmentLeaf();
-				leaf.addInternalStatements(parent.getInternalStatements());
-				leaf.addInternalStatements(previousNodes.get(0).getInternalStatements());
-				pushIntoLastNode(leaf);
-				return;
+		AbstractInternalCodeFragment parent = null;
+		if (previousNodes.size() == 1 && previousNodes.get(0) instanceof InternalCodeFragmentLeaf) {
+			MetricsComputer metricsComputerBefore = MetricsComputer.getComputedMetrics(previousNodes.get(0));
+			MetricsComputer metricsComputerAfter = MetricsComputer.getComputedMetrics(fragment);
+			if(metricsComputerBefore.includesFDPMapOf(metricsComputerAfter)) {
+				parent = newInternalCodeFragmentLeaf();
 			}
 		}
-		
-		for (AbstractInternalCodeFragment previousNode : previousNodes) {
-			parent.addChild(previousNode);
+		if (parent == null) {
+			parent = newInternalCodeFragment();
+			for (AbstractInternalCodeFragment previousNode : previousNodes) {
+				((InternalCodeFragment) parent).addChild(previousNode);
+			}
 		}
+		parent.addInternalStatementsOfFragment(fragment);
 		
 		pushIntoLastNode(parent);
 	}
@@ -113,7 +97,7 @@ public class ArpiGroupingVisitor extends GroupingVisitor implements FragmentVisi
 	@Override
 	public void visit(InternalCodeFragmentLeaf fragment) {
 		InternalCodeFragmentLeaf leaf = newInternalCodeFragmentLeaf();
-		leaf.addInternalStatements(fragment.getInternalStatements());
+		leaf.addInternalStatementsOfFragment(fragment);
 		pushIntoLastNode(leaf);
 	}
 }

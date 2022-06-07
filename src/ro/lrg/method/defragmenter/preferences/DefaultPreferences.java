@@ -18,7 +18,7 @@ public interface DefaultPreferences {
 	String CONSIDER_STATIC_FIELD_ACCESS_DEFAULT_VALUE = "false";
 	String LIBRARY_CHECK_DEFAULT_VALUE = "true";
 	
-	Map<String,String> DEFAULT_VALUES_MAP = new HashMap<String,String>() {{
+	Map<String,String> DEFAULT_VALUES_MAP = new HashMap<String, String>() {{
 		put(GROUPING_ALGORITHM_PREFERENCE_NAME, GROUPING_ALGORITHM_DEFAULT_VALUE);
 		put(ATFD_PREFERENCE_NAME, ATFD_DEFAULT_VALUE);
 		put(FDP_PREFERENCE_NAME, FDP_DEFAULT_VALUE);
