@@ -1,5 +1,7 @@
 package tests;
 
+import java.util.Optional;
+
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
@@ -22,7 +24,9 @@ import ro.lrg.method.defragmenter.preferences.DefaultPreferences;
 import ro.lrg.xcore.metametamodel.Group;
 
 @RunWith(Suite.class)
-@SuiteClasses({CorrectNumberOfEnviousFragments.class})
+@SuiteClasses({CorrectCodeContent_ProjectLevelCall.class, CorrectColoring.class, CorrectForeignDataProviders_ProjectLevelCall.class, 
+	CorrectMetricsOfFragments_ProjectLevelCall.class, CorrectNumberOfElementsOfGroups.class, 
+	CorrectNumberOfEnviousFragments_AllCallLevels.class, CorrectToString.class})
 public class TestRunner implements DefaultPreferences{
 	private static final String PROJECT_NAME = "MethodDefragmenterTestProject";
 	private static Group<MClass> projectClasses;
@@ -40,9 +44,9 @@ public class TestRunner implements DefaultPreferences{
 	}
 
 	public static MProject getProject() {
-		if(TestUtil.getProject(PROJECT_NAME).isEmpty()) throw new NullPointerException();
-		System.err.println(TestUtil.getProject(PROJECT_NAME).isEmpty() + TestUtil.getProject(PROJECT_NAME).get().getElementName());
-		return Factory.getInstance().createMProject(TestUtil.getProject(PROJECT_NAME).get());
+		Optional<IJavaProject> project = TestUtil.getProject(PROJECT_NAME);
+		if(project.isEmpty()) throw new NullPointerException();
+		return Factory.getInstance().createMProject(project.get());
 	}
 	
 	public static MClass findClass(String className) {

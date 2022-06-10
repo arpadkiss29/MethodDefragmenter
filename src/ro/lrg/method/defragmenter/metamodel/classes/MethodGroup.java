@@ -1,7 +1,6 @@
 package ro.lrg.method.defragmenter.metamodel.classes;
 
 import org.eclipse.jdt.core.IMethod;
-import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaModelException;
 import methoddefragmenter.metamodel.entity.MClass;
 import methoddefragmenter.metamodel.entity.MMethod;
@@ -16,8 +15,7 @@ public class MethodGroup implements IRelationBuilder<MMethod, MClass> {
 	public Group<MMethod> buildGroup(MClass arg0) {
 		Group<MMethod> group = new Group<>();
 		try {
-			IType iType = arg0.getUnderlyingObject();
-			IMethod[] iMethods = iType.getMethods();
+			IMethod[] iMethods = arg0.getUnderlyingObject().getMethods();
 			for (IMethod iMethod : iMethods) {
 				MMethod mMethod = Factory.getInstance().createMMethod(iMethod);
 				group.add(mMethod);

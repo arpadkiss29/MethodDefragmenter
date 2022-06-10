@@ -38,8 +38,7 @@ public class AllEnviousLeavesVisitor implements FragmentVisitor {
 
 	@Override
 	public void visit(InternalCodeFragmentLeaf fragment) {
-//		if(fragmentIsEnvious(fragment)) 
-		allEnviousFragments.add(fragment);
+		if(fragmentIsEnvious(fragment)) allEnviousFragments.add(fragment);
 	}
 	
 	public List<AbstractInternalCodeFragment> getAllEnviousFragments() {

@@ -3,13 +3,10 @@ package tests;
 import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 
-import ro.lrg.method.defragmenter.preferences.DefaultPreferences;
-
-
-public class CorrectNumberOfEnviousFragments implements DefaultPreferences{
+public class CorrectNumberOfEnviousFragments_AllCallLevels {
 	@Test
 	public void resultedNumberOfFragmentsForProjectCallLevelIsCorrect() {
-		assertEquals(TestRunner.getProject().enviousFragmentGroup().getElements().size(), 1);
+		assertEquals(TestRunner.getProject().enviousFragmentGroup().getElements().size(), 2);
 	}
 	@Test
 	public void resultedNumberOfFragmentsForClassCallLevelIsCorrect_Circle() {
@@ -17,7 +14,7 @@ public class CorrectNumberOfEnviousFragments implements DefaultPreferences{
 	}
 	@Test
 	public void resultedNumberOfFragmentsForClassCallLevelIsCorrect_Recorder() {
-		assertEquals(TestRunner.findClass("Recorder").enviousFragmentGroup().getElements().size(), 1);
+		assertEquals(TestRunner.findClass("Recorder").enviousFragmentGroup().getElements().size(), 2);
 	}
 	@Test
 	public void resultedNumberOfFragmentsForClassCallLevelIsCorrect_Square() {
@@ -45,7 +42,7 @@ public class CorrectNumberOfEnviousFragments implements DefaultPreferences{
 	}
 	@Test
 	public void resultedNumberOfFragmentsForMethodCallLevelIsCorrect_Recorder_Persist() {
-		assertEquals(TestRunner.findMethod("Recorder", "persist").enviousFragmentGroup().getElements().size(), 1);
+		assertEquals(TestRunner.findMethod("Recorder", "persist").enviousFragmentGroup().getElements().size(), 2);
 	}
 	@Test
 	public void resultedNumberOfFragmentsForMethodCallLevelIsCorrect_Rectangle_Rectangle() {

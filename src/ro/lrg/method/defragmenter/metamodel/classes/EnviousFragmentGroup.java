@@ -14,8 +14,8 @@ public class EnviousFragmentGroup implements IRelationBuilder<MFragment, MClass>
 	@Override
 	public Group<MFragment> buildGroup(MClass arg0) {
 		List<MMethod> methods = arg0.methodGroup().getElements();
-		Group<MFragment> fragmentGroup = new Group<>();
-		methods.forEach(method->fragmentGroup.addAll(method.enviousFragmentGroup().getElements()));
-		return fragmentGroup;
+		Group<MFragment> enviousFragmentGroup = new Group<>();
+		methods.forEach(method->enviousFragmentGroup.addAll(method.enviousFragmentGroup().getElements()));
+		return enviousFragmentGroup;
 	}
 }
