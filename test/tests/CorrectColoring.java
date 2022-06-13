@@ -13,7 +13,7 @@ public class CorrectColoring {
 	
 	@Test
 	public void correctColoring_Recorder_persist() {
-		List<MFragment> mFragments = TestRunner.findMethod("Recorder", "persist").enviousFragmentGroup().getElements();
+		List<MFragment> mFragments = TestRunner.findMethod("recorder.Recorder", "persist").enviousFragmentGroup().getElements();
 		mFragments.get(0).color();
 		assertEquals("Error when coloring the first envious fragment of method Recorder.persist!", Selector.getColoredFragments().size(), 1);
 		mFragments.get(0).color();
@@ -31,7 +31,7 @@ public class CorrectColoring {
 	
 	@Test
 	public void correctMultiColoring_Recorder_persist() {
-		MMethod mMethod = TestRunner.findMethod("Recorder", "persist");
+		MMethod mMethod = TestRunner.findMethod("recorder.Recorder", "persist");
 		mMethod.colorEnviousFragments();
 		assertEquals("Error when coloring all envious fragments of method Recorder.persist!", Selector.getColoredFragments().size(), 2);
 		mMethod.colorEnviousFragments();
@@ -44,8 +44,8 @@ public class CorrectColoring {
 	
 	@Test
 	public void correctCombinedColoring_Recorder_persist() {
-		MMethod mMethod = TestRunner.findMethod("Recorder", "persist");
-		List<MFragment> mFragments = TestRunner.findMethod("Recorder", "persist").enviousFragmentGroup().getElements();
+		MMethod mMethod = TestRunner.findMethod("recorder.Recorder", "persist");
+		List<MFragment> mFragments = TestRunner.findMethod("recorder.Recorder", "persist").enviousFragmentGroup().getElements();
 		mFragments.get(0).color();
 		mMethod.colorEnviousFragments();
 		assertEquals("Error when coloring all envious fragments after coloring a single fragment!", Selector.getColoredFragments().size(), 2);

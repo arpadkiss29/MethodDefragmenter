@@ -18,7 +18,20 @@ public class CorrectToString {
 	
 	@Test
 	public void correctToStringForClasses() {
-		String[] correctValues = {"Rectangle", "Recorder", "Circle"};
+		String[] correctValues = {
+				"recorder.Recorder",
+				"recorder.data.Rectangle",
+				"recorder.data.Circle",
+				"three_letter_class.ForStatement",
+				"three_letter_class.DoWhileStatement",
+				"three_letter_class.ParticularCase",
+				"three_letter_class.SwitchStatement",
+				"three_letter_class.WhileStatement",
+				"three_letter_class.data.ThreeLetterClass",
+				"three_letter_class.data.DEF",
+				"three_letter_class.data.ABC"
+		};
+		
 		List<MClass> mClasses = TestRunner.getProject().classGroup().getElements();
 		for (MClass mclass : mClasses) {
 			assertEquals(
@@ -31,7 +44,15 @@ public class CorrectToString {
 	
 	@Test
 	public void correctToStringForMethods() {
-		String[] correctValues = {"Rectangle", "getX1", "getY1", "getX2", "getY2", "Recorder", "persist", "Circle", "getX", "getY", "getR"};
+		String[] correctValues = {
+				"Recorder", "persist",
+				"Rectangle", "getX1", "getY1", "getX2", "getY2",
+				"Circle", "getX", "getY", "getR",
+				"forStatement", "doWhileStatement", "particularCase", "switchStatement", "whileStatement",
+				"getD", "setD", "getE", "setE", "getF", "setF",
+				"getA", "setA", "getB", "setB", "getC", "setC"
+		};
+				
 		List<MMethod> mMethods = TestRunner.getProject().classGroup().getElements().stream()
 				.map(mClass -> mClass.methodGroup().getElements())
 				.flatMap(array -> array.stream())

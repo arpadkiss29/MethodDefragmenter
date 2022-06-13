@@ -1,4 +1,4 @@
-package tests;
+package tests.recorder;
 
 import static org.junit.Assert.assertEquals;
 
@@ -7,12 +7,13 @@ import java.util.List;
 import org.junit.Test;
 
 import methoddefragmenter.metamodel.entity.MFragment;
+import tests.TestRunner;
 
-public class CorrectCodeContent_ProjectLevelCall {
+public class CorrectCodeContent {
 	
 	@Test
-	public void correctCodeContent_ProjectLevelCall() {
-		List<MFragment> mFragments = TestRunner.getProject().enviousFragmentGroup().getElements();
+	public void correctCodeContent() {
+		List<MFragment> mFragments = TestRunner.findClass("recorder.Recorder").enviousFragmentGroup().getElements();
 		String[] correctValues = {
 				"[if (o instanceof Circle) {\n"
 				+ "  this.stream.writeInt(((Circle)o).getX());\n"
@@ -30,7 +31,7 @@ public class CorrectCodeContent_ProjectLevelCall {
 		for (MFragment mFragment : mFragments) {
 			assertEquals(
 					"Error at fragment number " + mFragments.indexOf(mFragment) + "!", 
-					mFragment.getUnderlyingObject().toString(), 
+					mFragment.toString(), 
 					correctValues[mFragments.indexOf(mFragment)]
 			);
 		}

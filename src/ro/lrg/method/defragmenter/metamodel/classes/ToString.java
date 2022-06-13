@@ -8,6 +8,6 @@ import ro.lrg.xcore.metametamodel.PropertyComputer;
 public class ToString implements IPropertyComputer<String, MClass> {
 	@Override
 	public String compute(MClass arg0) {
-		return arg0.getUnderlyingObject().getElementName();
+		return arg0.getUnderlyingObject().getFullyQualifiedName();
 	}
 }

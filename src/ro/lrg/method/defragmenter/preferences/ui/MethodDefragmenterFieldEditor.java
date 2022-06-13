@@ -50,17 +50,17 @@ public class MethodDefragmenterFieldEditor extends FieldEditor implements Defaul
 		groupingAlgorithmSelectionCombo.setItems(GROUPING_ALGORITHMS_NAMES);
 		groupingAlgorithmSelectionCombo.select(DEFAULT_ALGORITHM);
 		
-		new Label(parent, SWT.NONE).setText("Accesses to foreign data limit (ATFD):");
+		new Label(parent, SWT.NONE).setText("Accesses to foreign data treshold (ATFD):");
 		ATFDTresholdSpinner = new Spinner (parent, SWT.BORDER);
 		ATFDTresholdSpinner.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		ATFDTresholdSpinner.setValues(Integer.parseInt(ATFD_DEFAULT_VALUE), 0, 10, 0, 1, 10);
 		
-		new Label(parent, SWT.NONE).setText("Foreign data providers limit (FDP):");
+		new Label(parent, SWT.NONE).setText("Foreign data providers treshold (FDP):");
 		FDPTresholdSpinner = new Spinner (parent, SWT.BORDER);
 		FDPTresholdSpinner.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		FDPTresholdSpinner.setValues(Integer.parseInt(FDP_DEFAULT_VALUE), 0, 10, 0, 1, 10);
 		
-		new Label(parent, SWT.NONE).setText("Local atributes accesses limit (LAA):");
+		new Label(parent, SWT.NONE).setText("Local atributes accesses treshold (LAA):");
 		LAATresholdSpinner = new Spinner (parent, SWT.BORDER);
 		LAATresholdSpinner.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		LAATresholdSpinner.setValues(LAATresholdSpinnerPositionOf(LAA_DEFAULT_VALUE), 0, 

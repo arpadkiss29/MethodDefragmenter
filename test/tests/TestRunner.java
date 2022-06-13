@@ -1,4 +1,4 @@
-package tests;
+	package tests;
 
 import java.util.Optional;
 
@@ -20,14 +20,46 @@ import methoddefragmenter.metamodel.entity.MClass;
 import methoddefragmenter.metamodel.entity.MMethod;
 import methoddefragmenter.metamodel.entity.MProject;
 import methoddefragmenter.metamodel.factory.Factory;
-import ro.lrg.method.defragmenter.preferences.DefaultPreferences;
 import ro.lrg.xcore.metametamodel.Group;
 
 @RunWith(Suite.class)
-@SuiteClasses({CorrectCodeContent_ProjectLevelCall.class, CorrectColoring.class, CorrectForeignDataProviders_ProjectLevelCall.class, 
-	CorrectMetricsOfFragments_ProjectLevelCall.class, CorrectNumberOfElementsOfGroups.class, 
-	CorrectNumberOfEnviousFragments_AllCallLevels.class, CorrectToString.class})
-public class TestRunner implements DefaultPreferences{
+@SuiteClasses({
+	CorrectColoring.class, 
+	CorrectNumberOfElementsInProjectClassGroup.class, 
+	CorrectNumberOfElementsInMethodGroups.class, 
+	CorrectNumberOfEnviousFragmentsForProjectLevelCall.class, 
+	CorrectToString.class, 
+	
+	
+	tests.do_while_statement.CorrectCodeContent.class, 
+	tests.for_statement.CorrectCodeContent.class, 
+	tests.particular_case.CorrectCodeContent.class, 
+	tests.recorder.CorrectCodeContent.class, 
+	tests.switch_statement.CorrectCodeContent.class, 
+	tests.while_statement.CorrectCodeContent.class, 
+	
+	tests.do_while_statement.CorrectForeignDataProviders.class, 
+	tests.for_statement.CorrectForeignDataProviders.class, 
+	tests.particular_case.CorrectForeignDataProviders.class, 
+	tests.recorder.CorrectForeignDataProviders.class, 
+	tests.switch_statement.CorrectForeignDataProviders.class, 
+	tests.while_statement.CorrectForeignDataProviders.class, 
+	
+	tests.do_while_statement.CorrectMetricsOfFragments.class, 
+	tests.for_statement.CorrectMetricsOfFragments.class, 
+	tests.particular_case.CorrectMetricsOfFragments.class, 
+	tests.recorder.CorrectMetricsOfFragments.class, 
+	tests.switch_statement.CorrectMetricsOfFragments.class, 
+	tests.while_statement.CorrectMetricsOfFragments.class, 
+	
+	tests.do_while_statement.CorrectNumberOfEnviousFragments.class, 
+	tests.for_statement.CorrectNumberOfEnviousFragments.class, 
+	tests.particular_case.CorrectNumberOfEnviousFragments.class, 
+	tests.recorder.CorrectNumberOfEnviousFragments.class, 
+	tests.switch_statement.CorrectNumberOfEnviousFragments.class, 
+	tests.while_statement.CorrectNumberOfEnviousFragments.class
+	})
+public class TestRunner {
 	private static final String PROJECT_NAME = "MethodDefragmenterTestProject";
 	private static Group<MClass> projectClasses;
 	

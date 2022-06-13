@@ -61,7 +61,7 @@ public class MetricsComputer {
 					IPackageFragmentRoot root = (IPackageFragmentRoot) element.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT);
 					try {
 						IClasspathEntry classpathEntry = root.getRawClasspathEntry();
-						if (classpathEntry.getEntryKind() == IClasspathEntry.CPE_SOURCE || !libraryCheck) {
+						if (classpathEntry.getEntryKind() == IClasspathEntry.CPE_SOURCE || libraryCheck) {
 							if (!methodBindingCache.contains(methodBinding)) {
 								boolean already = false;
 								for (IMethodBinding mb : methodBindingCache) {
@@ -92,16 +92,12 @@ public class MetricsComputer {
 					IPackageFragmentRoot root = (IPackageFragmentRoot) element.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT);
 					try {
 						IClasspathEntry classpathEntry = root.getRawClasspathEntry();
-						if (classpathEntry.getEntryKind() == IClasspathEntry.CPE_SOURCE || !libraryCheck) {
+						if (classpathEntry.getEntryKind() == IClasspathEntry.CPE_SOURCE || libraryCheck) {
 							if (!variableBindingsCache.contains(variableBinding)) {
 								ITypeBinding typeBinding = variableBinding.getDeclaringClass();
 								if (typeBinding != null) {
-									boolean staticCheck = true;
-									if (!considerStaticFieldAccess) {
-										if (Modifier.isStatic(variableBinding.getModifiers()))
-											staticCheck = false;
-									}
-									if (staticCheck) {
+									if (!Modifier.isStatic(variableBinding.getModifiers())
+											|| considerStaticFieldAccess && Modifier.isStatic(variableBinding.getModifiers())) {
 										incrementAccesses(analyzedClass, typeBinding);
 									}
 								}
