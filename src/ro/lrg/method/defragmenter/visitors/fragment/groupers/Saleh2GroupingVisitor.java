@@ -40,10 +40,9 @@ public class Saleh2GroupingVisitor extends SalehGroupingVisitor {
 				if (accumulatorFDP > 0 && leafFDP == 0) {
 					zeroFDPAccumulator.addInternalStatementsOfFragment(leaf);
 				} else {
+					InternalCodeFragmentLeaf temp = mergeLeaves(accumulator, leaf);
+					int tempFDP = MetricsComputer.getComputedMetrics(temp).getFDP();
 					if (zeroFDPAccumulator.getInternalStatementsSize() > 0) {
-						InternalCodeFragmentLeaf temp = mergeLeaves(accumulator, leaf);
-						int tempFDP = MetricsComputer.getComputedMetrics(temp).getFDP();
-						
 						if (tempFDP <= FDPTreshold) {
 							accumulator.addInternalStatementsOfFragment(zeroFDPAccumulator);
 							zeroFDPAccumulator = newInternalCodeFragmentLeaf();
@@ -54,8 +53,6 @@ public class Saleh2GroupingVisitor extends SalehGroupingVisitor {
 							zeroFDPAccumulator = newInternalCodeFragmentLeaf();
 						}
 					} else {
-						InternalCodeFragmentLeaf temp = mergeLeaves(accumulator, leaf);
-						int tempFDP = MetricsComputer.getComputedMetrics(temp).getFDP();
 						if (tempFDP > FDPTreshold) {
 							groupedNodes.add(accumulator);
 							accumulator = newInternalCodeFragmentLeaf();

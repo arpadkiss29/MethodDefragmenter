@@ -1,6 +1,8 @@
 package ro.lrg.method.defragmenter.metamodel.methods;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IMethod;
@@ -29,18 +31,31 @@ import ro.lrg.xcore.metametamodel.RelationBuilder;
 @RelationBuilder
 public class EnviousFragmentGroup implements IRelationBuilder<MFragment, MMethod> {
 	
-	private Block findMethodBody(String methodName, String className, CompilationUnit compilationUnit) {
-		List<TypeDeclaration> typeDeclarations = compilationUnit.types();
-        for(TypeDeclaration typeDeclaration : typeDeclarations) {
-        	if(typeDeclaration.getName().getIdentifier().equals(className)) {
-        		MethodDeclaration[] methodDeclarations = typeDeclaration.getMethods();
-                for (MethodDeclaration methodDeclaration : methodDeclarations) {
-                	if(methodDeclaration.getName().getIdentifier().equals(methodName)) {
-                		return methodDeclaration.getBody();
-                	}
-                }
-        	}
-        }
+	private Block findMethodBody(IMethod method, CompilationUnit compilationUnit) {
+		String className = method.getDeclaringType().getElementName();
+		String methodName = method.getElementName();
+        String[] parameterTypeSignatures = method.getParameterTypes();
+		
+		Optional<TypeDeclaration> correctTypeDeclaration = ((List<TypeDeclaration>) compilationUnit.types()).stream()
+				.filter(typeDeclaration -> typeDeclaration.getName().getIdentifier().equals(className)).findFirst();
+		if (correctTypeDeclaration.isEmpty()) return null;
+		List<MethodDeclaration> methodDeclarations = Arrays.asList(correctTypeDeclaration.get().getMethods());
+		
+		for (MethodDeclaration methodDeclaration : methodDeclarations) {
+			List<String> parameterTypeSignatures2 = Arrays.asList(((IMethod) methodDeclaration.resolveBinding()
+					.getMethodDeclaration().getJavaElement()).getParameterTypes());
+			if (methodDeclaration.getName().getIdentifier().equals(methodName) 
+					&& parameterTypeSignatures2.size() == parameterTypeSignatures.length) {
+				boolean found = true;
+				for (String signature : parameterTypeSignatures2) {
+					if (!signature.equals(parameterTypeSignatures[parameterTypeSignatures2.indexOf(signature)])) {
+						found = false;
+						break;
+					}
+				}
+				if (found) return methodDeclaration.getBody();
+			}
+		}
         return null;
 	}
 	
@@ -53,10 +68,10 @@ public class EnviousFragmentGroup implements IRelationBuilder<MFragment, MMethod
         parser.setResolveBindings(true);
         CompilationUnit compilationUnit = (CompilationUnit) parser.createAST(null);
         
-        String className = method.getDeclaringType().getElementName();
-        String methodName = method.getElementName();
-        Block block = findMethodBody(methodName, className, compilationUnit);
+        Block block = findMethodBody(method, compilationUnit);
+        if (block == null) return new Group<>();
         
+        String className = method.getDeclaringType().getElementName();
         IFile iFile = (IFile) method.getResource();
         IJavaProject iJavaProject = method.getJavaProject();
         

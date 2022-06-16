@@ -15,6 +15,7 @@ public class CorrectNumberOfEnviousFragments {
 	
 	@Test
 	public void correctNumberOfEnviousFragments_whileStatement() {
-		assertEquals(TestRunner.findMethod("three_letter_class.WhileStatement", "whileStatement").enviousFragmentGroup().getElements().size(), 2);
+		String[] parameterTypeSignatures = {};
+		assertEquals(TestRunner.findMethod("three_letter_class.WhileStatement", "whileStatement", parameterTypeSignatures).enviousFragmentGroup().getElements().size(), 2);
 	}
 }

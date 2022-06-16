@@ -13,7 +13,7 @@ import org.osgi.service.prefs.BackingStoreException;
 
 import ro.lrg.method.defragmenter.Activator;
 
-public class MethodDefragmenterPropertyStore extends PreferenceStore implements DefaultPreferences {
+public class MethodDefragmenterPropertyStore extends PreferenceStore {
 	private IJavaProject preferenceStoreProject;
 	
 	public MethodDefragmenterPropertyStore(IJavaProject preferenceStoreProject) {
@@ -25,7 +25,7 @@ public class MethodDefragmenterPropertyStore extends PreferenceStore implements 
 	public void load() {
 		IScopeContext projectScope = new ProjectScope(preferenceStoreProject.getProject());
 		IEclipsePreferences projectNode = projectScope.getNode(Activator.PLUGIN_ID);
-		for(Entry<String, String> entry : DEFAULT_VALUES_MAP.entrySet()) {
+		for(Entry<String, String> entry : DefaultPreferences.DEFAULT_VALUES_MAP.entrySet()) {
 			String value = projectNode == null ? null : projectNode.get(entry.getKey(), null);
 			if(value == null || value.equals("")) super.setValue(entry.getKey(), entry.getValue());
 			else super.setValue(entry.getKey(), value);
@@ -49,17 +49,17 @@ public class MethodDefragmenterPropertyStore extends PreferenceStore implements 
 	
 	public void setBindings(String preferenceName, String value) {
 		super.setValue(preferenceName, value);
-		super.setDefault(preferenceName, DEFAULT_VALUES_MAP.get(preferenceName));
+		super.setDefault(preferenceName, DefaultPreferences.DEFAULT_VALUES_MAP.get(preferenceName));
 	}
 	
 	public void setDefaultBindings(String preferenceName) {
-		super.setDefault(preferenceName, DEFAULT_VALUES_MAP.get(preferenceName));
+		super.setDefault(preferenceName, DefaultPreferences.DEFAULT_VALUES_MAP.get(preferenceName));
 		super.setToDefault(preferenceName);
 	}
 	
 	private String getPreferenceValue(String preferenceName) {
 		String preferenceValue = super.getString(preferenceName);
-		return !preferenceValue.equals("") ? preferenceValue : DEFAULT_VALUES_MAP.get(preferenceName);
+		return !preferenceValue.equals("") ? preferenceValue : DefaultPreferences.DEFAULT_VALUES_MAP.get(preferenceName);
 	}
 			
 	public Map<String, String> toMap() {
@@ -76,32 +76,38 @@ public class MethodDefragmenterPropertyStore extends PreferenceStore implements 
 	}
 	
 	public int getGroupingAlgorithm() {
-		if(toMap().get(GROUPING_ALGORITHM_PREFERENCE_NAME) == null) return Integer.parseInt(DEFAULT_VALUES_MAP.get(GROUPING_ALGORITHM_PREFERENCE_NAME));
-		return Integer.parseInt(toMap().get(GROUPING_ALGORITHM_PREFERENCE_NAME));
+		if(toMap().get(DefaultPreferences.GROUPING_ALGORITHM_PREFERENCE_NAME) == null) 
+			return Integer.parseInt(DefaultPreferences.DEFAULT_VALUES_MAP.get(DefaultPreferences.GROUPING_ALGORITHM_PREFERENCE_NAME));
+		return Integer.parseInt(toMap().get(DefaultPreferences.GROUPING_ALGORITHM_PREFERENCE_NAME));
 	}
 	
 	public int getATFDTreshold() {
-		if(toMap().get(ATFD_PREFERENCE_NAME) == null) return Integer.parseInt(DEFAULT_VALUES_MAP.get(ATFD_PREFERENCE_NAME));
-		return Integer.parseInt(toMap().get(ATFD_PREFERENCE_NAME));
+		if(toMap().get(DefaultPreferences.ATFD_PREFERENCE_NAME) == null) 
+			return Integer.parseInt(DefaultPreferences.DEFAULT_VALUES_MAP.get(DefaultPreferences.ATFD_PREFERENCE_NAME));
+		return Integer.parseInt(toMap().get(DefaultPreferences.ATFD_PREFERENCE_NAME));
 	}
 	
 	public int getFDPTreshold() {
-		if(toMap().get(FDP_PREFERENCE_NAME) == null) return Integer.parseInt(DEFAULT_VALUES_MAP.get(FDP_PREFERENCE_NAME));
-		return Integer.parseInt(toMap().get(FDP_PREFERENCE_NAME));
+		if(toMap().get(DefaultPreferences.FDP_PREFERENCE_NAME) == null) 
+			return Integer.parseInt(DefaultPreferences.DEFAULT_VALUES_MAP.get(DefaultPreferences.FDP_PREFERENCE_NAME));
+		return Integer.parseInt(toMap().get(DefaultPreferences.FDP_PREFERENCE_NAME));
 	}
 	
 	public double getLAATreshold() {
-		if(toMap().get(LAA_PREFERENCE_NAME) == null) return Double.parseDouble(DEFAULT_VALUES_MAP.get(LAA_PREFERENCE_NAME));
-		return Double.parseDouble(toMap().get(LAA_PREFERENCE_NAME));
+		if(toMap().get(DefaultPreferences.LAA_PREFERENCE_NAME) == null) 
+			return Double.parseDouble(DefaultPreferences.DEFAULT_VALUES_MAP.get(DefaultPreferences.LAA_PREFERENCE_NAME));
+		return Double.parseDouble(toMap().get(DefaultPreferences.LAA_PREFERENCE_NAME));
 	}
 
 	public boolean isConsiderStaticFieldAccesses() {
-		if(toMap().get(CONSIDER_STATIC_FIELD_ACCESS_PREFERENCE_NAME) == null) return Boolean.parseBoolean(DEFAULT_VALUES_MAP.get(CONSIDER_STATIC_FIELD_ACCESS_PREFERENCE_NAME));
-		return Boolean.parseBoolean(toMap().get(CONSIDER_STATIC_FIELD_ACCESS_PREFERENCE_NAME));
+		if(toMap().get(DefaultPreferences.CONSIDER_STATIC_FIELD_ACCESS_PREFERENCE_NAME) == null) 
+			return Boolean.parseBoolean(DefaultPreferences.DEFAULT_VALUES_MAP.get(DefaultPreferences.CONSIDER_STATIC_FIELD_ACCESS_PREFERENCE_NAME));
+		return Boolean.parseBoolean(toMap().get(DefaultPreferences.CONSIDER_STATIC_FIELD_ACCESS_PREFERENCE_NAME));
 	}
 
 	public boolean isLibraryCheck() {
-		if(toMap().get(LIBRARY_CHECK_PREFERENCE_NAME) == null) return Boolean.parseBoolean(DEFAULT_VALUES_MAP.get(LIBRARY_CHECK_PREFERENCE_NAME));
-		return Boolean.parseBoolean(toMap().get(LIBRARY_CHECK_PREFERENCE_NAME));
+		if(toMap().get(DefaultPreferences.LIBRARY_CHECK_PREFERENCE_NAME) == null) 
+			return Boolean.parseBoolean(DefaultPreferences.DEFAULT_VALUES_MAP.get(DefaultPreferences.LIBRARY_CHECK_PREFERENCE_NAME));
+		return Boolean.parseBoolean(toMap().get(DefaultPreferences.LIBRARY_CHECK_PREFERENCE_NAME));
 	}
 }

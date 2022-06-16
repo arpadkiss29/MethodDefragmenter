@@ -15,6 +15,7 @@ public class CorrectNumberOfEnviousFragments {
 	
 	@Test
 	public void correctNumberOfEnviousFragments_particularCase() {
-		assertEquals(TestRunner.findMethod("three_letter_class.ParticularCase", "particularCase").enviousFragmentGroup().getElements().size(), 2);
+		String[] parameterTypeSignatures = {"I"};
+		assertEquals(TestRunner.findMethod("three_letter_class.ParticularCase", "particularCase", parameterTypeSignatures).enviousFragmentGroup().getElements().size(), 2);
 	}
 }

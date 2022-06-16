@@ -1,5 +1,7 @@
 	package tests;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import org.eclipse.jdt.core.ICompilationUnit;
@@ -29,7 +31,6 @@ import ro.lrg.xcore.metametamodel.Group;
 	CorrectNumberOfElementsInMethodGroups.class, 
 	CorrectNumberOfEnviousFragmentsForProjectLevelCall.class, 
 	CorrectToString.class, 
-	
 	
 	tests.do_while_statement.CorrectCodeContent.class, 
 	tests.for_statement.CorrectCodeContent.class, 
@@ -83,20 +84,28 @@ public class TestRunner {
 	
 	public static MClass findClass(String className) {
 		for (MClass projectClass : projectClasses.getElements()) {
-			if (projectClass.getUnderlyingObject().getFullyQualifiedName().equals(className)) {
+			if (projectClass.toString().equals(className)) {
 				return projectClass;
 			}
 		}
 		return null;
 	}
 	
-	public static MMethod findMethod(String className, String methodName) {		
+	public static MMethod findMethod(String className, String methodName, String[] parameterTypeSignatures) {		
 		MClass mClass = findClass(className);
 		try {
-			IMethod[] classMethods = mClass.getUnderlyingObject().getMethods();
-			for (IMethod classMethod : classMethods) {
-				if (classMethod.getElementName().equals(methodName)) {
-					return Factory.getInstance().createMMethod(classMethod);
+			IMethod[] methods = mClass.getUnderlyingObject().getMethods();
+			for (IMethod method : methods) {
+				List<String> parameterTypeSignatures2 = Arrays.asList(method.getParameterTypes());
+				if (method.getElementName().equals(methodName) && parameterTypeSignatures2.size() == parameterTypeSignatures.length) {
+					boolean found = true;
+					for (String signature : parameterTypeSignatures2) {
+						if (!signature.equals(parameterTypeSignatures[parameterTypeSignatures2.indexOf(signature)])) {
+							found = false;
+							break;
+						}
+					}
+					if (found) return Factory.getInstance().createMMethod(method);
 				}
 			}
 		} catch (JavaModelException e) {
@@ -110,18 +119,15 @@ public class TestRunner {
 			projectClasses = new Group<>();
 			IPackageFragment[] iPackageFragments = project.getPackageFragments();
 			for (IPackageFragment iPackageFragment : iPackageFragments) {
-				boolean isLocalPackage = true;
 				IJavaElement parent = iPackageFragment.getParent();
 				if (parent instanceof IPackageFragmentRoot && ((IPackageFragmentRoot) parent).isExternal()) {
-					isLocalPackage = false;
+					continue;
 				}
-				if (isLocalPackage) {
-					ICompilationUnit[] files = iPackageFragment.getCompilationUnits();
-					for (ICompilationUnit file : files) {
-						IType[] classes = file.getAllTypes();
-						for (IType c : classes) {
-							projectClasses.add(Factory.getInstance().createMClass(c));
-						}
+				ICompilationUnit[] files = iPackageFragment.getCompilationUnits();
+				for (ICompilationUnit file : files) {
+					IType[] classes = file.getAllTypes();
+					for (IType class_ : classes) {
+						projectClasses.add(Factory.getInstance().createMClass(class_));
 					}
 				}
 			}

@@ -15,11 +15,13 @@ public class CorrectNumberOfEnviousFragments {
 	
 	@Test
 	public void correctNumberOfEnviousFragments_Recorder() {
-		assertEquals(TestRunner.findMethod("recorder.Recorder", "Recorder").enviousFragmentGroup().getElements().size(), 0);
+		String[] parameterTypeSignatures = {"QDataOutputStream;"};
+		assertEquals(TestRunner.findMethod("recorder.Recorder", "Recorder", parameterTypeSignatures).enviousFragmentGroup().getElements().size(), 0);
 	}
 	
 	@Test
 	public void correctNumberOfEnviousFragments_persist() {
-		assertEquals(TestRunner.findMethod("recorder.Recorder", "persist").enviousFragmentGroup().getElements().size(), 2);
+		String[] parameterTypeSignatures = {"QObject;"};
+		assertEquals(TestRunner.findMethod("recorder.Recorder", "persist", parameterTypeSignatures).enviousFragmentGroup().getElements().size(), 2);
 	}
 }

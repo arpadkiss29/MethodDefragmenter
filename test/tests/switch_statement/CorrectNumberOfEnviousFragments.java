@@ -15,6 +15,7 @@ public class CorrectNumberOfEnviousFragments {
 	
 	@Test
 	public void correctNumberOfEnviousFragments_switchStatement() {
-		assertEquals(TestRunner.findMethod("three_letter_class.SwitchStatement", "switchStatement").enviousFragmentGroup().getElements().size(), 2);
+		String[] parameterTypeSignatures = {"I"};
+		assertEquals(TestRunner.findMethod("three_letter_class.SwitchStatement", "switchStatement", parameterTypeSignatures).enviousFragmentGroup().getElements().size(), 2);
 	}
 }
