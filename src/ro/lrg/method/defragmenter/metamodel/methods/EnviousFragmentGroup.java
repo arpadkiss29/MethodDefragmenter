@@ -31,6 +31,7 @@ import ro.lrg.xcore.metametamodel.RelationBuilder;
 @RelationBuilder
 public class EnviousFragmentGroup implements IRelationBuilder<MFragment, MMethod> {
 	
+	@SuppressWarnings("unchecked")
 	private Block findMethodBody(IMethod method, CompilationUnit compilationUnit) {
 		String className = method.getDeclaringType().getElementName();
 		String methodName = method.getElementName();
@@ -59,6 +60,7 @@ public class EnviousFragmentGroup implements IRelationBuilder<MFragment, MMethod
         return null;
 	}
 	
+	@SuppressWarnings("deprecation")
 	@Override
     public Group<MFragment> buildGroup(MMethod arg0) {
 		IMethod method = arg0.getUnderlyingObject();

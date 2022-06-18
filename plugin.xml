@@ -2,10 +2,6 @@
 <?eclipse version="3.4"?>
 <plugin>
 
-	<extension point="org.eclipse.core.resources.markers" id="ro.lrg.method.defragmenter.marker">
-		<super type="org.eclipse.core.resources.textmarker"/>
-		/>
-	</extension>
 	
 	<extension point="org.eclipse.ui.editors.markerAnnotationSpecification"
 		id="MethodDefragmenterAnnotationSpecification" name="CodeAnnotation">
@@ -317,11 +313,6 @@
   </specification>
 	</extension>
 	
-	<extension point="org.eclipse.ui.editors.annotationTypes">
-   		 <type markerSeverity="0"
-          name="ro.lrg.method.defragmenter.annotation" 
-          markerType="ro.lrg.method.defragmenter.marker"/>
-	</extension>
  <extension
        point="org.eclipse.ui.startup">
     <startup
