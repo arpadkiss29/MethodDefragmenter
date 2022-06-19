@@ -5,8 +5,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Map.Entry;
-
 import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
@@ -24,10 +22,11 @@ import ro.lrg.method.defragmenter.visitors.ast.MethodInvocationVisitor;
 import ro.lrg.method.defragmenter.visitors.ast.VariableBindingVisitor;
 
 public class MetricsComputer {
-	private Map<String, FDPClass> detailedFDPMap = new HashMap<>();
-	private Map<String, Integer> FDPMap = new HashMap<>();
+	private final Map<String, FDPClass> detailedFDPMap = new HashMap<>();
+	private final Map<String, Integer> FDPMap = new HashMap<>();
+	private int localAccesses;
 	private int ATFD;
-	private int LAA;
+	private double LAA;
 	
 	public static MetricsComputer getComputedMetrics(AbstractInternalCodeFragment abstractInternalCodeFragment) {
 		MethodDefragmenterPropertyStore propertyStore = new MethodDefragmenterPropertyStore(abstractInternalCodeFragment.getIJavaProject());
@@ -38,12 +37,14 @@ public class MetricsComputer {
 	}
 	
 	private void computeDataAccesses(AbstractInternalCodeFragment fragment, String analyzedClass, boolean considerStaticFieldAccess, boolean libraryCheck) {
-		resetMetrics();
+		detailedFDPMap.clear();
+		FDPMap.clear();
+		localAccesses = 0;
 		
 		Set<IVariableBinding> variableBindingsCache = new HashSet<IVariableBinding>();
 		Set<IMethodBinding> methodBindingCache = new HashSet<IMethodBinding>();
-
-		List<ASTNode> nodes = fragment.getAllInternalStatementsOfTree();
+		
+		List<ASTNode> nodes = fragment.getInternalStatements();
 		
 		for (ASTNode node : nodes) {
 			MethodInvocationVisitor invocationVisitor = new MethodInvocationVisitor();
@@ -60,7 +61,7 @@ public class MetricsComputer {
 					IPackageFragmentRoot root = (IPackageFragmentRoot) element.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT);
 					try {
 						IClasspathEntry classpathEntry = root.getRawClasspathEntry();
-						if (classpathEntry.getEntryKind() == IClasspathEntry.CPE_SOURCE || !libraryCheck) {
+						if (classpathEntry.getEntryKind() == IClasspathEntry.CPE_SOURCE || libraryCheck) {
 							if (!methodBindingCache.contains(methodBinding)) {
 								boolean already = false;
 								for (IMethodBinding mb : methodBindingCache) {
@@ -91,16 +92,12 @@ public class MetricsComputer {
 					IPackageFragmentRoot root = (IPackageFragmentRoot) element.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT);
 					try {
 						IClasspathEntry classpathEntry = root.getRawClasspathEntry();
-						if (classpathEntry.getEntryKind() == IClasspathEntry.CPE_SOURCE || !libraryCheck) {
+						if (classpathEntry.getEntryKind() == IClasspathEntry.CPE_SOURCE || libraryCheck) {
 							if (!variableBindingsCache.contains(variableBinding)) {
 								ITypeBinding typeBinding = variableBinding.getDeclaringClass();
 								if (typeBinding != null) {
-									boolean staticCheck = true;
-									if (!considerStaticFieldAccess) {
-										if (Modifier.isStatic(variableBinding.getModifiers()))
-											staticCheck = false;
-									}
-									if (staticCheck) {
+									if (!Modifier.isStatic(variableBinding.getModifiers())
+											|| considerStaticFieldAccess && Modifier.isStatic(variableBinding.getModifiers())) {
 										incrementAccesses(analyzedClass, typeBinding);
 									}
 								}
@@ -114,7 +111,32 @@ public class MetricsComputer {
 			}
 		}
 		
-		computeFDPMap(analyzedClass);
+		detailedFDPMap.entrySet().stream().forEach(e -> FDPMap.put(e.getKey(), e.getValue().getNumberOfAccesses()));
+		ATFD = FDPMap.entrySet().stream().map(e -> e.getValue()).reduce(0, Integer::sum);
+		LAA = localAccesses == 0 ? 0 : localAccesses * 1.0 / (localAccesses + ATFD);
+	}
+	
+	private void incrementAccesses(String analyzedClass, ITypeBinding accessClassBinding) {
+		if (checkLocalAccess(analyzedClass, accessClassBinding)) {
+			localAccesses++;
+		} else {
+			if (detailedFDPMap.get(accessClassBinding.getName()) != null) {
+				FDPClass providerClass = detailedFDPMap.get(accessClassBinding.getName());
+				providerClass.incrementNumberOfAccesses();
+			} else {
+				FDPClass providerClass = new FDPClass((IType) accessClassBinding.getJavaElement());
+				providerClass.incrementNumberOfAccesses();
+				detailedFDPMap.put(providerClass.getClassName(), providerClass);
+			}
+		}
+	}
+	
+	private boolean checkLocalAccess(String analyzedClass, ITypeBinding accessClassBinding) {
+		if (accessClassBinding.getName().equals(analyzedClass)) return true;
+		if (accessClassBinding.getSuperclass() != null) {
+			checkLocalAccess(analyzedClass, accessClassBinding.getSuperclass());
+		}
+		return false;
 	}
 	
 	public boolean includesFDPMapOf(MetricsComputer metricsComputer) {
@@ -138,50 +160,6 @@ public class MetricsComputer {
 		return true;
 	}
 	
-	public List<IType> getFDPITypesList() {
-		return detailedFDPMap.entrySet().stream().map(entry -> {
-			return entry.getValue().getIType();
-		}).toList();
-	}
-	
-	private void resetMetrics() {
-		detailedFDPMap.clear();
-		FDPMap.clear();
-		ATFD = 0;
-		LAA = 0;
-	}
-	
-	private void computeFDPMap(String analyzedClass) {
-		FDPMap = new HashMap<>();
-		for (Entry<String, FDPClass> entry : detailedFDPMap.entrySet()) {
-			FDPMap.put(entry.getKey(), entry.getValue().getNumberOfAccesses());
-		}
-	}
-	
-	private void incrementAccesses(String analyzedClass, ITypeBinding accessClassBinding) {
-		if (checkLocalAccess(analyzedClass, accessClassBinding)) {
-			LAA++;
-		} else {
-			if (detailedFDPMap.get(accessClassBinding.getName()) != null) {
-				FDPClass providerClass = detailedFDPMap.get(accessClassBinding.getName());
-				providerClass.incrementNumberOfAccesses();
-			} else {
-				FDPClass providerClass = new FDPClass((IType) accessClassBinding.getJavaElement());
-				providerClass.incrementNumberOfAccesses();
-				detailedFDPMap.put(providerClass.getClassName(), providerClass);
-			}
-		}
-	}
-	
-	private boolean checkLocalAccess(String analyzedClass, ITypeBinding accessClassBinding) {
-		if (accessClassBinding.getName().equals(analyzedClass)) return true;
-		if (accessClassBinding.getSuperclass() != null) {
-			checkLocalAccess(analyzedClass, accessClassBinding.getSuperclass());
-		}
-		return false;
-	}
-	
-	//getters and setters
 	public int getATFD() {
 		return ATFD;
 	}
@@ -190,23 +168,15 @@ public class MetricsComputer {
 		return FDPMap.size();
 	}
 	
-	public Map<String, Integer> getFDPMap() {
+	public List<IType> getFDPITypesList() {
+		return detailedFDPMap.entrySet().stream().map(entry -> entry.getValue().getIType()).toList();
+	}
+	
+	private Map<String, Integer> getFDPMap() {
 		return FDPMap;
 	}
 	
-	public int getLAA() {
+	public double getLAA() {
 		return LAA;
-	}
-	
-	public void setATFD(int ATFD) {
-		this.ATFD = ATFD;
-	}
-	
-	public void setFDPMap(Map<String, Integer> storedFDP) {
-		this.FDPMap = storedFDP;
-	}
-	
-	public void setLAA(int LAA) {
-		this.LAA = LAA;
 	}
 }

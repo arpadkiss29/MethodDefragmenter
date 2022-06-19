@@ -22,9 +22,9 @@ public class AllEnviousLeavesVisitor implements FragmentVisitor {
 		this.LAATreshold = LAATreshold;
 	}
 	
-	private boolean fragmentIsEnvy(AbstractInternalCodeFragment fragment) {
+	private boolean fragmentIsEnvious(AbstractInternalCodeFragment fragment) {
 		MetricsComputer metricsComputer = MetricsComputer.getComputedMetrics(fragment);
-		return EnvyComputer.computeEnvy(metricsComputer.getATFD(), metricsComputer.getFDPMap(), metricsComputer.getLAA(), 
+		return EnvyComputer.computeEnvy(metricsComputer.getATFD(), metricsComputer.getFDP(), metricsComputer.getLAA(), 
 				ATFDTreshold, FDPTreshold, LAATreshold);
 	}
 	
@@ -38,7 +38,7 @@ public class AllEnviousLeavesVisitor implements FragmentVisitor {
 
 	@Override
 	public void visit(InternalCodeFragmentLeaf fragment) {
-		if(fragmentIsEnvy(fragment)) allEnviousFragments.add(fragment);
+		if(fragmentIsEnvious(fragment)) allEnviousFragments.add(fragment);
 	}
 	
 	public List<AbstractInternalCodeFragment> getAllEnviousFragments() {

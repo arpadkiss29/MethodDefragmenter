@@ -2,7 +2,7 @@ package ro.lrg.method.defragmenter.metamodel.fragments;
 
 import methoddefragmenter.metamodel.entity.MFragment;
 import ro.lrg.method.defragmenter.utils.AbstractInternalCodeFragment;
-import ro.lrg.method.defragmenter.visitors.fragment.colourers.UncolorFragmentVisitor;
+import ro.lrg.method.defragmenter.visitors.fragment.colorers.UncolorFragmentVisitor;
 import ro.lrg.xcore.metametamodel.ActionPerformer;
 import ro.lrg.xcore.metametamodel.HListEmpty;
 import ro.lrg.xcore.metametamodel.IActionPerformer;

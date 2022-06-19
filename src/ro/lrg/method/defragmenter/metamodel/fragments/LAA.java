@@ -7,9 +7,9 @@ import ro.lrg.xcore.metametamodel.IPropertyComputer;
 import ro.lrg.xcore.metametamodel.PropertyComputer;
 
 @PropertyComputer
-public class LAA implements IPropertyComputer<Integer, MFragment> {
+public class LAA implements IPropertyComputer<Double, MFragment> {
 	@Override
-	public Integer compute(MFragment arg0) {
+	public Double compute(MFragment arg0) {
 		AbstractInternalCodeFragment abstractInternalCodeFragment = arg0.getUnderlyingObject();
 		return MetricsComputer.getComputedMetrics(abstractInternalCodeFragment).getLAA();
 	}

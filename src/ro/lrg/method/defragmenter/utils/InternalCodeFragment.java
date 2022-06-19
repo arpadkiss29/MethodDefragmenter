@@ -19,15 +19,8 @@ public class InternalCodeFragment extends AbstractInternalCodeFragment {
 	}
 	
 	public void addChild(AbstractInternalCodeFragment child) {
-		if(child == null) {
-			System.err.println("Found null child!");
-			return;
-		}
+		if (child == null) return;
 		children.add(child);
-	}
-	
-	public AbstractInternalCodeFragment getChild(int i) {
-		return children.get(i);
 	}
 	
 	public List<AbstractInternalCodeFragment> getChildren() {

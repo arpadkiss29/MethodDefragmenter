@@ -5,26 +5,42 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.Position;
 import org.eclipse.jface.text.source.IAnnotationModel;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.IDocumentProvider;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.eclipse.ui.texteditor.SimpleMarkerAnnotation;
 
-import ro.lrg.method.defragmenter.visitors.fragment.colourers.UncolorFragmentVisitor;
+import ro.lrg.method.defragmenter.visitors.fragment.colorers.UncolorFragmentVisitor;
 
 public class Selector {
 	private static int colorCounter = 0;
-	private static Map<String, ColouredFragment> colouredFragments = new HashMap<>();
+	private static Map<String, ColoredFragment> coloredFragments = new HashMap<>();
 	private static boolean colorMultipleFragments = false;
 	private static final String MARKER = "ro.lrg.method.defragmenter.marker";
 	private static final String FDP_DOESNT_EXIST = "FDP_DOESNT_EXIST";
 	
-	public static IMarker createIMarker(IResource iResource, Position position) {
+	private static ITextEditor createITextEditor(IFile iFile) {
+		IWorkbenchPage iWorkbenchPage = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
+		try {
+			IDE.openEditor(iWorkbenchPage, iFile);
+		} catch (PartInitException e) {
+			e.printStackTrace();
+		}
+		ITextEditor iTextEditor = (ITextEditor) iWorkbenchPage.getActiveEditor();
+		return iTextEditor;
+	}
+	
+	private static IMarker createIMarker(IResource iResource, Position position) {
 		IMarker iMarker = null;
 		try {
 			iMarker = iResource.createMarker(MARKER);
@@ -51,79 +67,74 @@ public class Selector {
 		return identifier;
 	}
 	
-	public static void uncolorAllColouredFragments() {
-		UncolorFragmentVisitor visitor = new UncolorFragmentVisitor();
-		List<ColouredFragment> colouredFragmentsList = colouredFragments.values().stream().collect(Collectors.toList());
-		for (ColouredFragment colouredFragment : colouredFragmentsList) {
-			colouredFragment.getFragment().accept(visitor);
-		}
-		colouredFragments.clear();
-		colorCounter = 0;
-	}
-	
-	public static String sameFDPAlreadyExists(AbstractInternalCodeFragment abstractInternalCodeFragment) {
+	private static String sameFDPMapAlreadyExists(AbstractInternalCodeFragment abstractInternalCodeFragment) {
 		MetricsComputer metricsComputer1 = MetricsComputer.getComputedMetrics(abstractInternalCodeFragment);
-		for (ColouredFragment colouredFragment : colouredFragments.values()) {
+		for (ColoredFragment colouredFragment : coloredFragments.values()) {
 			MetricsComputer metricsComputer2 = MetricsComputer.getComputedMetrics(colouredFragment.getFragment());
 			if (metricsComputer2.hasTheSameFDPMapWith(metricsComputer1)) return colouredFragment.getColor();
 		}
 		return FDP_DOESNT_EXIST;
 	}
 	
-	public static void addAnnotation(ITextEditor iTextEditor, IMarker iMarker, Position position, AbstractInternalCodeFragment fragment) {
+	public static void uncolorAllColouredFragments() {
+		UncolorFragmentVisitor visitor = new UncolorFragmentVisitor();
+		List<ColoredFragment> colouredFragmentsList = coloredFragments.values().stream().collect(Collectors.toList());
+		for (ColoredFragment colouredFragment : colouredFragmentsList) {
+			colouredFragment.getFragment().accept(visitor);
+		}
+		coloredFragments.clear();
+		colorCounter = 0;
+	}
+	
+	public static void addAnnotation(AbstractInternalCodeFragment fragment) {
+		IFile iFile = fragment.getIFile();
+		Position position = fragment.getPosition();
+		ITextEditor iTextEditor = createITextEditor(iFile);
+		IMarker iMarker = Selector.createIMarker(iFile, position);
 		String identifier = getMarkerIdentifier(iMarker);
-		if (colouredFragments.containsKey(identifier)) return;
 		
-		//The DocumentProvider enables to get the document currently loaded in the editor
+		if (coloredFragments.containsKey(identifier)) return;
+		
 		IDocumentProvider iDocumentProvider = iTextEditor.getDocumentProvider();
-		//This is the document we want to connect to. This is taken from 
-		//the current editor input.
 		IDocument iDocument = iDocumentProvider.getDocument(iTextEditor.getEditorInput());
-		//The IannotationModel enables to add/remove/change annotation to a Document 
-		//loaded in an Editor
 		IAnnotationModel iAnnotationModel = iDocumentProvider.getAnnotationModel(iTextEditor.getEditorInput());
-		//Note: The annotation type id specify that you want to create one of your 
-		//annotations
 		
-		String color = sameFDPAlreadyExists(fragment);
+		String color = sameFDPMapAlreadyExists(fragment);
 		if (color.equals(FDP_DOESNT_EXIST)) {
 			color = "annotationColor_" + colorCounter;
 			colorCounter++;
 		}
+		
 		SimpleMarkerAnnotation simpleMarkerAnnotation = new SimpleMarkerAnnotation(color, iMarker);
-		//Finally add the new annotation to the model
 		iAnnotationModel.connect(iDocument);
 		iAnnotationModel.addAnnotation(simpleMarkerAnnotation, position);
 		iAnnotationModel.disconnect(iDocument);
 		
-		colouredFragments.put(identifier, new ColouredFragment(fragment, simpleMarkerAnnotation, color));
+		coloredFragments.put(identifier, new ColoredFragment(fragment, simpleMarkerAnnotation, color));
 	}
 	
-	public static void removeAnnotation(ITextEditor iTextEditor, IMarker iMarker) {
+	public static void removeAnnotation(AbstractInternalCodeFragment fragment) {
+		IFile iFile = fragment.getIFile();
+		Position position = fragment.getPosition();
+		ITextEditor iTextEditor = createITextEditor(iFile);
+		IMarker iMarker = Selector.createIMarker(iFile, position);
 		String identifier = getMarkerIdentifier(iMarker);
-		if (!colouredFragments.containsKey(identifier)) return;
-		SimpleMarkerAnnotation simpleMarkerAnnotation = colouredFragments.remove(identifier).getAnnotation();
 		
-		//The DocumentProvider enables to get the document currently loaded in the editor
+		if (!coloredFragments.containsKey(identifier)) return;
+		
+		SimpleMarkerAnnotation simpleMarkerAnnotation = coloredFragments.remove(identifier).getAnnotation();
+		
 		IDocumentProvider iDocumentProvider = iTextEditor.getDocumentProvider();
-		//This is the document we want to connect to. This is taken from 
-		//the current editor input.
 		IDocument iDocument = iDocumentProvider.getDocument(iTextEditor.getEditorInput());
-		//The IannotationModel enables to add/remove/change annotation to a Document 
-		//loaded in an Editor
 		IAnnotationModel iAnnotationModel = iDocumentProvider.getAnnotationModel(iTextEditor.getEditorInput());
-		//Finally add the new annotation to the model
+		
 		iAnnotationModel.connect(iDocument);
 		iAnnotationModel.removeAnnotation(simpleMarkerAnnotation);
 		iAnnotationModel.disconnect(iDocument);
 	}
 	
-	public static void incrementColorCounter() {
-		colorCounter++;
-	}
-
-	public static int getColorCounter() {
-		return colorCounter;
+	public static Map<String, ColoredFragment> getColoredFragments() {
+		return coloredFragments;
 	}
 	
 	public static boolean isColorMultipleFragments() {

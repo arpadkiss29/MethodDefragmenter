@@ -69,6 +69,17 @@ public class InitialFragmentationVisitor extends ASTVisitor {
 	}
 	
 	//this method helps some visit methods
+	
+	private void checkIfParentShouldBeLeaf(AbstractInternalCodeFragment parent) {
+		if (((InternalCodeFragment) parent).getChildrenSize() == 0) {
+			InternalCodeFragmentLeaf leaf = newInternalCodeFragmentLeaf();
+			leaf.addInternalStatementsOfFragment(parent);
+			parent = leaf;
+		}
+	}
+	
+	//this method helps some visit methods
+
 	private void visitAux(InternalCodeFragment parent, ASTNode statement) {
 		if (statement != null) {
 			statement.accept(this);
@@ -77,15 +88,7 @@ public class InitialFragmentationVisitor extends ASTVisitor {
 		}
 	}
 	
-	private AbstractInternalCodeFragment checkIfParentShouldBeLeaf(AbstractInternalCodeFragment parent) {
-		if (((InternalCodeFragment) parent).getChildrenSize() == 0) {
-			InternalCodeFragmentLeaf leaf = newInternalCodeFragmentLeaf();
-			leaf.addInternalStatement(parent.getInternalStatement(0));
-			return leaf;
-		} else {
-			return parent;
-		}
-	}
+	//--------------------------------------------------------------------------visit methods
 	
 	@Override
 	public boolean visit(Block node) {
@@ -97,13 +100,12 @@ public class InitialFragmentationVisitor extends ASTVisitor {
 			visitAux((InternalCodeFragment) parent, statement);
 		}
 		
-		parent = checkIfParentShouldBeLeaf(parent);
+		checkIfParentShouldBeLeaf(parent);
         
 		lastNode.push(parent);
 		return false;
 	}
-	
-	//--------------------------------------------------------------------------visit methods
+
 	@Override
 	public boolean visit(ArrayAccess node) {
 		AbstractInternalCodeFragment parent = newInternalCodeFragment();
@@ -112,7 +114,7 @@ public class InitialFragmentationVisitor extends ASTVisitor {
 		visitAux((InternalCodeFragment) parent, node.getArray());
 		visitAux((InternalCodeFragment) parent, node.getIndex());
 		
-		parent = checkIfParentShouldBeLeaf(parent);
+		checkIfParentShouldBeLeaf(parent);
 		
 		lastNode.push(parent);
 		return false;
@@ -128,7 +130,7 @@ public class InitialFragmentationVisitor extends ASTVisitor {
 			visitAux((InternalCodeFragment) parent, statement);
 		}
 		
-		parent = checkIfParentShouldBeLeaf(parent);
+		checkIfParentShouldBeLeaf(parent);
 		
 		lastNode.push(parent);
 		return false;
@@ -141,7 +143,7 @@ public class InitialFragmentationVisitor extends ASTVisitor {
 
 		visitAux((InternalCodeFragment) parent, node.getBody());
 		
-		parent = checkIfParentShouldBeLeaf(parent);
+		checkIfParentShouldBeLeaf(parent);
 		
 		lastNode.push(parent);
 		return false;
@@ -154,7 +156,7 @@ public class InitialFragmentationVisitor extends ASTVisitor {
 		
 		visitAux((InternalCodeFragment) parent, node.getBody());
 		
-		parent = checkIfParentShouldBeLeaf(parent);
+		checkIfParentShouldBeLeaf(parent);
 		
 		lastNode.push(parent);
 		return false;
@@ -167,7 +169,7 @@ public class InitialFragmentationVisitor extends ASTVisitor {
 		
 		visitAux((InternalCodeFragment) parent, node.getBody());
 		
-		parent = checkIfParentShouldBeLeaf(parent);
+		checkIfParentShouldBeLeaf(parent);
 		
 		lastNode.push(parent);
 		return false;
@@ -180,7 +182,7 @@ public class InitialFragmentationVisitor extends ASTVisitor {
 		
 		visitAux((InternalCodeFragment) parent, node.getBody());
 		
-		parent = checkIfParentShouldBeLeaf(parent);
+		checkIfParentShouldBeLeaf(parent);
 		
 		lastNode.push(parent);
 		return false;
@@ -194,7 +196,7 @@ public class InitialFragmentationVisitor extends ASTVisitor {
 		visitAux((InternalCodeFragment) parent, node.getThenStatement());
 		visitAux((InternalCodeFragment) parent, node.getElseStatement());
 		
-		parent = checkIfParentShouldBeLeaf(parent);
+		checkIfParentShouldBeLeaf(parent);
 		
 		lastNode.push(parent);
 		return false;
@@ -210,7 +212,7 @@ public class InitialFragmentationVisitor extends ASTVisitor {
 			visitAux((InternalCodeFragment) parent, statement);
 		}
 		
-		parent = checkIfParentShouldBeLeaf(parent);
+		checkIfParentShouldBeLeaf(parent);
 		
 		lastNode.push(parent);
 		return false;
@@ -226,7 +228,7 @@ public class InitialFragmentationVisitor extends ASTVisitor {
 			visitAux((InternalCodeFragment) parent, statement);
 		}
 		
-		parent = checkIfParentShouldBeLeaf(parent);
+		checkIfParentShouldBeLeaf(parent);
 
 		lastNode.push(parent);
 		return false;
@@ -239,7 +241,7 @@ public class InitialFragmentationVisitor extends ASTVisitor {
 		
 		visitAux((InternalCodeFragment) parent, node.getBody());
 	
-		parent = checkIfParentShouldBeLeaf(parent);
+		checkIfParentShouldBeLeaf(parent);
 		
 		lastNode.push(parent);
 		return false;
@@ -257,7 +259,7 @@ public class InitialFragmentationVisitor extends ASTVisitor {
 		}
 		visitAux((InternalCodeFragment) parent, node.getFinally());
 		
-		parent = checkIfParentShouldBeLeaf(parent);
+		checkIfParentShouldBeLeaf(parent);
 		
 		lastNode.push(parent);
 		return false;
@@ -270,18 +272,21 @@ public class InitialFragmentationVisitor extends ASTVisitor {
 		
 		visitAux((InternalCodeFragment) parent, node.getBody());
 		
-		parent = checkIfParentShouldBeLeaf(parent);
+		checkIfParentShouldBeLeaf(parent);
 		
 		lastNode.push(parent);
 		return false;
 	}
 
-	//--------------------------------------------------------------------------simple visit methods
+	//--------------------------------------------------------------------------method that helps the simple visit methods
+	
 	private void pushAsLeaf(ASTNode node) {
 		InternalCodeFragmentLeaf leaf = newInternalCodeFragmentLeaf();
 		leaf.addInternalStatement(node);
 		lastNode.push(leaf);
 	}
+	
+	//--------------------------------------------------------------------------simple visit methods
 	
 	@Override
 	public boolean visit(ArrayCreation node) {
